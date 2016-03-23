@@ -1,0 +1,16 @@
+Material: Iron
+Method:         lesastsq        
+Symmetry:       m-3m m-3m        
+Date:           23.03.2016, 11:21        
+Fitting time    1h 51 min 34 sec        
+Chisqr:         204.924218        
+Reducec Chisqr: 2.410873        
+deg of freedom: 85        
+# of datapoint: 88        
+nfev:           128        
+Parameters:
+[[Variables]]
+    c_11:   2.8452e+11 (init= 2.4e+11)
+    c_12:   1.1380e+11 (init= 1.4e+11)
+    c_44:   8.8984e+10 (init= 1.2e+11)
+[[Correlations]] (unreported correlations are <  0.100) 

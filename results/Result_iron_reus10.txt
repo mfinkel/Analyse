@@ -1,0 +1,24 @@
+Material: Iron
+Symmetry:       cubic "m-3m"         
+Date:           09.03.2016, 17:54        
+Fitting time    0h 3 min 6 sec        
+Message:        Tolerance seems to be too small.        
+Covar matrix:   
+[[  2.19192059e+21  -4.82471358e+20  -1.94928774e+21]
+ [ -4.82471358e+20   5.91770244e+20   8.63388027e+20]
+ [ -1.94928774e+21   8.63388027e+20   2.24862978e+21]]        
+Success:        True        
+Chisqr:         0.000000        
+Reducec Chisqr: 0.000000        
+deg of freedom: 2        
+# of datapoint: 5        
+nfev:           23        
+Parameters:
+[[Variables]]
+    c_11:   2.8626e+11 +/- 4.68e+10 (16.35%) (init= 2.3e+11)
+    c_12:   1.1250e+11 +/- 2.43e+10 (21.62%) (init= 1.2e+11)
+    c_44:   1.0499e+11 +/- 4.74e+10 (45.17%) (init= 1.2e+11)
+[[Correlations]] (unreported correlations are <  0.100)
+    C(c_11, c_44)                = -0.878 
+    C(c_12, c_44)                =  0.748 
+    C(c_11, c_12)                = -0.424  

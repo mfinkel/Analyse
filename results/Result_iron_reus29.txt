@@ -1,0 +1,25 @@
+Material: Iron
+Method:         leastsq        
+Symmetry:       m-3m m-3m        
+Date:           23.03.2016, 11:44        
+Fitting time    0h 22 min 43 sec        
+Message:        Tolerance seems to be too small.        
+Covar matrix:   
+[[  1.01679496e+20   8.30380274e+19  -8.45165724e+18]
+ [  8.30380274e+19   9.16566159e+19  -4.47192118e+18]
+ [ -8.45165724e+18  -4.47192118e+18   5.85611650e+18]]        
+Success:        True        
+Chisqr:         605.425873        
+Reducec Chisqr: 7.122657        
+deg of freedom: 85        
+# of datapoint: 88        
+nfev:           23        
+Parameters:
+[[Variables]]
+    c_11:   2.8559e+11 +/- 1.01e+10 (3.53%) (init= 2.4e+11)
+    c_12:   1.1662e+11 +/- 9.57e+09 (8.21%) (init= 1.4e+11)
+    c_44:   8.7455e+10 +/- 2.42e+09 (2.77%) (init= 1.2e+11)
+[[Correlations]] (unreported correlations are <  0.100)
+    C(c_11, c_12)                =  0.860 
+    C(c_11, c_44)                = -0.346 
+    C(c_12, c_44)                = -0.193  

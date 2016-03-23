@@ -1,0 +1,14 @@
+Material: Iron
+Method:         lbfgsb        
+Symmetry:       m-3m m-3m        
+Date:           21.03.2016, 15:25        
+Fitting time    1h 45 min 27 sec        
+deg of freedom: 85        
+# of datapoint: 88        
+nfev:           121        
+Parameters:
+[[Variables]]
+    c_11:   2.8453e+11 (init= 2.37e+11)
+    c_12:   1.1381e+11 (init= 1.41e+11)
+    c_44:   8.8986e+10 (init= 1.16e+11)
+[[Correlations]] (unreported correlations are <  0.100) 

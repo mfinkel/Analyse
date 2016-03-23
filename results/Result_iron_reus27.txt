@@ -1,0 +1,14 @@
+Material: Iron
+Method:         lesastsq        
+Symmetry:       m-3m m-3m        
+Date:           22.03.2016, 07:29        
+Fitting time    1h 32 min 5 sec        
+deg of freedom: 85        
+# of datapoint: 88        
+nfev:           98        
+Parameters:
+[[Variables]]
+    c_11:   2.6633e+11 (init= 2.37e+11)
+    c_12:   1.1689e+11 (init= 1.41e+11)
+    c_44:   8.6435e+10 (init= 1.16e+11)
+[[Correlations]] (unreported correlations are <  0.100) 

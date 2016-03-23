@@ -1,0 +1,144 @@
+Material: Iron_chi^2-plot 
+----------------------------------------------------        
+de Wit:        
+----------------------------------------------------
+Message:        Tolerance seems to be too small.    
+Covar matrix:   
+[[  5.10244880e+20   5.06015688e+20   1.21322662e+19]
+ [  5.06015688e+20   5.25648304e+20   3.25383434e+19]
+ [  1.21322662e+19   3.25383434e+19   2.72316905e+19]]    
+Success:        True    
+Chisqr:         0.000000    
+Reducec Chisqr: 0.000000    
+deg of freedom: 7    
+# of datapoint: 10    
+nfev:           19    
+Parameters:
+[[Variables]]
+    c_11:   2.2250e+11 +/- 2.26e+10 (10.15%) (init= 2.178e+11)
+    c_12:   1.2357e+11 +/- 2.29e+10 (18.55%) (init= 1.258e+11)
+    c_44:   1.1511e+11 +/- 5.22e+09 (4.53%) (init= 1.264e+11)
+[[Correlations]] (unreported correlations are <  0.100)
+    C(c_11, c_12)                =  0.977 
+    C(c_12, c_44)                =  0.272 
+    C(c_11, c_44)                =  0.103 
+
+----------------------------------------------------    
+BHM:    
+----------------------------------------------------
+Message:        Tolerance seems to be too small.    
+Covar matrix:   
+[[  4.30946464e+20   4.26305295e+20   7.32798291e+18]
+ [  4.26305295e+20   4.52748971e+20   3.55053113e+19]
+ [  7.32798291e+18   3.55053113e+19   3.36661699e+19]]    
+Success:        True    
+Chisqr:         0.000000    
+Reducec Chisqr: 0.000000    
+deg of freedom: 7    
+# of datapoint: 10    
+nfev:           15    
+Parameters:
+[[Variables]]
+    c_11:   2.1841e+11 +/- 2.08e+10 (9.50%) (init= 2.178e+11)
+    c_12:   1.2618e+11 +/- 2.13e+10 (16.86%) (init= 1.258e+11)
+    c_44:   1.1931e+11 +/- 5.80e+09 (4.86%) (init= 1.264e+11)
+[[Correlations]] (unreported correlations are <  0.100)
+    C(c_11, c_12)                =  0.965 
+    C(c_12, c_44)                =  0.288 
+
+----------------------------------------------------    
+Hill:    
+----------------------------------------------------
+Message:        Tolerance seems to be too small.    
+Covar matrix:   
+[[  4.53663991e+20   4.36834996e+20   4.81400226e+18]
+ [  4.36834996e+20   4.36539848e+20   1.95430996e+19]
+ [  4.81400226e+18   1.95430996e+19   2.25018838e+19]]    
+Success:        True    
+Chisqr:         0.000000    
+Reducec Chisqr: 0.000000    
+deg of freedom: 7    
+# of datapoint: 10    
+nfev:           18    
+Parameters:
+[[Variables]]
+    c_11:   2.2484e+11 +/- 2.13e+10 (9.47%) (init= 2.178e+11)
+    c_12:   1.2297e+11 +/- 2.09e+10 (16.99%) (init= 1.258e+11)
+    c_44:   1.1435e+11 +/- 4.74e+09 (4.15%) (init= 1.264e+11)
+[[Correlations]] (unreported correlations are <  0.100)
+    C(c_11, c_12)                =  0.982 
+    C(c_12, c_44)                =  0.197 
+
+
+
+
+        
+Material: Iron 
+----------------------------------------------------        
+de Wit:        
+----------------------------------------------------
+Message:        Tolerance seems to be too small.    
+Covar matrix:   
+[[  2.99186054e+20   2.30698345e+20   3.97919773e+18]
+ [  2.30698345e+20   2.13114609e+20   3.09460890e+19]
+ [  3.97919773e+18   3.09460890e+19   2.99871876e+19]]    
+Success:        True    
+Chisqr:         0.625014    
+Reducec Chisqr: 0.089288    
+deg of freedom: 7    
+# of datapoint: 10    
+nfev:           19    
+Parameters:
+[[Variables]]
+    c_11:   2.3736e+11 +/- 1.73e+10 (7.29%) (init= 2.178e+11)
+    c_12:   1.3044e+11 +/- 1.46e+10 (11.19%) (init= 1.258e+11)
+    c_44:   1.1324e+11 +/- 5.48e+09 (4.84%) (init= 1.264e+11)
+[[Correlations]] (unreported correlations are <  0.100)
+    C(c_11, c_12)                =  0.914 
+    C(c_12, c_44)                =  0.387 
+
+----------------------------------------------------    
+BHM:    
+----------------------------------------------------
+Message:        Tolerance seems to be too small.    
+Covar matrix:   
+[[  2.78619554e+20   2.04952134e+20  -5.59020273e+18]
+ [  2.04952134e+20   1.92992656e+20   3.08186984e+19]
+ [ -5.59020273e+18   3.08186984e+19   3.63015449e+19]]    
+Success:        True    
+Chisqr:         0.573724    
+Reducec Chisqr: 0.081961    
+deg of freedom: 7    
+# of datapoint: 10    
+nfev:           18    
+Parameters:
+[[Variables]]
+    c_11:   2.3307e+11 +/- 1.67e+10 (7.16%) (init= 2.178e+11)
+    c_12:   1.3120e+11 +/- 1.39e+10 (10.59%) (init= 1.258e+11)
+    c_44:   1.1585e+11 +/- 6.03e+09 (5.20%) (init= 1.264e+11)
+[[Correlations]] (unreported correlations are <  0.100)
+    C(c_11, c_12)                =  0.884 
+    C(c_12, c_44)                =  0.368 
+
+----------------------------------------------------    
+Hill:    
+----------------------------------------------------
+Message:        Tolerance seems to be too small.    
+Covar matrix:   
+[[  2.76031441e+20   2.11268388e+20   3.02703949e+18]
+ [  2.11268388e+20   1.87323470e+20   2.35026315e+19]
+ [  3.02703949e+18   2.35026315e+19   2.50612092e+19]]    
+Success:        True    
+Chisqr:         0.573724    
+Reducec Chisqr: 0.081961    
+deg of freedom: 7    
+# of datapoint: 10    
+nfev:           19    
+Parameters:
+[[Variables]]
+    c_11:   2.3849e+11 +/- 1.66e+10 (6.97%) (init= 2.178e+11)
+    c_12:   1.2850e+11 +/- 1.37e+10 (10.65%) (init= 1.258e+11)
+    c_44:   1.1190e+11 +/- 5.01e+09 (4.47%) (init= 1.264e+11)
+[[Correlations]] (unreported correlations are <  0.100)
+    C(c_11, c_12)                =  0.929 
+    C(c_12, c_44)                =  0.343 
