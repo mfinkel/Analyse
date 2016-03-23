@@ -33,10 +33,10 @@ import Fittingtools
 def linfunk(x, m, b):
     y = m*x+b
     return y
-# print "1"
-# comp = Modells.compliances("cubic")
-# print "hallo"
-# print comp.acces_tensor(1,1,1,1, 5)
+print "1"
+comp = Modells.compliances("cubic")
+print "hallo"
+print comp.acces_tensor(1,1,1,1, 5)
 
 path_to_data  =  "..\\Daten-bearbeitet\\Stahl ST37\\"
 odf_name = "ST37_MTODF.txt"
