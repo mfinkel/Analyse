@@ -33,6 +33,10 @@ import Fittingtools
 def linfunk(x, m, b):
     y = m*x+b
     return y
+# print "1"
+# comp = Modells.compliances("cubic")
+# print "hallo"
+# print comp.acces_tensor(1,1,1,1, 5)
 
 path_to_data  =  "..\\Daten-bearbeitet\\Stahl ST37\\"
 odf_name = "ST37_MTODF.txt"
@@ -42,7 +46,7 @@ Data_Iron.read_scattering_data(path_of_unstraind_data="Euler-Scans ohne Last\\",
                                path_of_straind_data="Euler-Scans unter 5kN\\")
 modi = ["reus", "voigt", "hill"]
 # for i in modi:
-Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=modi[2], number_of_datapoints=None)
+Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=modi[0], number_of_datapoints=None)
 # Data_Iron.plot_odf()
 # Data_Iron.integral_over_total_odf
 # Data_Iron.calc__deltavals()
@@ -241,7 +245,6 @@ for i in xrange(0, len(unstraind[0].hkl_TTheta)):#loop over all measured hkl
 
 
 
-
 def Plot_chi_Psi(HKL_object_list, hkl, omeg, fig=True):
     '''
         Plots psi over chi to check if the calculation of psi makes sence
@@ -251,6 +254,7 @@ def Plot_chi_Psi(HKL_object_list, hkl, omeg, fig=True):
             '211': 2,
             '220': 3,
             '310': 4}
+
     HKL = hkl_[hkl]
     chi = []
     psi = []
