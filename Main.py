@@ -38,8 +38,6 @@ def linfunk(x, m, b):
 # print "hallo"
 # print comp.acces_tensor(1,1,1,1, 5)
 
-# print "hallo"
-
 path_to_data  =  "..\\Daten-bearbeitet\\Stahl ST37\\"
 odf_name = "ST37_MTODF.txt"
 
@@ -247,7 +245,6 @@ for i in xrange(0, len(unstraind[0].hkl_TTheta)):#loop over all measured hkl
 
 
 
-
 def Plot_chi_Psi(HKL_object_list, hkl, omeg, fig=True):
     '''
         Plots psi over chi to check if the calculation of psi makes sence
@@ -257,6 +254,7 @@ def Plot_chi_Psi(HKL_object_list, hkl, omeg, fig=True):
             '211': 2,
             '220': 3,
             '310': 4}
+
     HKL = hkl_[hkl]
     chi = []
     psi = []
