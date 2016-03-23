@@ -1433,7 +1433,7 @@ class ODF(object):
                          np.cos(phi_b)]
                         ])
         return res
-    print "hallo world"
+
 
     @staticmethod
     def g(phi1, phi, phi2):
