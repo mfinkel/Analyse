@@ -377,9 +377,9 @@ class one_HKL:
 
     def psii(self):
         '''polar angle of q in the Specimen frame'''
-        # r=1.
-        # psi = np.arccos(self.LQ()[2]/r)
-        psi = np.arccos(np.dot(self.z_I(), self.q_()))
+        r = 1.
+        psi = np.arccos(self.LQ()[2]/r)
+        # psi = np.arccos(np.dot(self.z_I(), self.q_()))
         return float(psi)
 
     def delta_epsilon(self):
@@ -518,7 +518,7 @@ class Data:
     """
 
     def Fit_the_data_with_texture(self, method, filename, number_of_datapoints = None):
-        print "Number of datapoints: ", len(self.__epsilon_list)
+        print "Number of datapoints: ", len(self.__epsilon_list), method
         fit = Modells.Fit_strain_with_texture(odf1=self.__odf, odf2=None,
                                               force=self.__sample_spezifikations["force"],
                                               diameter=self.__sample_spezifikations["diameter"],
