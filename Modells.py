@@ -518,16 +518,16 @@ class Fit_strain_with_texture(object):
                               value=126.4 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
         elif self.symetry_phase_1 == "m-3m":
             self.__params.add('c_11',
-                              value=240 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+                              value=217 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
             self.__params.add('c_12',
-                              value=140 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+                              value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
             self.__params.add('c_44',
-                              value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+                              value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
         elif self.symetry_phase_1 == "hexagonal":
             self.__params.add('c_11',
-                              value=240 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+                              value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
             self.__params.add('c_12',
-                              value=126.4 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+                              value=120.4 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
             self.__params.add('c_13',
                               value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
             self.__params.add('c_33',
