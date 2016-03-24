@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 mpl.rcParams['legend.fontsize'] = 10
 
-def plot_coordinatframe(X, Y, Z, Q, titel=None, crystalframe = None, crystalframe2 = None, I=None, rotation = None):
+def plot_coordinatframe(X, Y, Z, Q=None, titel=None, crystalframe = None, crystalframe2 = None, I=None, rotation = None):
 
     fig = plt.figure(titel)
 
@@ -13,31 +13,32 @@ def plot_coordinatframe(X, Y, Z, Q, titel=None, crystalframe = None, crystalfram
     ax = fig.gca(projection='3d')
 
     # plot Specimen frame
-    ax.plot([0,1], [0,0], 0, label='Specimen frame', color='blue')
+    ax.plot([0, 1], [0, 0], 0, label='Specimen frame', color='blue')
     ax.text(0.8, 0.1, 0, "x_P", color='blue')
 
-    ax.plot([0,0], [0,1], 0, color='blue')
+    ax.plot([0, 0], [0, 1], 0, color='blue')
     ax.text(0.1, 0.8, 0, "y_P", color='blue')
 
-    ax.plot([0,0], [0,0], [0,1],  color='blue')
+    ax.plot([0, 0], [0, 0], [0, 1], color='blue')
     ax.text(0, 0.1, 0.8, "z_P", color='blue')
 
     # plot Rotated frame
-    ax.plot([0,X[0]], [0,X[1]], [0, X[2]], label='rotated frame', color='red')
-    ax.text(X[0]*0.8, X[1]*0.8, X[2]*0.8, "x_L", color='red')
+    ax.plot([0, X[0]], [0, X[1]], [0, X[2]], label='rotated frame', color='red')
+    ax.text(X[0][0] * 0.8, X[1][0] * 0.8, X[2][0] * 0.8, "x_L", color='red')
 
-    ax.plot([0,Y[0]], [0,Y[1]], [0, Y[2]], color='red')
-    ax.text(Y[0]*0.8, Y[1]*0.8, Y[2]*0.8, "y_L", color='red')
+    ax.plot([0, Y[0]], [0, Y[1]], [0, Y[2]], color='red')
+    ax.text(Y[0][0] * 0.8, Y[1][0] * 0.8, Y[2][0] * 0.8, "y_L", color='red')
 
-    ax.plot([0,Z[0]], [0,Z[1]], [0, Z[2]], color='red')
-    ax.text(Z[0]*0.8, Z[1]*0.8, Z[2]*0.8, "z_L", color='red')
+    ax.plot([0, Z[0]], [0, Z[1]], [0, Z[2]], color='red')
+    ax.text(Z[0][0] * 0.8, Z[1][0] * 0.8, Z[2][0] * 0.8, "z_L", color='red')
 
     # q
-    ax.plot([0,Q[0]], [0,Q[1]], [0, Q[2]],label='scattering vector', color='green')
-    ax.text(Q[0], Q[1], Q[2], "Q", color='green')
+    if Q is not None:
+        ax.plot([0,Q[0]], [0,Q[1]], [0, Q[2]],label='scattering vector', color='green')
+        ax.text(Q[0][0], Q[1][0], Q[2][0], "Q", color='green')
 
     # plot crystallframe frame
-    if (crystalframe is not None):
+    if crystalframe is not None:
         X, Y, Z, rot = crystalframe
         ax.plot([0, X[0]], [0, X[1]], [0, X[2]], label='crystal frame', color='magenta')
         ax.text(X[0]*0.6, X[1]*0.6, X[2]*0.6, "x_C, %.0f"%(rot), color='magenta')

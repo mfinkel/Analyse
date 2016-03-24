@@ -11,6 +11,7 @@ import math
 import DataCursor
 import Fittingtools
 import Modells
+import Plot_coordsys as cplot
 from glob import glob
 
 
@@ -260,28 +261,36 @@ class one_HKL:
         """
         chi = -deg_to_rad(self.chi)
         omega = deg_to_rad(self.Omega)
-        phi = deg_to_rad(self.phi)
+        phi = 0  # deg_to_rad(self.phi)
 
         # rot around z_L'
         O = np.array([[np.cos(phi), -np.sin(phi), 0.],
-                       [np.sin(phi), np.cos(phi), 0.],
-                       [0., 0., 1.]
-                       ]
-                      )
+                      [np.sin(phi), np.cos(phi), 0.],
+                      [0., 0., 1.]
+                      ]
+                     )
         # rotation around y_L' axis (lefthanded if chi<0)
         X = np.array([[np.cos(chi), 0., np.sin(chi)],
-                       [0., 1., 0.],
-                       [-np.sin(chi), 0., np.cos(chi)]
-                       ]
-                      )
+                      [0., 1., 0.],
+                      [-np.sin(chi), 0., np.cos(chi)]
+                      ]
+                     )
         # rot around z_L
         W = np.array([[np.cos(omega), -np.sin(omega), 0.],
                       [np.sin(omega), np.cos(omega), 0.],
                       [0., 0., 1.]
                       ]
                      )
-        # print self.chi, self.Omega, W*X*O
-        return O.dot(X.dot(W)).transpose()
+        res = W.dot(X.dot(O))  # .transpose()
+        # L_1 = np.dot(res, np.array([[1], [0], [0]]))
+        # L_2 = np.dot(res, np.array([[0], [1], [0]]))
+        # L_3 = np.dot(res, np.array([[0], [0], [1]]))
+        # titel = "chi: {}, omega: {}, phi: {}".format(r_t_d(chi), r_t_d(omega), r_t_d(phi))
+        # cplot.plot_coordinatframe(L_1, L_2, L_3, Q=self.q(), titel=titel)
+        # plt.show()
+        # # print self.chi, self.Omega, W*X*O
+        # print "PSI: ", r_t_d(np.arccos(np.dot(L_3.transpose(), self.q())))
+        return res  # O.dot(X.dot(W))  # .transpose()
 
     def z_I(self):
         '''
@@ -292,7 +301,7 @@ class one_HKL:
         x = np.sin(chi) * np.cos(omega)
         y = np.sin(chi) * np.sin(omega)
         z = np.cos(chi)
-        return np.array([x, y, z])
+        return np.dot(self.transformation_L(), np.array([[0], [0], [1]])).transpose()
 
     def x_I(self):
         '''
@@ -352,7 +361,7 @@ class one_HKL:
 
     def LQ(self):
         '''q in specimen frame'''
-        L = self.transformation_L()
+        L = self.transformation_L().transpose()
         # Q = np.array(self.q())
         # print Q
         return L.dot(self.q())
@@ -373,13 +382,14 @@ class one_HKL:
 
             # try an other way to compute this
         # phi = np.arccos(np.dot(self.x_I(), self.q_()))
+        # print "phi: ", r_t_d(phi)
         return float(phi)
 
     def psii(self):
         '''polar angle of q in the Specimen frame'''
         r = 1.
         psi = np.arccos(self.LQ()[2]/r)
-        # psi = np.arccos(np.dot(self.z_I(), self.q_()))
+        psi = np.arccos(np.dot(self.z_I(), self.q_()))
         return float(psi)
 
     def delta_epsilon(self):
