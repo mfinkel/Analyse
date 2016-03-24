@@ -1580,34 +1580,34 @@ class ODF(object):
         except ValueError:
             phi2 = phi2[0]
 
-        L_1 = np.dot(self.g1(phi_, psi, phi_2).transpose(), np.array([[1], [0], [0]]))
-        L_2 = np.dot(self.g1(phi_, psi, phi_2).transpose(), np.array([[0], [1], [0]]))
-        L_3 = np.dot(self.g1(phi_, psi, phi_2).transpose(), np.array([[0], [0], [1]]))
+        # L_1 = np.dot(self.g1(phi_, psi, phi_2).transpose(), np.array([[1], [0], [0]]))
+        # L_2 = np.dot(self.g1(phi_, psi, phi_2).transpose(), np.array([[0], [1], [0]]))
+        # L_3 = np.dot(self.g1(phi_, psi, phi_2).transpose(), np.array([[0], [0], [1]]))
 
-        crystalframe = (np.dot(g_, np.array([[1], [0], [0]])),
-                        np.dot(g_, np.array([[0], [1], [0]])),
-                        np.dot(g_, np.array([[0], [0], [1]])),
-                        rad_to_deg(self.__params['phi2_']))
-
-        g = self.g(phi1, phi, phi2).transpose()
-        crystalframe2 = (np.dot(g, np.array([[1], [0], [0]])),
-                         np.dot(g, np.array([[0], [1], [0]])),
-                         np.dot(g, np.array([[0], [0], [1]])),
-                         rad_to_deg(self.__params['phi2_']))
-
-        title = "phi: %i, psi: %i, hkl: %i%i%i" % (rad_to_deg(self.__params["phi"]), rad_to_deg(self.__params["psi"]),
-                                                   h, k, l)
-        Q = self.g1(phi_, psi, phi_2).transpose().dot(np.array([[0], [0], [1]]))
-        # cplot.plot_coordinatframe(L_1, L_2, L_3, Q, titel=title, crystalframe=crystalframe,
-        #                           crystalframe2=crystalframe2, I=I, rotation=rad_to_deg(self.__params["phi2_"]))
-
-        Q_C = g.dot(
-            np.array([[np.sin(phi_b) * np.cos(betha_b)], [np.sin(phi_b) * np.sin(betha_b)], [np.cos(phi_b)]]))
-        # print "angle between c_3 and q: ", rad_to_deg(float(np.arccos(crystalframe2[2].transpose().dot(Q)[0, 0])))
-        delta_angle = rad_to_deg(
-            float(np.arccos(Q_C.transpose().dot(Q)[0, 0] / (np.linalg.norm(Q_C) * np.linalg.norm(Q)))))
-        if abs(float(Q_C.transpose().dot(Q)[0, 0] / (np.linalg.norm(Q_C) * np.linalg.norm(Q))) - 1) < 1e-13:
-            delta_angle = 0.0
+        # crystalframe = (np.dot(g_, np.array([[1], [0], [0]])),
+        #                 np.dot(g_, np.array([[0], [1], [0]])),
+        #                 np.dot(g_, np.array([[0], [0], [1]])),
+        #                 rad_to_deg(self.__params['phi2_']))
+        #
+        # g = self.g(phi1, phi, phi2).transpose()
+        # crystalframe2 = (np.dot(g, np.array([[1], [0], [0]])),
+        #                  np.dot(g, np.array([[0], [1], [0]])),
+        #                  np.dot(g, np.array([[0], [0], [1]])),
+        #                  rad_to_deg(self.__params['phi2_']))
+        #
+        # title = "phi: %i, psi: %i, hkl: %i%i%i" % (rad_to_deg(self.__params["phi"]), rad_to_deg(self.__params["psi"]),
+        #                                            h, k, l)
+        # Q = self.g1(phi_, psi, phi_2).transpose().dot(np.array([[0], [0], [1]]))
+        # # cplot.plot_coordinatframe(L_1, L_2, L_3, Q, titel=title, crystalframe=crystalframe,
+        # #                           crystalframe2=crystalframe2, I=I, rotation=rad_to_deg(self.__params["phi2_"]))
+        #
+        # Q_C = g.dot(
+        #     np.array([[np.sin(phi_b) * np.cos(betha_b)], [np.sin(phi_b) * np.sin(betha_b)], [np.cos(phi_b)]]))
+        # # print "angle between c_3 and q: ", rad_to_deg(float(np.arccos(crystalframe2[2].transpose().dot(Q)[0, 0])))
+        # delta_angle = rad_to_deg(
+        #     float(np.arccos(Q_C.transpose().dot(Q)[0, 0] / (np.linalg.norm(Q_C) * np.linalg.norm(Q)))))
+        # if abs(float(Q_C.transpose().dot(Q)[0, 0] / (np.linalg.norm(Q_C) * np.linalg.norm(Q))) - 1) < 1e-13:
+        #     delta_angle = 0.0
         # print "angle between q_c and q: ", delta_angle, Q_C.transpose().dot(Q)[0, 0]/(np.linalg.norm(Q_C)*np.linalg.norm(Q))
         return phi1, phi, phi2  # , delta_angle
 
