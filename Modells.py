@@ -1081,7 +1081,7 @@ class Fit_strain_with_texture(object):
         :return:
         """
         phi1, phi, phi2 = euler
-        g = self.odf_phase_1.g(phi1, phi, phi2).transpose()
+        g = self.odf_phase_1.g(phi1, phi, phi2)  # .transpose()
 
         res = 0
         for m in xrange(3):
@@ -1246,12 +1246,32 @@ class Fit_strain_with_texture(object):
                                                                                 args=(n, g, j, i, C_Matrix))
         return E
 
-    def u(self, c, C):
+    def u(self, phi1, phi, phi2, C):
         E = self.__calc_E(C)
+        g = self.odf_phase_1.g(phi1, phi, phi2).transpose()
+        c = self.c(g)  # constant tensor of the inclusion depending on the orientation g
         E_inv = self.invert_four_rank_c_tensor(E)
         h = self.invert_four_rank_c_tensor(c + C + E_inv)
+        res = np.zeros((3, 3, 3, 3))
+        for i in xrange(3):
+            for j in xrange(3):
+                for k in xrange(3):
+                    for l in xrange(3):
+                        for m in xrange(3):
+                            for n in xrange(3):
+                                res[i, j, k, l] += h[i, j, m, n] * E_inv[m, n, k, l]
         # return w.tensordot(np.tensordot(self.invert_four_rank_c_tensor(c - C), w) + C).tensordot(c - C)
-        return - self.fourth_rank_identity()
+        return res - self.fourth_rank_identity()
+
+    def integrand_int_u(self, phi1, phi, phi2, C):
+        return self.u(phi1, phi, phi2, C) * self.odf_phase_1.f(phi1, phi, phi2) * np.sin(phi)
+
+    def int_u(self, c, C):
+        for i in xrange(3):
+            for j in xrange(3):
+                for k in xrange(3):
+                    for l in xrange(3):
+                        pass
 
     def A_eshelby(self, euler, u, w, i, j):
         """
