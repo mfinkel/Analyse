@@ -10,6 +10,7 @@ import numpy as np
 import re
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
+import scipy
 # import scipy.optimize
 import time as tm
 # import os.path
@@ -626,20 +627,26 @@ class Fit_strain_with_texture(object):
                         n = self.__voigt_notation(k + 1, l + 1)
 
                         if m <= 3 and n <= 3:
-                            self.__constant_c_Matrix_tensor_extended[i, j, k, l] = self.__constant_c_Matrix_tensor_voigt[
-                                m - 1, n - 1]
-                            self.__complience_s_Matrix_tensor_extended[i, j, k, l] = self.__complience_s_Matrix_tensor_voigt[
-                                m - 1, n - 1]
+                            self.__constant_c_Matrix_tensor_extended[i, j, k, l] = \
+                                self.__constant_c_Matrix_tensor_voigt[
+                                    m - 1, n - 1]
+                            self.__complience_s_Matrix_tensor_extended[i, j, k, l] = \
+                                self.__complience_s_Matrix_tensor_voigt[
+                                    m - 1, n - 1]
                         elif m <= 3 < n:
-                            self.__constant_c_Matrix_tensor_extended[i, j, k, l] = self.__constant_c_Matrix_tensor_voigt[
-                                m - 1, n - 1]
-                            self.__complience_s_Matrix_tensor_extended[i, j, k, l] = self.__complience_s_Matrix_tensor_voigt[
-                                                                                  m - 1, n - 1] / 2.
+                            self.__constant_c_Matrix_tensor_extended[i, j, k, l] = \
+                                self.__constant_c_Matrix_tensor_voigt[
+                                    m - 1, n - 1]
+                            self.__complience_s_Matrix_tensor_extended[i, j, k, l] = \
+                                self.__complience_s_Matrix_tensor_voigt[
+                                    m - 1, n - 1] / 2.
                         elif m > 3 and n > 3:
-                            self.__constant_c_Matrix_tensor_extended[i, j, k, l] = self.__constant_c_Matrix_tensor_voigt[
-                                m - 1, n - 1]
-                            self.__complience_s_Matrix_tensor_extended[i, j, k, l] = self.__complience_s_Matrix_tensor_voigt[
-                                                                                  m - 1, n - 1] / 4.
+                            self.__constant_c_Matrix_tensor_extended[i, j, k, l] = \
+                                self.__constant_c_Matrix_tensor_voigt[
+                                    m - 1, n - 1]
+                            self.__complience_s_Matrix_tensor_extended[i, j, k, l] = \
+                                self.__complience_s_Matrix_tensor_voigt[
+                                    m - 1, n - 1] / 4.
 
     def __conv_all_extended_not_to_voigt_not(self):
         for i in xrange(3):
@@ -650,20 +657,26 @@ class Fit_strain_with_texture(object):
                         n = self.__voigt_notation(k + 1, l + 1)
 
                         if m <= 3 and n <= 3:
-                            self.__constant_c_Matrix_tensor_voigt[m - 1, n - 1] = self.__constant_c_Matrix_tensor_extended[
-                                i, j, k, l]
-                            self.__complience_s_Matrix_tensor_voigt[m - 1, n - 1] = self.__complience_s_Matrix_tensor_extended[
-                                i, j, k, l]
+                            self.__constant_c_Matrix_tensor_voigt[m - 1, n - 1] = \
+                                self.__constant_c_Matrix_tensor_extended[
+                                    i, j, k, l]
+                            self.__complience_s_Matrix_tensor_voigt[m - 1, n - 1] = \
+                                self.__complience_s_Matrix_tensor_extended[
+                                    i, j, k, l]
                         elif m <= 3 < n:
-                            self.__constant_c_Matrix_tensor_voigt[m - 1, n - 1] = self.__constant_c_Matrix_tensor_extended[
-                                i, j, k, l]
-                            self.__complience_s_Matrix_tensor_voigt[m - 1, n - 1] = 2 * self.__complience_s_Matrix_tensor_extended[
-                                i, j, k, l]
+                            self.__constant_c_Matrix_tensor_voigt[m - 1, n - 1] = \
+                                self.__constant_c_Matrix_tensor_extended[
+                                    i, j, k, l]
+                            self.__complience_s_Matrix_tensor_voigt[m - 1, n - 1] = 2 * \
+                                                                                    self.__complience_s_Matrix_tensor_extended[
+                                                                                        i, j, k, l]
                         elif m > 3 and n > 3:
-                            self.__constant_c_Matrix_tensor_voigt[m - 1, n - 1] = self.__constant_c_Matrix_tensor_extended[
-                                i, j, k, l]
-                            self.__complience_s_Matrix_tensor_voigt[m - 1, n - 1] = 4 * self.__complience_s_Matrix_tensor_extended[
-                                i, j, k, l]
+                            self.__constant_c_Matrix_tensor_voigt[m - 1, n - 1] = \
+                                self.__constant_c_Matrix_tensor_extended[
+                                    i, j, k, l]
+                            self.__complience_s_Matrix_tensor_voigt[m - 1, n - 1] = 4 * \
+                                                                                    self.__complience_s_Matrix_tensor_extended[
+                                                                                        i, j, k, l]
 
     def __conv_voigtnot_to_extended_not_compliences_s(self, tensor_in_voigt_not):
         """
@@ -849,8 +862,8 @@ class Fit_strain_with_texture(object):
         t1 = tm.clock()
         date = tm.localtime()
         fit_method = 'leastsq'  # the optons are:
-                                # leastsq, nelder, lbfgsb, powell, cg, newton, cobyla, tnc, dogleg, slsqp,
-                                # differential_evolution
+        # leastsq, nelder, lbfgsb, powell, cg, newton, cobyla, tnc, dogleg, slsqp,
+        # differential_evolution
         result = lm.minimize(self.__residuum, params, method=fit_method, args=(xvals,),
                              kws={'data': data, 'weight': weight, 'method': method})
         t2 = tm.clock()
@@ -887,19 +900,19 @@ class Fit_strain_with_texture(object):
         #                        res.nfree, res.ndata, res.nfev, pars)
         # try:
         out = \
-         "Method:         %s\
-        \nSymmetry:       %s\
-        \nDate:           %s\
-        \nFitting time    %s\
-        \nMessage:        %s\
-        \nCovar matrix:   \n%s\
-        \nSuccess:        %s\
-        \nChisqr:         %f\
-        \nReducec Chisqr: %f\
-        \ndeg of freedom: %i\
-        \n# of datapoint: %i\
-        \nnfev:           %i\
-        \nParameters:\n%s " \
+            "Method:         %s\
+           \nSymmetry:       %s\
+           \nDate:           %s\
+           \nFitting time    %s\
+           \nMessage:        %s\
+           \nCovar matrix:   \n%s\
+           \nSuccess:        %s\
+           \nChisqr:         %f\
+           \nReducec Chisqr: %f\
+           \ndeg of freedom: %i\
+           \n# of datapoint: %i\
+           \nnfev:           %i\
+           \nParameters:\n%s " \
             % (kwargs["method"], sym, da, time, res.message, str(res.covar), res.success, res.chisqr, res.redchi,
                res.nfree, res.ndata, res.nfev, pars)
         # except AttributeError:
@@ -1075,7 +1088,8 @@ class Fit_strain_with_texture(object):
             for n in xrange(3):
                 for o in xrange(3):
                     for p in xrange(3):
-                        res += g[u, m] * g[w, n] * g[i, o] * g[j, p] * self.__complience_s_Matrix_tensor_extended[m, n, o, p]
+                        res += g[u, m] * g[w, n] * g[i, o] * g[j, p] * self.__complience_s_Matrix_tensor_extended[
+                            m, n, o, p]
         return res
 
     def __voigt_inner_sum(self, phi1, phi, phi2, a, b, i, j):
@@ -1155,8 +1169,7 @@ class Fit_strain_with_texture(object):
         hill = (self.a_voigt[u, w, i, j] + self.A_reus(euler, u, w, i, j)) / 2
         return hill
 
-    def u(self, c, C, w):
-        return w.tensordot(np.tensordot(self.invert_four_rank_c_tensor(c - C), w) + C).tensordot(c - C)
+
 
     def c(self, g):
         c = np.zeros((3, 3, 3, 3))
@@ -1169,7 +1182,7 @@ class Fit_strain_with_texture(object):
                                 for o in xrange(3):
                                     for p in xrange(3):
                                         c[u, w, i, j] += g[u, m] * g[w, n] * g[i, o] * g[j, p] * \
-                                                         self.__constant_c_Matrix_tensor_extended[m, n, o, p]
+                                                         self.__constant_c_inclusion_tensor_extended[m, n, o, p]
         return c
 
     @staticmethod
@@ -1181,44 +1194,64 @@ class Fit_strain_with_texture(object):
                        )
         return res
 
-    def __D(self, alpha, beta):
+    def __D(self, alpha, beta, C_Matrix):
         k = self.__k(alpha, beta)
-        res = np.array([[self.__constant_c_Matrix_tensor_extended[0, 0, 0, 0] * k[0] ** 2 +
-                         self.__constant_c_Matrix_tensor_extended[1, 0, 0, 1] * k[1] ** 2 +
-                         self.__constant_c_Matrix_tensor_extended[2, 0, 0, 2] * k[2] ** 2,
+        res = np.array([[C_Matrix[0, 0, 0, 0] * k[0] ** 2 +
+                         C_Matrix[1, 0, 0, 1] * k[1] ** 2 +
+                         C_Matrix[2, 0, 0, 2] * k[2] ** 2,
 
-                         self.__constant_c_Matrix_tensor_extended[0, 0, 1, 1] * k[0] * k[1] +
-                         self.__constant_c_Matrix_tensor_extended[1, 0, 1, 0] * k[0] * k[1],
+                         C_Matrix[0, 0, 1, 1] * k[0] * k[1] +
+                         C_Matrix[1, 0, 1, 0] * k[0] * k[1],
 
-                         self.__constant_c_Matrix_tensor_extended[0, 0, 2, 2] * k[0] * k[2] +
-                         self.__constant_c_Matrix_tensor_extended[2, 0, 2, 0] * k[0] * k[2]
+                         C_Matrix[0, 0, 2, 2] * k[0] * k[2] +
+                         C_Matrix[2, 0, 2, 0] * k[0] * k[2]
                          ],
-                        [self.__constant_c_Matrix_tensor_extended[0, 1, 0, 1] * k[0] * k[1] +
-                         self.__constant_c_Matrix_tensor_extended[1, 1, 0, 0] * k[0] * k[1],
+                        [C_Matrix[0, 1, 0, 1] * k[0] * k[1] +
+                         C_Matrix[1, 1, 0, 0] * k[0] * k[1],
 
-                         self.__constant_c_Matrix_tensor_extended[0, 1, 1, 0] * k[0] ** 2 +
-                         self.__constant_c_Matrix_tensor_extended[1, 1, 1, 1] * k[1] ** 2 +
-                         self.__constant_c_Matrix_tensor_extended[2, 1, 1, 2] * k[2] ** 2,
+                         C_Matrix[0, 1, 1, 0] * k[0] ** 2 +
+                         C_Matrix[1, 1, 1, 1] * k[1] ** 2 +
+                         C_Matrix[2, 1, 1, 2] * k[2] ** 2,
 
-                         self.__constant_c_Matrix_tensor_extended[1, 1, 2, 2] * k[1] * k[2] +
-                         self.__constant_c_Matrix_tensor_extended[2, 1, 2, 1] * k[1] * k[2]
+                         C_Matrix[1, 1, 2, 2] * k[1] * k[2] +
+                         C_Matrix[2, 1, 2, 1] * k[1] * k[2]
                          ],
-                        [self.__constant_c_Matrix_tensor_extended[0, 2, 0, 2] * k[0] * k[2] +
-                         self.__constant_c_Matrix_tensor_extended[2, 2, 0, 0] * k[0] * k[2],
+                        [C_Matrix[0, 2, 0, 2] * k[0] * k[2] +
+                         C_Matrix[2, 2, 0, 0] * k[0] * k[2],
 
-                         self.__constant_c_Matrix_tensor_extended[1, 2, 1, 2] * k[1] * k[2] +
-                         self.__constant_c_Matrix_tensor_extended[2, 2, 1, 1] * k[1] * k[2],
+                         C_Matrix[1, 2, 1, 2] * k[1] * k[2] +
+                         C_Matrix[2, 2, 1, 1] * k[1] * k[2],
 
-                         self.__constant_c_Matrix_tensor_extended[0, 2, 2, 0] * k[0] ** 2 +
-                         self.__constant_c_Matrix_tensor_extended[1, 2, 2, 1] * k[1] ** 2 +
-                         self.__constant_c_Matrix_tensor_extended[3, 3, 3, 3] * k[2] ** 2
+                         C_Matrix[0, 2, 2, 0] * k[0] ** 2 +
+                         C_Matrix[1, 2, 2, 1] * k[1] ** 2 +
+                         C_Matrix[3, 3, 3, 3] * k[2] ** 2
                          ]
                         ]
                        )
         return np.linalg.inv(res)
 
-    def __calc_E(self, ):
+    def integrand(self, alpha, beta, *args):
+        n, g, j, i, C_Matrix= args
+        return np.sin(alpha) * self.__D(alpha, beta, C_Matrix)[n, j] \
+               * self.__k(alpha, beta)[g] * self.__k(alpha, beta)[i]
 
+    def __calc_E(self, C_Matrix):
+        E = np.zeros((3, 3, 3, 3))
+        for n in xrange(3):
+            for g in xrange(3):
+                for j in xrange(3):
+                    for i in xrange(3):
+                        E[n, g, j, i] = 1 / (4 * np.pi) * scipy.integrate.nquad(self.integrand,
+                                                                                [[0, np.pi], [0, 2 * np.pi]],
+                                                                                args=(n, g, j, i, C_Matrix))
+        return E
+
+    def u(self, c, C):
+        E = self.__calc_E(C)
+        E_inv = self.invert_four_rank_c_tensor(E)
+        h = self.invert_four_rank_c_tensor(c + C + E_inv)
+        # return w.tensordot(np.tensordot(self.invert_four_rank_c_tensor(c - C), w) + C).tensordot(c - C)
+        return - self.fourth_rank_identity()
 
     def A_eshelby(self, euler, u, w, i, j):
         """
@@ -1234,9 +1267,18 @@ class Fit_strain_with_texture(object):
         phi1, phi, phi2 = euler
         g = self.odf_phase_1.g(phi1, phi, phi2).transpose()
         S = np.zeros((3, 3, 3, 3))  # averaged constant tensor of the matrix
+        S = self.__complience_s_Matrix_tensor_extended  # use as a start value
         C = self.invert_four_rank_s_tensor(S)  # averaged compliance tensor of the matrix
-        c = self.c(g)  # compliencetensor of the inclusion depending on the orientation g
+        c = self.c(g)  # constant tensor of the inclusion depending on the orientation g
 
+        E = self.__calc_E(C)
+        E_inv = self.invert_four_rank_c_tensor(E)
+
+
+
+        def test(self, a):
+            a = S
+            b = c
         # t_g
         return S[u, w, i, j] + t(c, C)[u, w, i, j]
 
@@ -1258,6 +1300,7 @@ def cli_progress_test_voigt(i, end_val, tuple, bar_length=20):
         "\rc: ({},{},{},{}), Percent: [{}] {}%".format(a, b, c, d, hashes + spaces, int(round(percent * 100))))
     sys.stdout.flush()
 
+
 def cli_progress_test(i, end_val, bar_length=20):
     """
     just a status Bar
@@ -1270,8 +1313,9 @@ def cli_progress_test(i, end_val, bar_length=20):
     hashes = '=' * int(round(percent * bar_length))
     spaces = '_' * (bar_length - len(hashes))
     sys.stdout.write(
-        "\rPercent: [{}] {}%".format( hashes + spaces, int(round(percent * 100))))
+        "\rPercent: [{}] {}%".format(hashes + spaces, int(round(percent * 100))))
     sys.stdout.flush()
+
 
 '''
 Odf classdefinition
@@ -1463,7 +1507,6 @@ class ODF(object):
                         ])
         return res
 
-
     @staticmethod
     def g2(phi2_, phi_b, betha_b):
         """
@@ -1485,7 +1528,6 @@ class ODF(object):
                          np.cos(phi_b)]
                         ])
         return res
-
 
     @staticmethod
     def g(phi1, phi, phi2):
