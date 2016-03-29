@@ -239,7 +239,7 @@ class one_HKL:
         self.chi = chi  # chi of the sample with respect to the instrument frame
         self.chi_ = chi_  # chi of scattering vector
         self.Omega = Omega
-        self.phi = phi
+        self.phi = phi  # rotation angle by th transformation between Instrument frame and specimen frame
         self.phi_ = -90.  # 0.
 
         # Eulerangles in the spesimen frame
