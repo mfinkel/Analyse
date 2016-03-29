@@ -292,6 +292,44 @@ class one_HKL:
         # print "PSI: ", r_t_d(np.arccos(np.dot(L_3.transpose(), self.q())))
         return res  # O.dot(X.dot(W))  # .transpose()
 
+    def transformation_L_new(self):
+        """
+           define transformation from lab.frame to specimen frame
+           acording to Grässlin
+        """
+        chi = -deg_to_rad(self.chi)
+        omega = deg_to_rad(self.Omega)
+        phi = 0  # deg_to_rad(self.phi)
+
+        # rot around z_L'
+        O = np.array([[np.cos(phi), np.sin(phi), 0.],
+                      [-np.sin(phi), np.cos(phi), 0.],
+                      [0., 0., 1.]
+                      ]
+                     )
+        # rotation around y_L' axis (lefthanded if chi<0)
+        X = np.array([[np.cos(chi), 0., -np.sin(chi)],
+                      [0., 1., 0.],
+                      [np.sin(chi), 0., np.cos(chi)]
+                      ]
+                     )
+        # rot around z_L
+        W = np.array([[np.cos(omega), np.sin(omega), 0.],
+                      [-np.sin(omega), np.cos(omega), 0.],
+                      [0., 0., 1.]
+                      ]
+                     )
+        res = W.dot(X.dot(O))  # .transpose()
+        # L_1 = np.dot(res, np.array([[1], [0], [0]]))
+        # L_2 = np.dot(res, np.array([[0], [1], [0]]))
+        # L_3 = np.dot(res, np.array([[0], [0], [1]]))
+        # titel = "chi: {}, omega: {}, phi: {}".format(r_t_d(chi), r_t_d(omega), r_t_d(phi))
+        # cplot.plot_coordinatframe(L_1, L_2, L_3, Q=self.q(), titel=titel)
+        # plt.show()
+        # # print self.chi, self.Omega, W*X*O
+        # print "PSI: ", r_t_d(np.arccos(np.dot(L_3.transpose(), self.q())))
+        return res  # O.dot(X.dot(W))  # .transpose()
+
     def z_I(self):
         '''
             z of probsys in the lab frame (signe of chi already set negative)
@@ -342,9 +380,9 @@ class one_HKL:
         res[2, 2] = np.cos(psi)
         return res
 
-    # Direction of the scatteringvector in the Lab.sys.
+    # Direction of the scattering vector in the Lab.sys.
     def q(self):
-        '''Direction of the scatteringvector in the Lab.sys.'''
+        """Direction of the scattering vector in the Lab.sys."""
         chi_ = deg_to_rad(self.chi_)
         Theta = deg_to_rad(-(90. + (self.Theta + self.Theta_0) / 2.))
         return np.array([[np.sin(chi_) * np.cos(Theta)],
@@ -352,7 +390,7 @@ class one_HKL:
                          [np.cos(chi_)]])
 
     def q_(self):
-        '''Direction of the scatteringvector in the Lab.sys.'''
+        """Direction of the scattering vector in the Lab.sys."""
         chi_ = deg_to_rad(self.chi_)
         Theta = deg_to_rad(-(90. + (self.Theta + self.Theta_0) / 2.))
         return np.array([np.sin(chi_) * np.cos(Theta),
@@ -366,9 +404,16 @@ class one_HKL:
         # print Q
         return L.dot(self.q())
 
+    def LQ_new(self):
+        '''q in specimen frame'''
+        L = self.transformation_L_new()
+        # Q = np.array(self.q())
+        # print Q
+        return L.dot(self.q())
+
     def PHII(self):
         '''Acimut angle of q in the Specimen frame'''
-        lq = self.LQ()
+        lq = self.LQ_new()
         phi = 'nan'
         if (lq[0] > 0):
             phi = np.arctan((lq[1] / lq[0]))
