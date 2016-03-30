@@ -1267,14 +1267,14 @@ class Fit_strain_with_texture(object):
         return self.u(phi1, phi, phi2, C) * self.odf_phase_1.f(phi1, phi, phi2) * np.sin(phi)
 
     def int_u(self, C):
-        res = np.zeros((3,3,3,3))
+        res = np.zeros((3, 3, 3, 3))
         for i in xrange(3):
             for j in xrange(3):
                 for k in xrange(3):
                     for l in xrange(3):
-                        res[i,j,k,l] = scipy.integrate.nquad(self.integrand_int_u,
-                                                             [[0, 2 * np.pi], [0, np.pi], [0, 2 * np.pi]],
-                                                             args=(C,))
+                        res[i, j, k, l] = scipy.integrate.nquad(self.integrand_int_u,
+                                                                [[0, 2 * np.pi], [0, np.pi], [0, 2 * np.pi]],
+                                                                args=(C,))
         return res
 
 # def __residuum_u_eshelby(self, params, xvals, data=None, weight=None, method=None):
@@ -1421,7 +1421,7 @@ class ODF(object):
         # phi_2 = rotation around m in measurement frame
         # phi_b, betha_b = acimut, polar angle, respectively, of m in the crystal frame
         # phi2_ = rotation around m in the crystal frame
-        self.__params = {"psi": 0, "phi": 0, "phi_2": deg_to_rad(-90), 'phi_b': 0, 'betha_b': 0, 'phi2_': 0}
+        self.__params = {"psi": 0, "phi": 0, "phi_2": deg_to_rad(0), 'phi_b': 0, 'betha_b': 0, 'phi2_': 0}  # "phi_2": deg_to_rad(-90)
 
         # Tensors of the phase a (not the Matrix)
         # Single crystal constants
@@ -1554,7 +1554,7 @@ class ODF(object):
         :param phi2: arbitrary angle
         :return: rotation matrix
         """
-        # phi += np.pi / 2
+        phi += np.pi / 2
         res = np.array([[-np.cos(psi) * np.cos(phi) * np.sin(phi2) - np.sin(phi) * np.cos(phi2),
                          -np.cos(psi) * np.sin(phi) * np.sin(phi2) + np.cos(phi) * np.cos(phi2),
                          np.sin(psi) * np.sin(phi2)],
@@ -1601,7 +1601,7 @@ class ODF(object):
         :param betha_b: azimuth angle of the hkl direction
         :return:
         """
-        # betha_b = np.pi / 2 - betha_b
+        betha_b = np.pi / 2 - betha_b
         res = np.array([[np.cos(phi2_) * np.sin(betha_b) - np.sin(phi2_) * np.cos(betha_b) * np.cos(phi_b),
                          np.sin(phi2_) * np.sin(betha_b) + np.cos(phi2_) * np.cos(betha_b) * np.cos(phi_b),
                          np.cos(betha_b) * np.sin(phi_b)],
@@ -1876,6 +1876,23 @@ class ODF(object):
 
         return res / (2 * np.pi)
 
+    def integrate_(self, phi, psi, h, k, l, *args):
+        # performe the integration around q//h
+        self.__params["phi"] = phi
+        self.__params["psi"] = psi
+        step = 5
+        res = 0
+        for i in range(0, 360, step):
+            r = deg_to_rad(i)
+            phi1, phi, phi2 = self.calc_eulerangles(r % (2 * np.pi), h, k, l)
+            euler = (rad_to_deg(phi1), rad_to_deg(phi), rad_to_deg(phi2))
+            phi1, phi, phi2 = euler
+            # dphi1, dphi, dphi2 = self.calc_delta_vals(h, k, l, rad_to_deg(psi), rad_to_deg(phi), i, step)  # [0]
+
+            res += self.f(phi1, phi, phi2) * deg_to_rad(step)
+            # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2
+
+        return res / (2 * np.pi)
     # def integrate_voigt(self, A, phi, psi, h, k, l, *args):
     #     # performe the integration around q//h
     #     self.__params["phi"] = phi
@@ -1903,23 +1920,7 @@ class ODF(object):
     #
     #     return res / (2 * np.pi)
 
-    def integrate_(self, phi, psi, h, k, l, *args):
-        # performe the integration around q//h
-        self.__params["phi"] = phi
-        self.__params["psi"] = psi
-        step = 5
-        res = 0
-        for i in range(0, 360, step):
-            r = deg_to_rad(i)
-            phi1, phi, phi2 = self.calc_eulerangles(r % (2 * np.pi), h, k, l)
-            euler = (rad_to_deg(phi1), rad_to_deg(phi), rad_to_deg(phi2))
-            phi1, phi, phi2 = euler
-            # dphi1, dphi, dphi2 = self.calc_delta_vals(h, k, l, rad_to_deg(psi), rad_to_deg(phi), i, step)  # [0]
 
-            res += self.f(phi1, phi, phi2) * deg_to_rad(step)
-            # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2
-
-        return res / (2 * np.pi)
 
     @property
     def integral_over_all_orientations_g(self):
