@@ -1081,7 +1081,7 @@ class Fit_strain_with_texture(object):
         :return:
         """
         phi1, phi, phi2 = euler
-        g = self.odf_phase_1.g(phi1, phi, phi2)  # .transpose()
+        g = self.odf_phase_1.g(phi1, phi, phi2).transpose()
 
         res = 0
         for m in xrange(3):
@@ -1266,12 +1266,82 @@ class Fit_strain_with_texture(object):
     def integrand_int_u(self, phi1, phi, phi2, C):
         return self.u(phi1, phi, phi2, C) * self.odf_phase_1.f(phi1, phi, phi2) * np.sin(phi)
 
-    def int_u(self, c, C):
+    def int_u(self, C):
+        res = np.zeros((3,3,3,3))
         for i in xrange(3):
             for j in xrange(3):
                 for k in xrange(3):
                     for l in xrange(3):
-                        pass
+                        res[i,j,k,l] = scipy.integrate.nquad(self.integrand_int_u,
+                                                             [[0, 2 * np.pi], [0, np.pi], [0, 2 * np.pi]],
+                                                             args=(C,))
+        return res
+
+# def __residuum_u_eshelby(self, params, xvals, data=None, weight=None, method=None):
+#         """
+#         :param params: lm.Parameter Object
+#         :param xvals: list of the xvalues [[phi, psi, h, k, l], [phi, psi, h, k, l], ...
+#         :param data: the data
+#         :param weight: the error's of the data
+#         :return:
+#         """
+#         self.__counter += 1
+#         self.__counter2 = 0
+#         print "Iteration #", self.__counter
+#         if self.symetry_phase_1 == "isotope":
+#             self.__constant_c_Matrix_tensor_voigt = \
+#                 np.array([
+#                     [params['c_11'].value, params['c_12'].value, params['c_12'].value, 0, 0, 0],
+#                     [params['c_12'].value, params['c_11'].value, params['c_12'].value, 0, 0, 0],
+#                     [params['c_12'].value, params['c_12'].value, params['c_11'].value, 0, 0, 0],
+#                     [0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value), 0, 0],
+#                     [0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value), 0],
+#                     [0, 0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value)]
+#                 ])
+#         elif self.symetry_phase_1 == "m-3m":  # cubic
+#             self.__constant_c_Matrix_tensor_voigt = \
+#                 np.array([
+#                     [params['c_11'].value, params['c_12'].value, params['c_12'].value, 0, 0, 0],
+#                     [params['c_12'].value, params['c_11'].value, params['c_12'].value, 0, 0, 0],
+#                     [params['c_12'].value, params['c_12'].value, params['c_11'].value, 0, 0, 0],
+#                     [0, 0, 0, params['c_44'].value, 0, 0],
+#                     [0, 0, 0, 0, params['c_44'].value, 0],
+#                     [0, 0, 0, 0, 0, params['c_44'].value]
+#                 ])
+#         elif self.symetry_phase_1 == "hexagonal" or self.symetry_phase_1 == "hexagonal":
+#             self.__constant_c_Matrix_tensor_voigt = \
+#                 np.array([
+#                     [params['c_11'].value, params['c_12'].value, params['c_13'].value, 0, 0, 0],
+#                     [params['c_12'].value, params['c_11'].value, params['c_13'].value, 0, 0, 0],
+#                     [params['c_13'].value, params['c_13'].value, params['c33'].value, 0, 0, 0],
+#                     [0, 0, 0, params['c_44'].value, 0, 0],
+#                     [0, 0, 0, 0, params['c_44'].value, 0],
+#                     [0, 0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value)]
+#                 ])
+#
+#         print "parameter vals:"
+#         print "C_11: ", params["c_11"].value
+#         print "C_12: ", params["c_12"].value
+#         print "C_44: ", params["c_44"].value
+#         self.__complience_s_Matrix_tensor_voigt = np.linalg.inv(self.__constant_c_Matrix_tensor_voigt)
+#         self.__conv_all_voigtnot_to_extended_not()
+#
+#         t1 = tm.clock()
+#         co = 0
+#
+#
+#         t2 = tm.clock()
+#         dt = t2 - t1
+#         print "time for iteration #%i: %i min %i sec" % (self.__counter, int(dt / 60), int(dt % 60))
+#
+#         if data is None and weight is None:
+#             return strain_epsilon
+#
+#         if weight is None:
+#             return np.array(data) / self.stress_sigma(2, 2) - np.array(strain_epsilon)
+#
+#         return (np.array(data) / self.stress_sigma(2, 2) - np.array(strain_epsilon)) / \
+#                (np.array(weight) / self.stress_sigma(2, 2))
 
     def A_eshelby(self, euler, u, w, i, j):
         """
@@ -1294,11 +1364,6 @@ class Fit_strain_with_texture(object):
         E = self.__calc_E(C)
         E_inv = self.invert_four_rank_c_tensor(E)
 
-
-
-        def test(self, a):
-            a = S
-            b = c
         # t_g
         return S[u, w, i, j] + t(c, C)[u, w, i, j]
 
@@ -1859,6 +1924,7 @@ class ODF(object):
     @property
     def integral_over_all_orientations_g(self):
         sum_total = 0
+
         t1 = tm.clock()
         for k in xrange(0, self.__phi2_max + self.__stepwidth, self.__stepwidth):  # sum over all phi2 vals
             for j in xrange(0, self.__Phi_max + self.__stepwidth, self.__stepwidth):  # sum over all Phi vals
@@ -1887,7 +1953,6 @@ class ODF(object):
         # 360 / self.__phi2_max
         t2 = tm.clock()
         dt = t2 - t1
-
         print "Integral: ", sum_total, "Time to calc it: ", dt
         return sum_total
 
@@ -1913,7 +1978,7 @@ class ODF(object):
         sets the odf data in an other representation:
         array[i,j,k]
         i = phi2 val
-        j = phi  VAL
+        j = phi  val
         k = phi1 val
         """
         number_of_phi1vals = int(self.__phi1_max / self.__stepwidth + 1)
