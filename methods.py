@@ -155,7 +155,7 @@ class dataset:
                 y = rang[j][4]
             dax = self.data[0][x:y]
             day = self.data[1][x:y]
-            gauss = Fittingtools.gauss_lin_fitting_2(dax, day)
+            gauss = Fittingtools.gauss_lin_fitting_2(dax, day, plot=False)
             # print "courffit: ", gauss
             # Fittingtools.gauss_lin_fitting_2(dax, day)
             # print "\n\n"
@@ -443,10 +443,11 @@ class one_HKL:
         '''
         Theta = deg_to_rad(self.Theta)
         Theta0 = deg_to_rad(self.Theta_0)
-        Theta_weight = self.Theta_weight/180.*np.pi
-        Theta_0_weight = self.Theta_0_weight*np.pi/180.
+        Theta_weight = self.Theta_weight/180.*np.pi/2
+        Theta_0_weight = self.Theta_0_weight*np.pi/180./2
 
         e1 = np.sin(Theta0) / np.sin(Theta) - 1.
+
         weight = np.sqrt((np.cos(Theta0) / np.sin(Theta)*Theta_0_weight)**2 +
                          (np.sin(Theta0) / (np.sin(Theta)**2)*np.cos(Theta)*Theta_weight)**2)
         # e2=(Theta0-Theta)/np.tan(Theta)

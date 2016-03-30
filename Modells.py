@@ -519,11 +519,11 @@ class Fit_strain_with_texture(object):
                               value=126.4 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
         elif self.symetry_phase_1 == "m-3m":
             self.__params.add('c_11',
-                              value=217 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+                              value=100 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
             self.__params.add('c_12',
-                              value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+                              value=40 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
             self.__params.add('c_44',
-                              value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+                              value=50 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
         elif self.symetry_phase_1 == "hexagonal":
             self.__params.add('c_11',
                               value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
@@ -829,15 +829,15 @@ class Fit_strain_with_texture(object):
         except ValueError:
             for m in xvals:
                 phi, psi, h, k, l = m
-                psi = np.pi - psi
+                # psi = np.pi - psi
                 strain_epsilon_1 = 0.
                 for i in xrange(3):
                     for j in xrange(3):
                         if abs(self.stress_sigma(i, j)) < 1e-13:
                             pass
                         else:
-                            strain_epsilon_1 += self.__F(phi, psi, h, k, l, i, j, method) \
-                                                * self.odf_phase_1.m(phi, psi)[2] ** 2 * self.stress_sigma(i, j)
+                            strain_epsilon_1 += self.__F(phi, psi, h, k, l, i, j, method) * self.stress_sigma(i, j) # * self.odf_phase_1.m(phi, psi)[2] ** 2
+
                 strain_epsilon_2.append(strain_epsilon_1)
                 cli_progress_test(co, len(xvals))
                 co += 1
@@ -1069,6 +1069,26 @@ class Fit_strain_with_texture(object):
         A = (self.diameter * np.power(10., -3.)) ** 2 / 4 * np.pi
         sigma3 = self.force * np.power(10., 3) / A  # *np.power(10.,-9)
         sig = np.zeros((3, 3))
+
+        sig[2, 2] = sigma3
+        # print "sigma_33: ", sigma3, self.force, self.diameter
+        return sig[i, j]
+
+    def stress_sigma_in_L_frame(self, i, j, psi, phi, phi2):
+        """
+            This function determines the 33-component of the macro-straintensor due
+            to the Force in this (and only in this) direction with respekt to
+            the specimen reference frame.
+            The component is:
+                sigma33 = F/A
+            where A is the crosssection of the Specimen
+            :param j:
+            :param i:
+        """
+        A = (self.diameter * np.power(10., -3.)) ** 2 / 4 * np.pi
+        sigma3 = self.force * np.power(10., 3) / A  # *np.power(10.,-9)
+        sig = np.zeros((3, 3))
+        sig[0,0]=np.sin(psi)**2 * np.sin(phi2)**2
         sig[2, 2] = sigma3
         # print "sigma_33: ", sigma3, self.force, self.diameter
         return sig[i, j]
@@ -1873,8 +1893,8 @@ class ODF(object):
             phi1, phi, phi2 = euler
             # print self.f(phi1, phi, phi2), counter, phi1, phi, phi2
 
-            res += A(euler, *args) * m[u] * m[w] * self.f(phi1, phi, phi2) * deg_to_rad(step)  # \
-            # * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2 # * (2 * np.pi)  # ** 2
+            res += A(euler, *args) * m[u] * m[w]  * deg_to_rad(step)  # \
+            # * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2 # * (2 * np.pi)  # ** 2* self.f(phi1, phi, phi2)
             #  * \
 
         return res / (2 * np.pi)
@@ -1892,8 +1912,8 @@ class ODF(object):
             phi1, phi, phi2 = euler
             # dphi1, dphi, dphi2 = self.calc_delta_vals(h, k, l, rad_to_deg(psi), rad_to_deg(phi), i, step)  # [0]
 
-            res += self.f(phi1, phi, phi2) * deg_to_rad(step)
-            # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2
+            res += deg_to_rad(step)
+            # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2 self.f(phi1, phi, phi2) *
 
         return res / (2 * np.pi)
     # def integrate_voigt(self, A, phi, psi, h, k, l, *args):
