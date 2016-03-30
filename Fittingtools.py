@@ -130,8 +130,8 @@ def gauss_lin_fitting_2(x_list, av_count_l, plot=False):
     pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2])
     weights = []
     for i in av_count_l:
-        weights.append(np.sqrt(i))
-    out = mod.fit(av_count_l, pars, x=x_list)  # , weights=weights
+        weights.append(1/np.sqrt(i))
+    out = mod.fit(av_count_l, pars, x=x_list, weights=weights)  #
     y_ = out.best_fit
     res = 0
     n = len(x_list)
@@ -144,8 +144,8 @@ def gauss_lin_fitting_2(x_list, av_count_l, plot=False):
     if plot:
         plt.plot(x_list, av_count_l, "bo")
         plt.plot(x_list, out.init_fit, "k--")
-        plt.plot(x_list, out.best_fit, 'r-')
-        # plt.legend(), lable = "T: %.3f\nerr: %.5f" %(res[0], res[1])
+        plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f" % (res[0], res[1]))
+        plt.legend(loc='upper right', numpoints=1)
         plt.show()
     # print (out.fit_report(min_correl=0.75))
     return res

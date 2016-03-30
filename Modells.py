@@ -519,11 +519,11 @@ class Fit_strain_with_texture(object):
                               value=126.4 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
         elif self.symetry_phase_1 == "m-3m":
             self.__params.add('c_11',
-                              value=100 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+                              value=240 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
             self.__params.add('c_12',
-                              value=40 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+                              value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
             self.__params.add('c_44',
-                              value=50 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+                              value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
         elif self.symetry_phase_1 == "hexagonal":
             self.__params.add('c_11',
                               value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
@@ -824,8 +824,7 @@ class Fit_strain_with_texture(object):
                     if abs(self.stress_sigma(i, j)) < 1e-13:
                         pass
                     else:
-                        strain_epsilon += self.__F(phi, psi, h, k, l, i, j, method) \
-                                          * self.odf_phase_1.m(phi, psi)[2] ** 2 * self.stress_sigma(i, j)
+                        strain_epsilon += self.__F(phi, psi, h, k, l, i, j, method) * self.stress_sigma(i, j)
         except ValueError:
             for m in xvals:
                 phi, psi, h, k, l = m
@@ -836,7 +835,7 @@ class Fit_strain_with_texture(object):
                         if abs(self.stress_sigma(i, j)) < 1e-13:
                             pass
                         else:
-                            strain_epsilon_1 += self.__F(phi, psi, h, k, l, i, j, method) * self.stress_sigma(i, j) # * self.odf_phase_1.m(phi, psi)[2] ** 2
+                            strain_epsilon_1 += self.__F(phi, psi, h, k, l, i, j, method) * self.stress_sigma(i, j)
 
                 strain_epsilon_2.append(strain_epsilon_1)
                 cli_progress_test(co, len(xvals))
@@ -851,10 +850,10 @@ class Fit_strain_with_texture(object):
             return strain_epsilon
 
         if weight is None:
-            return np.array(data)  - np.array(strain_epsilon)
+            return np.array(data) - np.array(strain_epsilon)
 
-        return (np.array(data)  - np.array(strain_epsilon)) / \
-               (np.array(weight) )
+        return (np.array(data) - np.array(strain_epsilon)) / \
+               (np.array(weight))
 
     def do_the_fitting(self, filename, material, method="reus", path=".\\results\\"):
         self.__counter = 0
@@ -1893,8 +1892,8 @@ class ODF(object):
             phi1, phi, phi2 = euler
             # print self.f(phi1, phi, phi2), counter, phi1, phi, phi2
 
-            res += A(euler, *args) * m[u] * m[w]  * deg_to_rad(step)  # \
-            # * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2 # * (2 * np.pi)  # ** 2* self.f(phi1, phi, phi2)
+            res += A(euler, *args) * m[u] * m[w] * self.f(phi1, phi, phi2) * deg_to_rad(step)  # \
+            # * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2 # * (2 * np.pi)  # ** 2
             #  * \
 
         return res / (2 * np.pi)
@@ -1912,8 +1911,8 @@ class ODF(object):
             phi1, phi, phi2 = euler
             # dphi1, dphi, dphi2 = self.calc_delta_vals(h, k, l, rad_to_deg(psi), rad_to_deg(phi), i, step)  # [0]
 
-            res += deg_to_rad(step)
-            # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2 self.f(phi1, phi, phi2) *
+            res += self.f(phi1, phi, phi2) * deg_to_rad(step)
+            # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2
 
         return res / (2 * np.pi)
     # def integrate_voigt(self, A, phi, psi, h, k, l, *args):
