@@ -824,17 +824,20 @@ class Fit_strain_with_texture(object):
                     if abs(self.stress_sigma(i, j)) < 1e-13:
                         pass
                     else:
-                        strain_epsilon += self.__F(phi, psi, h, k, l, i, j, method)  # * self.stress_sigma(i, j)
+                        strain_epsilon += self.__F(phi, psi, h, k, l, i, j, method) \
+                                          * self.odf_phase_1.m(phi, psi)[2] ** 2 * self.stress_sigma(i, j)
         except ValueError:
             for m in xvals:
                 phi, psi, h, k, l = m
+                psi = np.pi - psi
                 strain_epsilon_1 = 0.
                 for i in xrange(3):
                     for j in xrange(3):
                         if abs(self.stress_sigma(i, j)) < 1e-13:
                             pass
                         else:
-                            strain_epsilon_1 += self.__F(phi, psi, h, k, l, i, j, method)  # * self.stress_sigma(i, j)
+                            strain_epsilon_1 += self.__F(phi, psi, h, k, l, i, j, method) \
+                                                * self.odf_phase_1.m(phi, psi)[2] ** 2 * self.stress_sigma(i, j)
                 strain_epsilon_2.append(strain_epsilon_1)
                 cli_progress_test(co, len(xvals))
                 co += 1
@@ -848,10 +851,10 @@ class Fit_strain_with_texture(object):
             return strain_epsilon
 
         if weight is None:
-            return np.array(data) / self.stress_sigma(2, 2) - np.array(strain_epsilon)
+            return np.array(data)  - np.array(strain_epsilon)
 
-        return (np.array(data) / self.stress_sigma(2, 2) - np.array(strain_epsilon)) / \
-               (np.array(weight) / self.stress_sigma(2, 2))
+        return (np.array(data)  - np.array(strain_epsilon)) / \
+               (np.array(weight) )
 
     def do_the_fitting(self, filename, material, method="reus", path=".\\results\\"):
         self.__counter = 0
