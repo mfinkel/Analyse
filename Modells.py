@@ -779,6 +779,7 @@ class Fit_strain_with_texture(object):
                     [0, 0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value)]
                 ])
         elif self.symetry_phase_1 == "m-3m":  # cubic
+            print "Symetry:", self.symetry_phase_1
             self.__constant_c_Matrix_tensor_voigt = \
                 np.array([
                     [params['c_11'].value, params['c_12'].value, params['c_12'].value, 0, 0, 0],
@@ -803,8 +804,13 @@ class Fit_strain_with_texture(object):
         print "C_11: ", params["c_11"].value
         print "C_12: ", params["c_12"].value
         print "C_44: ", params["c_44"].value
-        self.__complience_s_Matrix_tensor_voigt = np.linalg.inv(self.__constant_c_Matrix_tensor_voigt)
-        self.__conv_all_voigtnot_to_extended_not()
+
+        self.__constant_c_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_constants_c(self.__constant_c_Matrix_tensor_voigt)
+        # self.__complience_s_Matrix_tensor_voigt = np.linalg.inv(self.__constant_c_Matrix_tensor_voigt)
+        # self.__conv_all_voigtnot_to_extended_not()
+
+
+
         # self.__complience_s_tensor_extended = np.linalg.inv(self.__constant_c_tensor_extended)
 
         # print "tensor identity calc:\n",np.tensordot(self.__constant_c_tensor_extended, self.__complience_s_tensor_extended)
@@ -816,7 +822,7 @@ class Fit_strain_with_texture(object):
         co = 0
         if method == "voigt" or method == "hill":
             euler = (0, 0, 0)
-            self.a_voigt = self.A_voigt(euler, 0, 0, 0, 0)
+            self.a_voigt = self.__A_voigt(euler, 0, 0, 0, 0)
         try:
             phi, psi, h, k, l = xvals
             for i in xrange(3):
@@ -835,7 +841,8 @@ class Fit_strain_with_texture(object):
                         if abs(self.stress_sigma(i, j)) < 1e-13:
                             pass
                         else:
-                            strain_epsilon_1 += self.__F(phi, psi, h, k, l, i, j, method) * self.stress_sigma(i, j)
+                            strain_epsilon_1 += self.__F(phi, psi, h, k, l, i, j,
+                                                         method) * self.stress_sigma(i, j)
 
                 strain_epsilon_2.append(strain_epsilon_1)
                 cli_progress_test(co, len(xvals))
@@ -852,8 +859,7 @@ class Fit_strain_with_texture(object):
         if weight is None:
             return np.array(data) - np.array(strain_epsilon)
 
-        return (np.array(data) - np.array(strain_epsilon)) / \
-               (np.array(weight))
+        return (np.array(data) - np.array(strain_epsilon)) / (np.array(weight))
 
     def do_the_fitting(self, filename, material, method="reus", path=".\\results\\"):
         self.__counter = 0
@@ -883,29 +889,19 @@ class Fit_strain_with_texture(object):
         h = int(fit_time / 3600)
         m = int((fit_time % 3600) / 60)
         s = int(fit_time % 60)
+        comment = "\"normal\" Voigt"
+            # "Using an other definition for the reus model (wreite s(g) =(g_im * g_jn * g_ko * g_lp * c^0_mnop)^-1"  # add some comment here
         time = "%ih %i min %i sec" % (h, m, s)
         date = kwargs["date_of_fit"]
         da = tm.strftime("%d.%m.%Y, %H:%M", date)
         pars = lm.fit_report(res.params)
         sym = self.symetry_phase_1 + " " + self.odf_phase_1.crystal_symmetry
-        # out = \
-        #  "Method:         %s\
-        # \nSymmetry:       %s\
-        # \nDate:           %s\
-        # \nFitting time    %s\
-        # \nChisqr:         %f\
-        # \nReducec Chisqr: %f\
-        # \ndeg of freedom: %i\
-        # \n# of datapoint: %i\
-        # \nnfev:           %i\
-        # \nParameters:\n%s " % (kwargs["method"], sym, da, time, res.chisqr, res.redchi,
-        #                        res.nfree, res.ndata, res.nfev, pars)
-        # try:
         out = \
             "Method:         %s\
            \nSymmetry:       %s\
            \nDate:           %s\
            \nFitting time    %s\
+           \nComment:        %s\
            \nMessage:        %s\
            \nCovar matrix:   \n%s\
            \nSuccess:        %s\
@@ -915,26 +911,8 @@ class Fit_strain_with_texture(object):
            \n# of datapoint: %i\
            \nnfev:           %i\
            \nParameters:\n%s " \
-            % (kwargs["method"], sym, da, time, res.message, str(res.covar), res.success, res.chisqr, res.redchi,
+            % (kwargs["method"], sym, da, time, comment, res.message, str(res.covar), res.success, res.chisqr, res.redchi,
                res.nfree, res.ndata, res.nfev, pars)
-        # except AttributeError:
-        #     try:
-        #         out = \
-        #          "Method:         %s\
-        #         \nSymmetry:       %s\
-        #         \nDate:           %s\
-        #         \nFitting time    %s\
-        #         \nSuccess:        %s\
-        #         \nChisqr:         %f\
-        #         \nReducec Chisqr: %f\
-        #         \ndeg of freedom: %i\
-        #         \n# of datapoint: %i\
-        #         \nnfev:           %i\
-        #         \nParameters:\n%s " \
-        #         % (kwargs["method"], sym, da, time, res.success, res.chisqr, res.redchi,
-        #            res.nfree, res.ndata, res.nfev, pars)
-        #     except AttributeError:
-        #         pass
         return out
 
     def __test_if_file_exists(self, filename):
@@ -1036,13 +1014,13 @@ class Fit_strain_with_texture(object):
             # a_voigt = self.A_voigt(euler, 0,0,0,0)
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.odf_phase_1.integrate(self.A_voigt_call, phi, psi, h, k, l, u, w, i, j) / \
+                    res += self.odf_phase_1.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j) / \
                            self.odf_phase_1.integrate_(phi, psi, h, k, l)
 
         elif method == "hill":
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.odf_phase_1.integrate(self.A_hill, phi, psi, h, k, l, u, w, i, j) / \
+                    res += self.odf_phase_1.integrate(self.__A_hill, phi, psi, h, k, l, u, w, i, j) / \
                            self.odf_phase_1.integrate_(phi, psi, h, k, l)
 
         elif method == "eshelby":
@@ -1068,12 +1046,15 @@ class Fit_strain_with_texture(object):
         A = (self.diameter * np.power(10., -3.)) ** 2 / 4 * np.pi
         sigma3 = self.force * np.power(10., 3) / A  # *np.power(10.,-9)
         sig = np.zeros((3, 3))
-
+        nu = 0.3
         sig[2, 2] = sigma3
+        # sig[1, 1] = - nu * sigma3
+        # sig[0, 0] = - nu * sigma3
+
         # print "sigma_33: ", sigma3, self.force, self.diameter
         return sig[i, j]
 
-    def stress_sigma_in_L_frame(self, i, j, psi, phi, phi2):
+    def stress_sigma_in_L_frame(self, i, j, psi, phi, phi2=0):
         """
             This function determines the 33-component of the macro-straintensor due
             to the Force in this (and only in this) direction with respekt to
@@ -1087,8 +1068,12 @@ class Fit_strain_with_texture(object):
         A = (self.diameter * np.power(10., -3.)) ** 2 / 4 * np.pi
         sigma3 = self.force * np.power(10., 3) / A  # *np.power(10.,-9)
         sig = np.zeros((3, 3))
-        sig[0,0]=np.sin(psi)**2 * np.sin(phi2)**2
-        sig[2, 2] = sigma3
+        # sig[0,0]=np.sin(psi)**2 * np.sin(phi2)**2
+        # sig[2, 2] = sigma3
+        g = self.odf_phase_1.g1(phi, psi, phi2)
+        for i in xrange(3):
+            for j in xrange(3):
+                sig[i, j] = g[i, 2] * g[j, 2] * sigma3
         # print "sigma_33: ", sigma3, self.force, self.diameter
         return sig[i, j]
 
@@ -1105,14 +1090,23 @@ class Fit_strain_with_texture(object):
         phi1, phi, phi2 = euler
         g = self.odf_phase_1.g(phi1, phi, phi2).transpose()
 
-        res = 0
-        for m in xrange(3):
-            for n in xrange(3):
-                for o in xrange(3):
-                    for p in xrange(3):
-                        res += g[u, m] * g[w, n] * g[i, o] * g[j, p] * self.__complience_s_Matrix_tensor_extended[
-                            m, n, o, p]
-        return res
+        res = np.zeros((3, 3, 3, 3))
+        for a in xrange(3):
+            for b in xrange(3):
+                for c in xrange(3):
+                    for d in xrange(3):
+                        for m in xrange(3):
+                            for n in xrange(3):
+                                for o in xrange(3):
+                                    for p in xrange(3):
+                                        res[a, b, c, d] += g[a, m] * g[b, n] * g[c, o] * g[d, p] * \
+                                               self.__constant_c_Matrix_tensor_extended[m, n, o, p]
+        # print res
+        # print self.__constant_c_Matrix_tensor_extended
+        # print self.__constant_c_Matrix_tensor_voigt
+
+        res = self.invert_four_rank_c_tensor(res)
+        return res[u, w, i, j]
 
     def __voigt_inner_sum(self, phi1, phi, phi2, a, b, i, j):
         res = 0
@@ -1125,8 +1119,8 @@ class Fit_strain_with_texture(object):
                                * self.__constant_c_Matrix_tensor_extended[m, n, o, p]
         return res
 
-    def Queue(self, q, a, b, i, j):
-        q.put([a, b, i, j, self.odf_phase_1.integrate_a_over_all_orientations_g(self.__voigt_inner_sum, a, b, i, j)])
+    # def Queue(self, q, a, b, i, j):
+    #     q.put([a, b, i, j, self.odf_phase_1.integrate_a_over_all_orientations_g(self.__voigt_inner_sum, a, b, i, j)])
 
     def __calc(self, d_list):
         res = np.zeros((3, 3, 3, 3))
@@ -1137,7 +1131,7 @@ class Fit_strain_with_texture(object):
                                                 d_list["a"], d_list["b"], d_list["f"], d_list["d"])
         return res
 
-    def A_voigt(self, euler, u, w, i, j):
+    def __A_voigt(self, euler, u, w, i, j):
         """
         A(g) = <c(g)>^-1
         :param euler:
@@ -1165,7 +1159,7 @@ class Fit_strain_with_texture(object):
         # s = self.invert_tensor(c)
         return s  # [u, w, i, j]
 
-    def A_voigt_call(self, euler, u, w, i, j):
+    def __A_voigt_call(self, euler, u, w, i, j):
         """
         A(g) = <c(g)>^-1
         :param euler:
@@ -1179,7 +1173,7 @@ class Fit_strain_with_texture(object):
         return self.a_voigt[u, w, i, j]
         # return s  # [u, w, i, j]
 
-    def A_hill(self, euler, u, w, i, j):
+    def __A_hill(self, euler, u, w, i, j):
         """
         A(g) = (s_voigt(g) + s_reus(g))/2
         :param u:
@@ -1252,7 +1246,7 @@ class Fit_strain_with_texture(object):
                        )
         return np.linalg.inv(res)
 
-    def integrand(self, alpha, beta, *args):
+    def __integrand(self, alpha, beta, *args):
         n, g, j, i, C_Matrix= args
         return np.sin(alpha) * self.__D(alpha, beta, C_Matrix)[n, j] \
                * self.__k(alpha, beta)[g] * self.__k(alpha, beta)[i]
@@ -1263,12 +1257,12 @@ class Fit_strain_with_texture(object):
             for g in xrange(3):
                 for j in xrange(3):
                     for i in xrange(3):
-                        E[n, g, j, i] = 1 / (4 * np.pi) * scipy.integrate.nquad(self.integrand,
+                        E[n, g, j, i] = 1 / (4 * np.pi) * scipy.integrate.nquad(self.__integrand,
                                                                                 [[0, np.pi], [0, 2 * np.pi]],
                                                                                 args=(n, g, j, i, C_Matrix))
         return E
 
-    def u(self, phi1, phi, phi2, C):
+    def __u(self, phi1, phi, phi2, C):
         E = self.__calc_E(C)
         g = self.odf_phase_1.g(phi1, phi, phi2).transpose()
         c = self.c(g)  # constant tensor of the inclusion depending on the orientation g
@@ -1285,18 +1279,19 @@ class Fit_strain_with_texture(object):
         # return w.tensordot(np.tensordot(self.invert_four_rank_c_tensor(c - C), w) + C).tensordot(c - C)
         return res - self.fourth_rank_identity()
 
-    def integrand_int_u(self, phi1, phi, phi2, C):
-        return self.u(phi1, phi, phi2, C) * self.odf_phase_1.f(phi1, phi, phi2) * np.sin(phi)
+    def __integrand_int_u(self, phi1, phi, phi2, C):
+        return self.__u(phi1, phi, phi2, C) * self.odf_phase_1.f(phi1, phi, phi2) * np.sin(phi)
 
-    def int_u(self, C):
+    def __int_u(self, C):
         res = np.zeros((3, 3, 3, 3))
         for i in xrange(3):
             for j in xrange(3):
                 for k in xrange(3):
                     for l in xrange(3):
-                        res[i, j, k, l] = scipy.integrate.nquad(self.integrand_int_u,
-                                                                [[0, 2 * np.pi], [0, np.pi], [0, 2 * np.pi]],
-                                                                args=(C,))
+                        for phi1 in xrange(0, 360, 5):
+                            for phi in xrange(0, 180, 5):
+                                for phi2 in xrange(0, 360, 5):
+                                    res[i, j, k, l] += self.__integrand_int_u(phi1, phi, phi2, C)
         return res
 
 # def __residuum_u_eshelby(self, params, xvals, data=None, weight=None, method=None):
