@@ -128,9 +128,13 @@ def gauss_lin_fitting_2(x_list, av_count_l, plot=False):
     mod = PseudoVoigtModel()
     p_guess = guesspara(x_list, av_count_l)
     pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2])
-    out = mod.fit(av_count_l, pars, x=x_list)
+    weights = []
+    for i in av_count_l:
+        weights.append(1/np.sqrt(i))
+    out = mod.fit(av_count_l, pars, x=x_list, weights=weights)  #
     y_ = out.best_fit
     res = 0
+    n = len(x_list)
     if max(av_count_l) < 150. or max(av_count_l - y_) / max(av_count_l) > 0.2:
         res = ['nan', 'nan']
     else:
@@ -140,7 +144,8 @@ def gauss_lin_fitting_2(x_list, av_count_l, plot=False):
     if plot:
         plt.plot(x_list, av_count_l, "bo")
         plt.plot(x_list, out.init_fit, "k--")
-        plt.plot(x_list, out.best_fit, 'r-')
+        plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f" % (res[0], res[1]))
+        plt.legend(loc='upper right', numpoints=1)
         plt.show()
     # print (out.fit_report(min_correl=0.75))
     return res
