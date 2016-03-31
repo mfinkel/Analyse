@@ -575,12 +575,12 @@ class Data:
 
     def Fit_the_data_with_texture(self, method, filename, number_of_datapoints = None):
         print "Number of datapoints: ", len(self.__epsilon_list), method
-        fit = Modells.Fit_strain_with_texture(odf1=self.__odf, odf2=None,
-                                              force=self.__sample_spezifikations["force"],
-                                              diameter=self.__sample_spezifikations["diameter"],
-                                              strains_data=self.__epsilon_list[0:number_of_datapoints],
-                                              xvals=self.__hkl_phi_psi_list[0:number_of_datapoints],
-                                              weights=self.__epsilon_weight_list[0:number_of_datapoints])  #
+        fit = Modells.Fit_strain_with_texture_single_phase(odf_Matrix=self.__odf,
+                                                           force=self.__sample_spezifikations["force"],
+                                                           diameter=self.__sample_spezifikations["diameter"],
+                                                           strains_data=self.__epsilon_list[0:number_of_datapoints],
+                                                           xvals=self.__hkl_phi_psi_list[0:number_of_datapoints],
+                                                           weights=self.__epsilon_weight_list[0:number_of_datapoints])
         filename = filename + method
         for i in range(len(self.__epsilon_list)):
             print self.__hkl_phi_psi_list[i], self.__epsilon_list[i]
