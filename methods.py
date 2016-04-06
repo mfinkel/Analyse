@@ -513,7 +513,7 @@ class Data:
         self.__crystal_sym = {"cubic": "cubic"}
         self.__epsilon_list = []
         self.__epsilon_weight_list = []
-        self.__hkl_phi_psi_list = []  # hkl, phi, psi
+        self.__phi_psi_hkl_list = []  # hkl, phi, psi
 
     """
     Deal with the ODF
@@ -580,11 +580,12 @@ class Data:
                                                            force=self.__sample_spezifikations["force"],
                                                            diameter=self.__sample_spezifikations["diameter"],
                                                            strains_data=self.__epsilon_list[0:number_of_datapoints],
-                                                           xvals=self.__hkl_phi_psi_list[0:number_of_datapoints],
+                                                           xvals=self.__phi_psi_hkl_list[0:number_of_datapoints],
                                                            weights=self.__epsilon_weight_list[0:number_of_datapoints])
         filename = filename + method
         for i in range(len(self.__epsilon_list)):
-            print self.__hkl_phi_psi_list[i], self.__epsilon_list[i]
+            print "phi, psi, hkl: ", self.__phi_psi_hkl_list[i], " eps: ", self.__epsilon_list[i], \
+                  " Weight: ", self.__epsilon_weight_list
         fit.do_the_fitting(filename=filename, material="Iron", method=method)
 
     """
@@ -695,15 +696,15 @@ class Data:
         print HKL_object_list
 
         for i in HKL_object_list:
-            # if i.chi != 90:
-            self.__epsilon_list.append(i.d_epsilon)
-            self.__epsilon_weight_list.append(i.d_epsilon_weight)
-            h = i.h
-            k = i.k
-            l = i.l
+            if i.chi != 90:
+                self.__epsilon_list.append(i.d_epsilon)
+                self.__epsilon_weight_list.append(i.d_epsilon_weight)
+                h = i.h
+                k = i.k
+                l = i.l
 
-            # print [h, k, l, j.PHI, j.psi, j.d_epsilon]
-            self.__hkl_phi_psi_list.append([i.PHI, i.psi, i.h, i.k, i.l])
+                # print [h, k, l, j.PHI, j.psi, j.d_epsilon]
+                self.__phi_psi_hkl_list.append([i.PHI, i.psi, i.h, i.k, i.l])
         return HKL_object_list
 
 
