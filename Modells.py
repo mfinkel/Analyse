@@ -827,9 +827,9 @@ class Fit_strain_with_texture_single_phase(object):
         print "C_44: ", params["c_44"].value
 
         self.__constant_c_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_constants_c(self.__constant_c_Matrix_tensor_voigt)
-        # self.__complience_s_Matrix_tensor_voigt = np.linalg.inv(self.__constant_c_Matrix_tensor_voigt)
+        self.__complience_s_Matrix_tensor_voigt = np.linalg.inv(self.__constant_c_Matrix_tensor_voigt)
         # self.__conv_all_voigtnot_to_extended_not()
-
+        self.__complience_s_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_compliences_s(self.__complience_s_Matrix_tensor_voigt)
 
 
         # self.__complience_s_tensor_extended = np.linalg.inv(self.__constant_c_tensor_extended)
@@ -1041,7 +1041,8 @@ class Fit_strain_with_texture_single_phase(object):
         elif method == "hill":
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.__odf_Matrix.integrate(self.__A_hill, phi, psi, h, k, l, u, w, i, j) / \
+                    res += ((self.__odf_Matrix.integrate(self.A_reus, phi, psi, h, k, l, u, w, i, j) +
+                            self.__odf_Matrix.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j))/2) / \
                            self.__odf_Matrix.integrate_(phi, psi, h, k, l)
 
         elif method == "eshelby":
@@ -1111,31 +1112,31 @@ class Fit_strain_with_texture_single_phase(object):
         phi1, phi, phi2 = euler
         g = self.__odf_Matrix.g(phi1, phi, phi2).transpose()
 
-        res = 0.  # np.zeros((3, 3, 3, 3))
-        for a in xrange(3):
-            for b in xrange(3):
-                for c in xrange(3):
-                    for d in xrange(3):
-                        res += g[u, a] * g[w, b] * g[i, c] * g[j, j] * \
-                               self.__complience_s_Matrix_tensor_extended[a, b, c, d]
-        #                                                    self.__constant_c_Matrix_tensor_extended[m, n, o, p]
-        # res = np.zeros((3, 3, 3, 3))
+        # res = 0.  # np.zeros((3, 3, 3, 3))
         # for a in xrange(3):
         #     for b in xrange(3):
         #         for c in xrange(3):
         #             for d in xrange(3):
-        #                 for m in xrange(3):
-        #                     for n in xrange(3):
-        #                         for o in xrange(3):
-        #                             for p in xrange(3):
-        #                                 res[a, b, c, d] += g[a, m] * g[b, n] * g[c, o] * g[d, p] * \
+        #                 res += g[u, a] * g[w, b] * g[i, c] * g[j, d] * \
+        #                        self.__complience_s_Matrix_tensor_extended[a, b, c, d]
         #                                                    self.__constant_c_Matrix_tensor_extended[m, n, o, p]
+        res = np.zeros((3, 3, 3, 3))
+        for a in xrange(3):
+            for b in xrange(3):
+                for c in xrange(3):
+                    for d in xrange(3):
+                        for m in xrange(3):
+                            for n in xrange(3):
+                                for o in xrange(3):
+                                    for p in xrange(3):
+                                        res[a, b, c, d] += g[a, m] * g[b, n] * g[c, o] * g[d, p] * \
+                                                           self.__constant_c_Matrix_tensor_extended[m, n, o, p]
         # print res
         # print self.__constant_c_Matrix_tensor_extended
         # print self.__constant_c_Matrix_tensor_voigt
 
-        # res = self.invert_four_rank_c_tensor(res)
-        return res  # [u, w, i, j]
+        res = self.invert_four_rank_c_tensor(res)
+        return res[u, w, i, j]
 
     def __voigt_inner_sum(self, phi1, phi, phi2, a, b, i, j):
         res = 0

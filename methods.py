@@ -255,7 +255,7 @@ class one_HKL:
         self.d = self.d_hkl(lam, self.Theta)
 
     # define transformation from lab.sys to prob.sys.
-    def transformation_L(self):
+    def transformation_L_from_I_to_P(self):
         """
            define transformation from lab.frame to specimen frame
            acording to Grässlin
@@ -293,13 +293,13 @@ class one_HKL:
         # print "PSI: ", r_t_d(np.arccos(np.dot(L_3.transpose(), self.q())))
         return res  # O.dot(X.dot(W))  # .transpose()
 
-    def transformation_L_new(self):
+    def transformation_L_from_I_to_P_new(self):
         """
            define transformation from lab.frame to specimen frame
            acording to Grässlin
         """
-        chi = -deg_to_rad(self.chi)
-        omega = deg_to_rad(self.Omega)
+        chi = deg_to_rad(self.chi)
+        omega = -deg_to_rad(self.Omega)
         phi = 0  # deg_to_rad(self.phi)
 
         # rot around z_L'
@@ -320,7 +320,8 @@ class one_HKL:
                       [0., 0., 1.]
                       ]
                      )
-        res = W.dot(X.dot(O))  # .transpose()
+        res = W.dot(X.dot(O))
+        # res = O.dot(X.dot(W))
         # L_1 = np.dot(res, np.array([[1], [0], [0]]))
         # L_2 = np.dot(res, np.array([[0], [1], [0]]))
         # L_3 = np.dot(res, np.array([[0], [0], [1]]))
@@ -331,7 +332,7 @@ class one_HKL:
         # print "PSI: ", r_t_d(np.arccos(np.dot(L_3.transpose(), self.q())))
         return res  # O.dot(X.dot(W))  # .transpose()
 
-    def z_I(self):
+    def z_P_in_lab_frame(self):
         '''
             z of probsys in the lab frame (signe of chi already set negative)
         '''
@@ -340,9 +341,9 @@ class one_HKL:
         x = np.sin(chi) * np.cos(omega)
         y = np.sin(chi) * np.sin(omega)
         z = np.cos(chi)
-        return np.dot(self.transformation_L(), np.array([[0], [0], [1]])).transpose()
+        return np.dot(self.transformation_L_from_I_to_P_new(), np.array([[0], [0], [1]])).transpose()
 
-    def x_I(self):
+    def x_P_in_lab_frame(self):
         '''
             x of probsys in the lab frame
         '''
@@ -386,9 +387,11 @@ class one_HKL:
         """Direction of the scattering vector in the Lab.sys."""
         chi_ = deg_to_rad(self.chi_)
         Theta = deg_to_rad(-(90. + (self.Theta + self.Theta_0) / 2.))
-        return np.array([[np.sin(chi_) * np.cos(Theta)],
+        q =  np.array([[np.sin(chi_) * np.cos(Theta)],
                          [np.sin(chi_) * np.sin(Theta)],
                          [np.cos(chi_)]])
+        # q=np.array([[-1/np.sqrt(2)], [-1/np.sqrt(2)], [0]])
+        return q
 
     def q_(self):
         """Direction of the scattering vector in the Lab.sys."""
@@ -400,29 +403,31 @@ class one_HKL:
 
     def LQ(self):
         '''q in specimen frame'''
-        L = self.transformation_L().transpose()
+        L = self.transformation_L_from_I_to_P_new().transpose()
         # Q = np.array(self.q())
         # print Q
         return L.dot(self.q())
 
     def LQ_new(self):
         '''q in specimen frame'''
-        L = self.transformation_L_new()
+        L = self.transformation_L_from_I_to_P_new()
         # Q = np.array(self.q())
         # print Q
         return L.dot(self.q())
 
     def PHII(self):
         '''Acimut angle of q in the Specimen frame'''
-        lq = self.LQ_new()
+        lq = self.LQ()
+        # print "lq", lq
+        # lq = self.LQ()
         phi = 'nan'
         if (lq[0] > 0):
             phi = np.arctan((lq[1] / lq[0]))
         elif (lq[0] == 0):
             phi = np.sign(lq[1]) * np.pi / 2
-        elif (lq[0] < 0 and lq[1] >= 0):
+        elif lq[0] < 0 and lq[1] >= 0:
             phi = np.arctan((lq[1] / lq[0])) + np.pi
-        elif (lq[0] < 0 and lq[1] < 0):
+        elif lq[0] < 0 and lq[1] < 0:
             phi = np.arctan((lq[1] / lq[0])) - np.pi
             # print "PHI: ",float(phi)
 
@@ -435,7 +440,8 @@ class one_HKL:
         '''polar angle of q in the Specimen frame'''
         r = 1.
         psi = np.arccos(self.LQ()[2]/r)
-        psi = np.arccos(np.dot(self.z_I(), self.q_()))
+        psi = np.arccos(np.dot(self.z_P_in_lab_frame(), self.q()))
+        # psi = np.arccos(np.dot(self.LQ_new().transpose(), self.q_()))
         return float(psi)
 
     def delta_epsilon(self):
@@ -585,7 +591,7 @@ class Data:
         filename = filename + method
         for i in range(len(self.__epsilon_list)):
             print "phi, psi, hkl: ", self.__phi_psi_hkl_list[i], " eps: ", self.__epsilon_list[i], \
-                  " Weight: ", self.__epsilon_weight_list
+                  " Weight: ", self.__epsilon_weight_list[i]
         fit.do_the_fitting(filename=filename, material="Iron", method=method)
 
     """
@@ -696,7 +702,7 @@ class Data:
         print HKL_object_list
 
         for i in HKL_object_list:
-            if i.chi != 90:
+            if i.chi != 90 :  # fragwürdigand abs(i.d_epsilon/3)>abs(i.d_epsilon_weight)
                 self.__epsilon_list.append(i.d_epsilon)
                 self.__epsilon_weight_list.append(i.d_epsilon_weight)
                 h = i.h
