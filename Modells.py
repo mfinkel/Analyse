@@ -778,7 +778,7 @@ class Fit_strain_with_texture_single_phase(object):
                             tennsor_in_voigt_notation[m - 1, n - 1] = tensor_in_extendet_notation[i, j, k, l]
         return tennsor_in_voigt_notation
 
-    def __residuum(self, params, xvals, data=None, weight=None, method=None):
+    def __residuum_with_texture(self, params, xvals, data=None, weight=None, method=None):
         """
         :param params: lm.Parameter Object
         :param xvals: list of the xvalues [[phi, psi, h, k, l], [phi, psi, h, k, l], ...
@@ -893,7 +893,7 @@ class Fit_strain_with_texture_single_phase(object):
         fit_method = 'leastsq'  # the optons are:
         # leastsq, nelder, lbfgsb, powell, cg, newton, cobyla, tnc, dogleg, slsqp,
         # differential_evolution
-        result = lm.minimize(self.__residuum, params, method=fit_method, args=(xvals,),
+        result = lm.minimize(self.__residuum_with_texture, params, method=fit_method, args=(xvals,),
                              kws={'data': data, 'weight': weight, 'method': method})
         t2 = tm.clock()
         dt = t2 - t1
