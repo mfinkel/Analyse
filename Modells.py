@@ -910,8 +910,8 @@ class Fit_strain_with_texture_single_phase(object):
         h = int(fit_time / 3600)
         m = int((fit_time % 3600) / 60)
         s = int(fit_time % 60)
-        comment = "\"normal\" Voigt"
-            # "Using an other definition for the reus model (wreite s(g) =(g_im * g_jn * g_ko * g_lp * c^0_mnop)^-1"  # add some comment here
+        comment = "Old reus definition, only good values."
+        # "Using an other definition for the reus model (wreite s(g) =(g_im * g_jn * g_ko * g_lp * c^0_mnop)^-1"  # add some comment here
         time = "%ih %i min %i sec" % (h, m, s)
         date = kwargs["date_of_fit"]
         da = tm.strftime("%d.%m.%Y, %H:%M", date)
@@ -1111,23 +1111,31 @@ class Fit_strain_with_texture_single_phase(object):
         phi1, phi, phi2 = euler
         g = self.__odf_Matrix.g(phi1, phi, phi2).transpose()
 
-        res = np.zeros((3, 3, 3, 3))
+        res = 0.  # np.zeros((3, 3, 3, 3))
         for a in xrange(3):
             for b in xrange(3):
                 for c in xrange(3):
                     for d in xrange(3):
-                        for m in xrange(3):
-                            for n in xrange(3):
-                                for o in xrange(3):
-                                    for p in xrange(3):
-                                        res[a, b, c, d] += g[a, m] * g[b, n] * g[c, o] * g[d, p] * \
-                                               self.__constant_c_Matrix_tensor_extended[m, n, o, p]
+                        res += g[u, a] * g[w, b] * g[i, c] * g[j, j] * \
+                               self.__complience_s_Matrix_tensor_extended[a, b, c, d]
+        #                                                    self.__constant_c_Matrix_tensor_extended[m, n, o, p]
+        # res = np.zeros((3, 3, 3, 3))
+        # for a in xrange(3):
+        #     for b in xrange(3):
+        #         for c in xrange(3):
+        #             for d in xrange(3):
+        #                 for m in xrange(3):
+        #                     for n in xrange(3):
+        #                         for o in xrange(3):
+        #                             for p in xrange(3):
+        #                                 res[a, b, c, d] += g[a, m] * g[b, n] * g[c, o] * g[d, p] * \
+        #                                                    self.__constant_c_Matrix_tensor_extended[m, n, o, p]
         # print res
         # print self.__constant_c_Matrix_tensor_extended
         # print self.__constant_c_Matrix_tensor_voigt
 
-        res = self.invert_four_rank_c_tensor(res)
-        return res[u, w, i, j]
+        # res = self.invert_four_rank_c_tensor(res)
+        return res  # [u, w, i, j]
 
     def __voigt_inner_sum(self, phi1, phi, phi2, a, b, i, j):
         res = 0
@@ -1206,8 +1214,6 @@ class Fit_strain_with_texture_single_phase(object):
         hill = (self.a_voigt[u, w, i, j] + self.A_reus(euler, u, w, i, j)) / 2
         return hill
 
-
-
     def c(self, g):
         c = np.zeros((3, 3, 3, 3))
         for u in xrange(3):
@@ -1268,7 +1274,7 @@ class Fit_strain_with_texture_single_phase(object):
         return np.linalg.inv(res)
 
     def __integrand(self, alpha, beta, *args):
-        n, g, j, i, C_Matrix= args
+        n, g, j, i, C_Matrix = args
         return np.sin(alpha) * self.__D(alpha, beta, C_Matrix)[n, j] \
                * self.__k(alpha, beta)[g] * self.__k(alpha, beta)[i]
 
@@ -1439,6 +1445,7 @@ def cli_progress_test(i, end_val, bar_length=20):
         "\rPercent: [{}] {}%".format(hashes + spaces, int(round(percent * 100))))
     sys.stdout.flush()
 
+
 '''
 Fiting class, that inherits from the class "Fit_strain_with_texture_single_phase"
 '''
@@ -1447,7 +1454,6 @@ Fiting class, that inherits from the class "Fit_strain_with_texture_single_phase
 class Fit_strain_with_texture_two_phase_material(Fit_strain_with_texture_single_phase):
     def __init__(self, odf_Matrix, odf_Inclusion, force, diameter, strains_Matrix_data, xvals_Matrix,
                  strains_Inclusion_data, xvals_Inclusion, weights_Inclusion=None, weights_Matrix=None):
-
         Fit_strain_with_texture_single_phase.__init__(odf_Matrix=odf_Matrix, force=force, diameter=diameter,
                                                       strains_data=strains_Matrix_data, xvals=xvals_Matrix,
                                                       weights=weights_Matrix)
@@ -1459,6 +1465,7 @@ class Fit_strain_with_texture_two_phase_material(Fit_strain_with_texture_single_
         self.__sym_Inclusion = self.__odf_Inclusion.crystal_symmetry
         self.__params_Inclusion = lm.Parameters()
         self.add_params(self.__params_Inclusion, self.__sym_Inclusion)
+
 
 '''
 Odf classdefinition
@@ -1479,7 +1486,8 @@ class ODF(object):
         # phi_2 = rotation around m in measurement frame
         # phi_b, betha_b = acimut, polar angle, respectively, of m in the crystal frame
         # phi2_ = rotation around m in the crystal frame
-        self.__params = {"psi": 0, "phi": 0, "phi_2": deg_to_rad(0), 'phi_b': 0, 'betha_b': 0, 'phi2_': 0}  # "phi_2": deg_to_rad(-90)
+        self.__params = {"psi": 0, "phi": 0, "phi_2": deg_to_rad(0), 'phi_b': 0, 'betha_b': 0,
+                         'phi2_': 0}  # "phi_2": deg_to_rad(-90)
 
         # Tensors of the phase a (not the Matrix)
         # Single crystal constants
@@ -1951,6 +1959,7 @@ class ODF(object):
             # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2
 
         return res / (2 * np.pi)
+
     # def integrate_voigt(self, A, phi, psi, h, k, l, *args):
     #     # performe the integration around q//h
     #     self.__params["phi"] = phi
