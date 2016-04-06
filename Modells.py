@@ -493,48 +493,53 @@ Methods:
 '''
 
 
-class Fit_strain_with_texture(object):
-    def __init__(self, odf1, odf2, force, diameter, strains_data, xvals, weights=None):
+class Fit_strain_with_texture_single_phase(object):
+    def __init__(self, odf_Matrix, force, diameter, strains_data, xvals, weights=None):
         self.xvals = xvals
         self.force = force
         self.diameter = diameter
         self.__strains_data = strains_data
         self.__weights = weights
-        self.odf_phase_1 = odf1
-        self.odf_phase_2 = odf2
+        self.__odf_Matrix = odf_Matrix
 
-        self.symetry_phase_1 = self.odf_phase_1.crystal_symmetry
+        self.symetry_Matrix = self.__odf_Matrix.crystal_symmetry
         try:
-            self.symetry_phase_2 = self.odf_phase_2.crystal_symmetry
-            self.phase_flag = True
+            self.symetry_Inclusion = self.odf_Inclusion.crystal_symmetry
+            self.phase_flag = True  # multi phase material
         except:
             self.phase_flag = False  # single phase material
 
-        self.odf_integral_over_all_angles = self.odf_phase_1.integral_over_all_orientations_g
-        self.__params = lm.Parameters()
-        if self.symetry_phase_1 == "isotope":
-            self.__params.add('c_11',
-                              value=220 * np.power(10., 9), min=0 * np.power(10., 9), max=600. * np.power(10., 9))
-            self.__params.add('c_12',
-                              value=126.4 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
-        elif self.symetry_phase_1 == "m-3m":
-            self.__params.add('c_11',
-                              value=240 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
-            self.__params.add('c_12',
-                              value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
-            self.__params.add('c_44',
-                              value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
-        elif self.symetry_phase_1 == "hexagonal":
-            self.__params.add('c_11',
-                              value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
-            self.__params.add('c_12',
-                              value=120.4 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
-            self.__params.add('c_13',
-                              value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
-            self.__params.add('c_33',
-                              value=126.4 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
-            self.__params.add('c_44',
-                              value=126.4 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+        self.odf_integral_over_all_angles = self.__odf_Matrix.integral_over_all_orientations_g
+
+        self.__params_Matrix = lm.Parameters()  # Parameters of the Matrix
+        self.add_params(params=self.__params_Matrix, sym=self.symetry_Matrix)
+
+        # self.__params_Inclusion = lm.Parameter()
+        # if self.phase_flag:
+        #     self.add_params(params=self.__params_Inclusion, sym=self.symetry_phase_2)
+        # if self.symetry_phase_1 == "isotope":
+        #     self.__params_Matrix.add('c_11',
+        #                              value=220 * np.power(10., 9), min=0 * np.power(10., 9), max=600. * np.power(10., 9))
+        #     self.__params_Matrix.add('c_12',
+        #                              value=126.4 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+        # elif self.symetry_phase_1 == "m-3m":
+        #     self.__params_Matrix.add('c_11',
+        #                              value=240 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+        #     self.__params_Matrix.add('c_12',
+        #                              value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+        #     self.__params_Matrix.add('c_44',
+        #                              value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+        # elif self.symetry_phase_1 == "hexagonal":
+        #     self.__params_Matrix.add('c_11',
+        #                              value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+        #     self.__params_Matrix.add('c_12',
+        #                              value=120.4 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+        #     self.__params_Matrix.add('c_13',
+        #                              value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+        #     self.__params_Matrix.add('c_33',
+        #                              value=126.4 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+        #     self.__params_Matrix.add('c_44',
+        #                              value=126.4 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
 
         # self.params.add('c_13', value=120 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
         # self.params.add('c_14', value=110 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
@@ -596,10 +601,26 @@ class Fit_strain_with_texture(object):
         self.__complience_s_Matrix_tensor_voigt = np.zeros((6, 6))
         self.__complience_s_Matrix_tensor_extended = np.zeros((3, 3, 3, 3))
 
-        self.__constant_c_inclusion_tensor_voigt = np.zeros((6, 6))
+        self.__constant_c_inclusion_tensor_voigt = np.zeros((6, 6))  # in this case, this are the tensors fore the inclousion of the same type as the Matrix
         self.__constant_c_inclusion_tensor_extended = np.zeros((3, 3, 3, 3))
         self.__complience_s_inclusion_tensor_voigt = np.zeros((6, 6))
         self.__complience_s_inclusion_tensor_extended = np.zeros((3, 3, 3, 3))
+
+    @staticmethod
+    def add_params(params, sym):
+        if sym == "isotope":
+            params.add('c_11', value=220 * np.power(10., 9), min=0 * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+        elif sym == "m-3m":
+            params.add('c_11', value=240 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_44', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+        elif sym == "hexagonal":
+            params.add('c_11', value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_13', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_33', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_44', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
 
     @staticmethod
     def __voigt_notation(i, j):
@@ -768,7 +789,7 @@ class Fit_strain_with_texture(object):
         self.__counter += 1
         self.__counter2 = 0
         print "Iteration #", self.__counter
-        if self.symetry_phase_1 == "isotope":
+        if self.symetry_Matrix == "isotope":
             self.__constant_c_Matrix_tensor_voigt = \
                 np.array([
                     [params['c_11'].value, params['c_12'].value, params['c_12'].value, 0, 0, 0],
@@ -778,8 +799,8 @@ class Fit_strain_with_texture(object):
                     [0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value), 0],
                     [0, 0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value)]
                 ])
-        elif self.symetry_phase_1 == "m-3m":  # cubic
-            print "Symetry:", self.symetry_phase_1
+        elif self.symetry_Matrix == "m-3m":  # cubic
+            print "Symetry:", self.symetry_Matrix
             self.__constant_c_Matrix_tensor_voigt = \
                 np.array([
                     [params['c_11'].value, params['c_12'].value, params['c_12'].value, 0, 0, 0],
@@ -789,7 +810,7 @@ class Fit_strain_with_texture(object):
                     [0, 0, 0, 0, params['c_44'].value, 0],
                     [0, 0, 0, 0, 0, params['c_44'].value]
                 ])
-        elif self.symetry_phase_1 == "hexagonal" or self.symetry_phase_1 == "hexagonal":
+        elif self.symetry_Matrix == "hexagonal" or self.symetry_Matrix == "hexagonal":
             self.__constant_c_Matrix_tensor_voigt = \
                 np.array([
                     [params['c_11'].value, params['c_12'].value, params['c_13'].value, 0, 0, 0],
@@ -863,7 +884,7 @@ class Fit_strain_with_texture(object):
 
     def do_the_fitting(self, filename, material, method="reus", path=".\\results\\"):
         self.__counter = 0
-        params = self.__params
+        params = self.__params_Matrix
         data = self.__strains_data
         weight = self.__weights
         xvals = self.xvals
@@ -895,7 +916,7 @@ class Fit_strain_with_texture(object):
         date = kwargs["date_of_fit"]
         da = tm.strftime("%d.%m.%Y, %H:%M", date)
         pars = lm.fit_report(res.params)
-        sym = self.symetry_phase_1 + " " + self.odf_phase_1.crystal_symmetry
+        sym = self.symetry_Matrix + " " + self.__odf_Matrix.crystal_symmetry
         out = \
             "Method:         %s\
            \nSymmetry:       %s\
@@ -1006,28 +1027,28 @@ class Fit_strain_with_texture(object):
         if method == "reus":
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.odf_phase_1.integrate(self.A_reus, phi, psi, h, k, l, u, w, i, j) / \
-                           self.odf_phase_1.integrate_(phi, psi, h, k, l)
+                    res += self.__odf_Matrix.integrate(self.A_reus, phi, psi, h, k, l, u, w, i, j) / \
+                           self.__odf_Matrix.integrate_(phi, psi, h, k, l)
 
         elif method == "voigt":
             # euler = (0, 0, 0)
             # a_voigt = self.A_voigt(euler, 0,0,0,0)
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.odf_phase_1.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j) / \
-                           self.odf_phase_1.integrate_(phi, psi, h, k, l)
+                    res += self.__odf_Matrix.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j) / \
+                           self.__odf_Matrix.integrate_(phi, psi, h, k, l)
 
         elif method == "hill":
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.odf_phase_1.integrate(self.__A_hill, phi, psi, h, k, l, u, w, i, j) / \
-                           self.odf_phase_1.integrate_(phi, psi, h, k, l)
+                    res += self.__odf_Matrix.integrate(self.__A_hill, phi, psi, h, k, l, u, w, i, j) / \
+                           self.__odf_Matrix.integrate_(phi, psi, h, k, l)
 
         elif method == "eshelby":
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.odf_phase_1.integrate(self.A_eshelby, phi, psi, h, k, l, u, w, i, j) / \
-                           self.odf_phase_1.integrate_(phi, psi, h, k, l)
+                    res += self.__odf_Matrix.integrate(self.A_eshelby, phi, psi, h, k, l, u, w, i, j) / \
+                           self.__odf_Matrix.integrate_(phi, psi, h, k, l)
         # print "Func. calls: ", self.__counter2, "Spannungsfaktor: ", res, " phi: ", rad_to_deg(phi), " psi: ", \
         #     rad_to_deg(psi), "hkl: ", h, k, l
         return res
@@ -1070,7 +1091,7 @@ class Fit_strain_with_texture(object):
         sig = np.zeros((3, 3))
         # sig[0,0]=np.sin(psi)**2 * np.sin(phi2)**2
         # sig[2, 2] = sigma3
-        g = self.odf_phase_1.g1(phi, psi, phi2)
+        g = self.__odf_Matrix.g1(phi, psi, phi2)
         for i in xrange(3):
             for j in xrange(3):
                 sig[i, j] = g[i, 2] * g[j, 2] * sigma3
@@ -1088,7 +1109,7 @@ class Fit_strain_with_texture(object):
         :return:
         """
         phi1, phi, phi2 = euler
-        g = self.odf_phase_1.g(phi1, phi, phi2).transpose()
+        g = self.__odf_Matrix.g(phi1, phi, phi2).transpose()
 
         res = np.zeros((3, 3, 3, 3))
         for a in xrange(3):
@@ -1110,7 +1131,7 @@ class Fit_strain_with_texture(object):
 
     def __voigt_inner_sum(self, phi1, phi, phi2, a, b, i, j):
         res = 0
-        g = self.odf_phase_1.g(phi1, phi, phi2).transpose()
+        g = self.__odf_Matrix.g(phi1, phi, phi2).transpose()
         for m in xrange(3):
             for n in xrange(3):
                 for o in xrange(3):
@@ -1126,7 +1147,7 @@ class Fit_strain_with_texture(object):
         res = np.zeros((3, 3, 3, 3))
 
         # print "a: ", d_list["a"], "b: ", d_list["b"], "f: ", d_list["f"], "d: ", d_list["d"]
-        res[d_list["a"], d_list["b"], d_list["f"], d_list["d"]] = self.odf_phase_1. \
+        res[d_list["a"], d_list["b"], d_list["f"], d_list["d"]] = self.__odf_Matrix. \
             integrate_a_over_all_orientations_g(self.__voigt_inner_sum,
                                                 d_list["a"], d_list["b"], d_list["f"], d_list["d"])
         return res
@@ -1141,7 +1162,7 @@ class Fit_strain_with_texture(object):
         :param j:
         :return:
         """
-        phi1, phi, phi2 = euler
+        # phi1, phi, phi2 = euler
         # g = self.odf_phase_1.g(phi1, phi, phi2)
         c = np.zeros((3, 3, 3, 3))  # compliance tensor g independent
         cout = 0
@@ -1150,8 +1171,8 @@ class Fit_strain_with_texture(object):
                 for f in xrange(3):
                     for d in xrange(3):
                         cli_progress_test_voigt(cout, 81, (a, b, f, d))
-                        c[a, b, f, d] = self.odf_phase_1.integrate_a_over_all_orientations_g(self.__voigt_inner_sum,
-                                                                                             a, b, f, d)
+                        c[a, b, f, d] = self.__odf_Matrix.integrate_a_over_all_orientations_g(self.__voigt_inner_sum,
+                                                                                              a, b, f, d)
                         cout += 1
 
         c /= self.odf_integral_over_all_angles
@@ -1264,7 +1285,7 @@ class Fit_strain_with_texture(object):
 
     def __u(self, phi1, phi, phi2, C):
         E = self.__calc_E(C)
-        g = self.odf_phase_1.g(phi1, phi, phi2).transpose()
+        g = self.__odf_Matrix.g(phi1, phi, phi2).transpose()
         c = self.c(g)  # constant tensor of the inclusion depending on the orientation g
         E_inv = self.invert_four_rank_c_tensor(E)
         h = self.invert_four_rank_c_tensor(c + C + E_inv)
@@ -1280,7 +1301,7 @@ class Fit_strain_with_texture(object):
         return res - self.fourth_rank_identity()
 
     def __integrand_int_u(self, phi1, phi, phi2, C):
-        return self.__u(phi1, phi, phi2, C) * self.odf_phase_1.f(phi1, phi, phi2) * np.sin(phi)
+        return self.__u(phi1, phi, phi2, C) * self.__odf_Matrix.f(phi1, phi, phi2) * np.sin(phi)
 
     def __int_u(self, C):
         res = np.zeros((3, 3, 3, 3))
@@ -1372,7 +1393,7 @@ class Fit_strain_with_texture(object):
         """
 
         phi1, phi, phi2 = euler
-        g = self.odf_phase_1.g(phi1, phi, phi2).transpose()
+        g = self.__odf_Matrix.g(phi1, phi, phi2).transpose()
         S = np.zeros((3, 3, 3, 3))  # averaged constant tensor of the matrix
         S = self.__complience_s_Matrix_tensor_extended  # use as a start value
         C = self.invert_four_rank_s_tensor(S)  # averaged compliance tensor of the matrix
@@ -1418,6 +1439,26 @@ def cli_progress_test(i, end_val, bar_length=20):
         "\rPercent: [{}] {}%".format(hashes + spaces, int(round(percent * 100))))
     sys.stdout.flush()
 
+'''
+Fiting class, that inherits from the class "Fit_strain_with_texture_single_phase"
+'''
+
+
+class Fit_strain_with_texture_two_phase_material(Fit_strain_with_texture_single_phase):
+    def __init__(self, odf_Matrix, odf_Inclusion, force, diameter, strains_Matrix_data, xvals_Matrix,
+                 strains_Inclusion_data, xvals_Inclusion, weights_Inclusion=None, weights_Matrix=None):
+
+        Fit_strain_with_texture_single_phase.__init__(odf_Matrix=odf_Matrix, force=force, diameter=diameter,
+                                                      strains_data=strains_Matrix_data, xvals=xvals_Matrix,
+                                                      weights=weights_Matrix)
+
+        self.__odf_Inclusion = odf_Inclusion
+        self.__strains_data_Inclusion = strains_Inclusion_data
+        self.__weights_Inclusion = weights_Inclusion
+        self.xvals_Inclusion = xvals_Inclusion
+        self.__sym_Inclusion = self.__odf_Inclusion.crystal_symmetry
+        self.__params_Inclusion = lm.Parameters()
+        self.add_params(self.__params_Inclusion, self.__sym_Inclusion)
 
 '''
 Odf classdefinition
@@ -1980,8 +2021,7 @@ class ODF(object):
         for k in xrange(0, self.__phi2_max + self.__stepwidth, self.__stepwidth):  # sum over all phi2 vals
             for j in xrange(0, self.__Phi_max + self.__stepwidth, self.__stepwidth):  # sum over all Phi vals
                 sum_1 = 0
-                for i in xrange(0, self.__phi1_max + self.__stepwidth,
-                                self.__stepwidth):  # sum over all phi1 vals (with Phi_j)
+                for i in xrange(0, self.__phi1_max + self.__stepwidth, self.__stepwidth):  # sum over all phi1 vals
                     sum_1 += inner_sum(i, j, k, *args) * self.f(i, j, k)
                 sum_total += np.sin(deg_to_rad(j)) * sum_1
         sum_total = sum_total * deg_to_rad(self.__stepwidth) ** 3 / (8 * np.pi ** 2)

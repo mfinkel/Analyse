@@ -12,6 +12,7 @@ import DataCursor
 import Fittingtools
 import Modells
 import Plot_coordsys as cplot
+import matplotlibwidget
 from glob import glob
 
 
@@ -575,12 +576,12 @@ class Data:
 
     def Fit_the_data_with_texture(self, method, filename, number_of_datapoints = None):
         print "Number of datapoints: ", len(self.__epsilon_list), method
-        fit = Modells.Fit_strain_with_texture(odf1=self.__odf, odf2=None,
-                                              force=self.__sample_spezifikations["force"],
-                                              diameter=self.__sample_spezifikations["diameter"],
-                                              strains_data=self.__epsilon_list[0:number_of_datapoints],
-                                              xvals=self.__hkl_phi_psi_list[0:number_of_datapoints],
-                                              weights=self.__epsilon_weight_list[0:number_of_datapoints])  #
+        fit = Modells.Fit_strain_with_texture_single_phase(odf_Matrix=self.__odf,
+                                                           force=self.__sample_spezifikations["force"],
+                                                           diameter=self.__sample_spezifikations["diameter"],
+                                                           strains_data=self.__epsilon_list[0:number_of_datapoints],
+                                                           xvals=self.__hkl_phi_psi_list[0:number_of_datapoints],
+                                                           weights=self.__epsilon_weight_list[0:number_of_datapoints])
         filename = filename + method
         for i in range(len(self.__epsilon_list)):
             print self.__hkl_phi_psi_list[i], self.__epsilon_list[i]
@@ -636,7 +637,7 @@ class Data:
                        [2.0, 2.0, 0.0, 1926, 2020], [3.0, 1.0, 0.0, 2266, 2380]]
         print hkl_setting
         # do it manually:
-        # hkl_setting = unstraind[0].select_hkl(auto=False, rang=[])
+        hkl_setting = unstraind[0].select_hkl(auto=False, rang=[])
 
         # do it for the rest automatically:
         for i in xrange(0, len(unstraind)):
