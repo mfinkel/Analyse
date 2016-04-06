@@ -1134,7 +1134,8 @@ class Fit_strain_with_texture_single_phase(object):
         elif method == "hill":
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.__odf_Matrix.integrate(self.__A_hill, phi, psi, h, k, l, u, w, i, j) / \
+                    res += ((self.__odf_Matrix.integrate(self.A_reus, phi, psi, h, k, l, u, w, i, j) +
+                            self.__odf_Matrix.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j))/2) / \
                            self.__odf_Matrix.integrate_(phi, psi, h, k, l)
 
         elif method == "eshelby":
@@ -1537,6 +1538,7 @@ def cli_progress_test(i, end_val, bar_length=20):
     sys.stdout.write(
         "\rPercent: [{}] {}%".format(hashes + spaces, int(round(percent * 100))))
     sys.stdout.flush()
+
 
 '''
 Fiting class, that inherits from the class "Fit_strain_with_texture_single_phase"
