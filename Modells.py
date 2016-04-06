@@ -882,7 +882,96 @@ class Fit_strain_with_texture_single_phase(object):
 
         return (np.array(data) - np.array(strain_epsilon)) / (np.array(weight))
 
-    def do_the_fitting(self, filename, material, method="reus", path=".\\results\\"):
+    def __residuum_without_texture(self, params, xvals, data=None, weight=None, method=None):
+        """
+        :param params: lm.Parameter Object
+        :param xvals: list of the xvalues [[phi, psi, h, k, l], [phi, psi, h, k, l], ...
+        :param data: the data
+        :param weight: the error's of the data
+        :return:
+        """
+        self.__counter += 1
+        self.__counter2 = 0
+        print "Iteration #", self.__counter
+        if self.symetry_Matrix == "isotope":
+            self.__constant_c_Matrix_tensor_voigt = \
+                np.array([
+                    [params['c_11'].value, params['c_12'].value, params['c_12'].value, 0, 0, 0],
+                    [params['c_12'].value, params['c_11'].value, params['c_12'].value, 0, 0, 0],
+                    [params['c_12'].value, params['c_12'].value, params['c_11'].value, 0, 0, 0],
+                    [0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value), 0, 0],
+                    [0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value), 0],
+                    [0, 0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value)]
+                ])
+        elif self.symetry_Matrix == "m-3m":  # cubic
+            print "Symetry:", self.symetry_Matrix
+            self.__constant_c_Matrix_tensor_voigt = \
+                np.array([
+                    [params['c_11'].value, params['c_12'].value, params['c_12'].value, 0, 0, 0],
+                    [params['c_12'].value, params['c_11'].value, params['c_12'].value, 0, 0, 0],
+                    [params['c_12'].value, params['c_12'].value, params['c_11'].value, 0, 0, 0],
+                    [0, 0, 0, params['c_44'].value, 0, 0],
+                    [0, 0, 0, 0, params['c_44'].value, 0],
+                    [0, 0, 0, 0, 0, params['c_44'].value]
+                ])
+        elif self.symetry_Matrix == "hexagonal" or self.symetry_Matrix == "hexagonal":
+            self.__constant_c_Matrix_tensor_voigt = \
+                np.array([
+                    [params['c_11'].value, params['c_12'].value, params['c_13'].value, 0, 0, 0],
+                    [params['c_12'].value, params['c_11'].value, params['c_13'].value, 0, 0, 0],
+                    [params['c_13'].value, params['c_13'].value, params['c33'].value, 0, 0, 0],
+                    [0, 0, 0, params['c_44'].value, 0, 0],
+                    [0, 0, 0, 0, params['c_44'].value, 0],
+                    [0, 0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value)]
+                ])
+
+        print "parameter vals:"
+        print "C_11: ", params["c_11"].value
+        print "C_12: ", params["c_12"].value
+        print "C_44: ", params["c_44"].value
+
+        self.__constant_c_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_constants_c(
+            self.__constant_c_Matrix_tensor_voigt)
+        strain_epsilon = []
+        t1 = tm.clock()
+
+        for m in xvals:
+            phi, psi, h, k, l = m
+            if method == "hill":
+                s1, s2 = RV(Gamma=Gama(h, k, l), c_11=params["c_11"].value, c_12=params["c_12"].value,
+                            c_44=params["c_44"].value)
+            if method == "voigt":
+                s1, s2 = Voigt__(Gamma=Gama(h, k, l), c_11=params["c_11"].value, c_12=params["c_12"].value,
+                                 c_44=params["c_44"].value)
+            if method == "eshelby":
+                s1, s2 = BHM_dW(Gamma=Gama(h, k, l), c_11=params["c_11"].value, c_12=params["c_12"].value,
+                                c_44=params["c_44"].value)
+            if method == "reus":
+                s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=params["c_11"].value, c_12=params["c_12"].value,
+                              c_44=params["c_44"].value)
+            eps = s1 * (self.stress_sigma(0, 0) + self.stress_sigma(1, 1) + self.stress_sigma(2, 2)) \
+                  + s2 * (self.stress_sigma(0, 0) * np.cos(phi) ** 2 * np.sin(psi) ** 2 +
+                          self.stress_sigma(1, 1) * np.sin(phi) ** 2 * np.sin(psi) ** 2 +
+                          self.stress_sigma(2, 2) * np.cos(psi) ** 2) \
+                  + s2 * (self.stress_sigma(0, 1) * np.sin(2 * phi) * np.sin(psi) ** 2 +
+                          self.stress_sigma(0, 2) * np.cos(phi) * np.sin(2 * psi) +
+                          self.stress_sigma(1, 2) * np.sin(phi) * np.sin(2 * psi))
+
+            strain_epsilon.append(eps)
+
+        t2 = tm.clock()
+        dt = t2 - t1
+        print "time for iteration #%i: %i min %i sec" % (self.__counter, int(dt / 60), int(dt % 60))
+
+        if data is None and weight is None:
+            return strain_epsilon
+
+        if weight is None:
+            return np.array(data) - np.array(strain_epsilon)
+
+        return (np.array(data) - np.array(strain_epsilon)) / (np.array(weight))
+
+    def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture = False):
         self.__counter = 0
         params = self.__params_Matrix
         data = self.__strains_data
@@ -893,7 +982,11 @@ class Fit_strain_with_texture_single_phase(object):
         fit_method = 'leastsq'  # the optons are:
         # leastsq, nelder, lbfgsb, powell, cg, newton, cobyla, tnc, dogleg, slsqp,
         # differential_evolution
-        result = lm.minimize(self.__residuum_with_texture, params, method=fit_method, args=(xvals,),
+        if texture:
+            result = lm.minimize(self.__residuum_with_texture, params, method=fit_method, args=(xvals,),
+                             kws={'data': data, 'weight': weight, 'method': method})
+        else:
+            result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
                              kws={'data': data, 'weight': weight, 'method': method})
         t2 = tm.clock()
         dt = t2 - t1

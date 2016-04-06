@@ -580,7 +580,7 @@ class Data:
     Fit the data
     """
 
-    def Fit_the_data_with_texture(self, method, filename, number_of_datapoints = None):
+    def Fit_the_data_with_texture(self, method, filename, number_of_datapoints = None, texture=False):
         print "Number of datapoints: ", len(self.__epsilon_list), method
         fit = Modells.Fit_strain_with_texture_single_phase(odf_Matrix=self.__odf,
                                                            force=self.__sample_spezifikations["force"],
@@ -592,7 +592,7 @@ class Data:
         for i in range(len(self.__epsilon_list)):
             print "phi, psi, hkl: ", self.__phi_psi_hkl_list[i], " eps: ", self.__epsilon_list[i], \
                   " Weight: ", self.__epsilon_weight_list[i]
-        fit.do_the_fitting(filename=filename, material="Iron", method=method)
+        fit.do_the_fitting(filename=filename, material="Iron", method=method, texture=texture)
 
     """
     Read the scattering data and process it
