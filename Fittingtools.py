@@ -130,7 +130,7 @@ def gauss_lin_fitting_2(x_list, av_count_l, plot=False):
     pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2])
     weights = []
     for i in av_count_l:
-        weights.append(1/np.sqrt(i))
+        weights.append(np.sqrt(i))  # 1/
     out = mod.fit(av_count_l, pars, x=x_list, weights=weights)  #
     y_ = out.best_fit
     res = 0
