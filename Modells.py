@@ -1539,7 +1539,6 @@ def cli_progress_test(i, end_val, bar_length=20):
         "\rPercent: [{}] {}%".format(hashes + spaces, int(round(percent * 100))))
     sys.stdout.flush()
 
-
 '''
 Fiting class, that inherits from the class "Fit_strain_with_texture_single_phase"
 '''
