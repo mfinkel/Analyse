@@ -1162,7 +1162,7 @@ class Fit_strain_with_texture_single_phase(object):
         :param j:
         :return:
         """
-        phi1, phi, phi2 = euler
+        # phi1, phi, phi2 = euler
         # g = self.odf_phase_1.g(phi1, phi, phi2)
         c = np.zeros((3, 3, 3, 3))  # compliance tensor g independent
         cout = 0
@@ -2021,8 +2021,7 @@ class ODF(object):
         for k in xrange(0, self.__phi2_max + self.__stepwidth, self.__stepwidth):  # sum over all phi2 vals
             for j in xrange(0, self.__Phi_max + self.__stepwidth, self.__stepwidth):  # sum over all Phi vals
                 sum_1 = 0
-                for i in xrange(0, self.__phi1_max + self.__stepwidth,
-                                self.__stepwidth):  # sum over all phi1 vals (with Phi_j)
+                for i in xrange(0, self.__phi1_max + self.__stepwidth, self.__stepwidth):  # sum over all phi1 vals
                     sum_1 += inner_sum(i, j, k, *args) * self.f(i, j, k)
                 sum_total += np.sin(deg_to_rad(j)) * sum_1
         sum_total = sum_total * deg_to_rad(self.__stepwidth) ** 3 / (8 * np.pi ** 2)

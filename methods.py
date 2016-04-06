@@ -12,6 +12,7 @@ import DataCursor
 import Fittingtools
 import Modells
 import Plot_coordsys as cplot
+import matplotlibwidget
 from glob import glob
 
 
@@ -636,7 +637,7 @@ class Data:
                        [2.0, 2.0, 0.0, 1926, 2020], [3.0, 1.0, 0.0, 2266, 2380]]
         print hkl_setting
         # do it manually:
-        # hkl_setting = unstraind[0].select_hkl(auto=False, rang=[])
+        hkl_setting = unstraind[0].select_hkl(auto=False, rang=[])
 
         # do it for the rest automatically:
         for i in xrange(0, len(unstraind)):
