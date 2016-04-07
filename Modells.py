@@ -989,6 +989,7 @@ class Fit_strain_with_texture_single_phase(object):
             result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
                                  kws={'data': data, 'weight': weight, 'method': "eshelby"})
             params = result.params
+            self.__counter = 0
             result = lm.minimize(self.__residuum_with_texture, params, method=fit_method, args=(xvals,),
                                  kws={'data': data, 'weight': weight, 'method': method})
         else:
