@@ -705,11 +705,6 @@ class Data:
             if i.chi != 90 :  # fragwürdigand abs(i.d_epsilon/3)>abs(i.d_epsilon_weight)
                 self.__epsilon_list.append(i.d_epsilon)
                 self.__epsilon_weight_list.append(i.d_epsilon_weight)
-                h = i.h
-                k = i.k
-                l = i.l
-
-                # print [h, k, l, j.PHI, j.psi, j.d_epsilon]
                 self.__phi_psi_hkl_list.append([i.PHI, i.psi, i.h, i.k, i.l])
         return HKL_object_list
 

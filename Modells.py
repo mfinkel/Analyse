@@ -826,17 +826,20 @@ class Fit_strain_with_texture_single_phase(object):
         print "C_12: ", params["c_12"].value
         print "C_44: ", params["c_44"].value
 
-        self.__constant_c_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_constants_c(self.__constant_c_Matrix_tensor_voigt)
+        self.__constant_c_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_constants_c(
+            self.__constant_c_Matrix_tensor_voigt)
         self.__complience_s_Matrix_tensor_voigt = np.linalg.inv(self.__constant_c_Matrix_tensor_voigt)
         # self.__conv_all_voigtnot_to_extended_not()
-        self.__complience_s_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_compliences_s(self.__complience_s_Matrix_tensor_voigt)
+        self.__complience_s_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_compliences_s(
+            self.__complience_s_Matrix_tensor_voigt)
 
-
-        # self.__complience_s_tensor_extended = np.linalg.inv(self.__constant_c_tensor_extended)
+        # self.__complience_s_Matrix_tensor_extended = np.linalg.inv(self.__constant_c_Matrix_tensor_extended)
 
         # print "tensor identity calc:\n",np.tensordot(self.__constant_c_tensor_extended, self.__complience_s_tensor_extended)
         # print "tensor identity teo:\n",self.fourth_rank_identity()
-        # print "tensor diference:\n", np.tensordot(self.__constant_c_tensor_extended, self.__complience_s_tensor_extended)- self.fourth_rank_identity()
+        # print "tensor diference:\n", np.tensordot(self.__constant_c_Matrix_tensor_extended,
+        #                                           self.__complience_s_Matrix_tensor_extended) - \
+        #                              self.fourth_rank_identity()
         strain_epsilon_2 = []
         strain_epsilon = 0.
         t1 = tm.clock()
@@ -971,7 +974,7 @@ class Fit_strain_with_texture_single_phase(object):
 
         return (np.array(data) - np.array(strain_epsilon)) / (np.array(weight))
 
-    def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture = False):
+    def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture=False):
         self.__counter = 0
         params = self.__params_Matrix
         data = self.__strains_data
@@ -983,11 +986,14 @@ class Fit_strain_with_texture_single_phase(object):
         # leastsq, nelder, lbfgsb, powell, cg, newton, cobyla, tnc, dogleg, slsqp,
         # differential_evolution
         if texture:
+            result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
+                                 kws={'data': data, 'weight': weight, 'method': "eshelby"})
+            params = result.params
             result = lm.minimize(self.__residuum_with_texture, params, method=fit_method, args=(xvals,),
-                             kws={'data': data, 'weight': weight, 'method': method})
+                                 kws={'data': data, 'weight': weight, 'method': method})
         else:
             result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
-                             kws={'data': data, 'weight': weight, 'method': method})
+                                 kws={'data': data, 'weight': weight, 'method': method})
         t2 = tm.clock()
         dt = t2 - t1
         print "time for fit: ", dt
@@ -1003,7 +1009,7 @@ class Fit_strain_with_texture_single_phase(object):
         h = int(fit_time / 3600)
         m = int((fit_time % 3600) / 60)
         s = int(fit_time % 60)
-        comment = "Old reus definition, only good values."
+        comment = "old reus definition"
         # "Using an other definition for the reus model (wreite s(g) =(g_im * g_jn * g_ko * g_lp * c^0_mnop)^-1"  # add some comment here
         time = "%ih %i min %i sec" % (h, m, s)
         date = kwargs["date_of_fit"]
@@ -1135,7 +1141,7 @@ class Fit_strain_with_texture_single_phase(object):
             for u in xrange(3):
                 for w in xrange(3):
                     res += ((self.__odf_Matrix.integrate(self.A_reus, phi, psi, h, k, l, u, w, i, j) +
-                            self.__odf_Matrix.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j))/2) / \
+                            self.__odf_Matrix.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j)) / 2) / \
                            self.__odf_Matrix.integrate_(phi, psi, h, k, l)
 
         elif method == "eshelby":
@@ -1205,31 +1211,31 @@ class Fit_strain_with_texture_single_phase(object):
         phi1, phi, phi2 = euler
         g = self.__odf_Matrix.g(phi1, phi, phi2).transpose()
 
-        # res = 0.  # np.zeros((3, 3, 3, 3))
-        # for a in xrange(3):
-        #     for b in xrange(3):
-        #         for c in xrange(3):
-        #             for d in xrange(3):
-        #                 res += g[u, a] * g[w, b] * g[i, c] * g[j, d] * \
-        #                        self.__complience_s_Matrix_tensor_extended[a, b, c, d]
-        #                                                    self.__constant_c_Matrix_tensor_extended[m, n, o, p]
-        res = np.zeros((3, 3, 3, 3))
+        res = 0.
         for a in xrange(3):
             for b in xrange(3):
                 for c in xrange(3):
                     for d in xrange(3):
-                        for m in xrange(3):
-                            for n in xrange(3):
-                                for o in xrange(3):
-                                    for p in xrange(3):
-                                        res[a, b, c, d] += g[a, m] * g[b, n] * g[c, o] * g[d, p] * \
-                                                           self.__constant_c_Matrix_tensor_extended[m, n, o, p]
+                        res += g[u, a] * g[w, b] * g[i, c] * g[j, d] * \
+                               self.__complience_s_Matrix_tensor_extended[a, b, c, d]
+
+        # res = np.zeros((3, 3, 3, 3))
+        # for a in xrange(3):
+        #     for b in xrange(3):
+        #         for c in xrange(3):
+        #             for d in xrange(3):
+        #                 for m in xrange(3):
+        #                     for n in xrange(3):
+        #                         for o in xrange(3):
+        #                             for p in xrange(3):
+        #                                 res[a, b, c, d] += g[a, m] * g[b, n] * g[c, o] * g[d, p] * \
+        #                                                    self.__constant_c_Matrix_tensor_extended[m, n, o, p]
         # print res
         # print self.__constant_c_Matrix_tensor_extended
         # print self.__constant_c_Matrix_tensor_voigt
 
-        res = self.invert_four_rank_c_tensor(res)
-        return res[u, w, i, j]
+        # res = self.invert_four_rank_c_tensor(res)
+        return res  # [u, w, i, j]
 
     def __voigt_inner_sum(self, phi1, phi, phi2, a, b, i, j):
         res = 0
