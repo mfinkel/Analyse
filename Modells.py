@@ -1198,7 +1198,7 @@ class Fit_strain_with_texture_single_phase(object):
         # print "sigma_33: ", sigma3, self.force, self.diameter
         return sig[i, j]
 
-    def A_reus(self, g, u, w, i, j):
+    def A_reus(self, g2, u, w, i, j):
         """
         A(g) = s(g)
         :param euler:
@@ -1209,14 +1209,14 @@ class Fit_strain_with_texture_single_phase(object):
         :return:
         """
         # phi1, phi, phi2 = euler
-        g = g.transpose()
+        g2 = g2.transpose()
 
         res = 0.
         for m in xrange(3):
             for n in xrange(3):
                 for o in xrange(3):
                     for p in xrange(3):
-                        res += g[2, m] * g[2, n] * g[u, o] * g[w, p] * \
+                        res += g2[2, m] * g2[2, n] * g2[u, o] * g2[w, p] * \
                                self.__complience_s_Matrix_tensor_extended[m, n, o, p]
 
         # res = np.zeros((3, 3, 3, 3))
@@ -1235,7 +1235,7 @@ class Fit_strain_with_texture_single_phase(object):
         # print self.__constant_c_Matrix_tensor_voigt
 
         # res = self.invert_four_rank_c_tensor(res)
-        return res  # [3, 3, u, w]  # [u, w, i, j]
+        return res  # [2, 2, u, w]  # [u, w, i, j]
 
     def __voigt_inner_sum(self, phi1, phi, phi2, a, b, i, j):
         res = 0
@@ -1260,17 +1260,17 @@ class Fit_strain_with_texture_single_phase(object):
                                                 d_list["a"], d_list["b"], d_list["f"], d_list["d"])
         return res
 
-    def __A_voigt(self, euler, u, w, i, j):
+    def __A_voigt(self, g2, u, w, i, j):
         """
         A(g) = <c(g)>^-1
-        :param euler:
+        :param g2:
         :param u:
         :param w:
         :param i:
         :param j:
         :return:
         """
-        # phi1, phi, phi2 = euler
+        # phi1, phi, phi2 = g2
         # g = self.odf_phase_1.g(phi1, phi, phi2)
         c = np.zeros((3, 3, 3, 3))  # compliance tensor g independent
         cout = 0
