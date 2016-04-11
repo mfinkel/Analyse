@@ -1216,7 +1216,7 @@ class Fit_strain_with_texture_single_phase(object):
             for n in xrange(3):
                 for o in xrange(3):
                     for p in xrange(3):
-                        res += g[3, m] * g[3, n] * g[u, o] * g[w, p] * \
+                        res += g[2, m] * g[2, n] * g[u, o] * g[w, p] * \
                                self.__complience_s_Matrix_tensor_extended[m, n, o, p]
 
         # res = np.zeros((3, 3, 3, 3))
@@ -2040,7 +2040,7 @@ class ODF(object):
             phi_b = self.calc_phi_b(h, k, l)
             beta_b = self.calc_betha_b(h, k, l)
             g2 = self.g2(phi2_=phi2_, phi_b=phi_b, beta_b=beta_b)
-            res += A(g2, *args) * g1[3, u] * g1[3, w] * self.f(phi1, phi, phi2) * deg_to_rad(step)  # \
+            res += A(g2, *args) * g1[2, u] * g1[2, w] * self.f(phi1, phi, phi2) * deg_to_rad(step)  # \
             # * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2 # * (2 * np.pi)  # ** 2
             #  * \
 
