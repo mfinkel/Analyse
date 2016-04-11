@@ -1009,7 +1009,7 @@ class Fit_strain_with_texture_single_phase(object):
         h = int(fit_time / 3600)
         m = int((fit_time % 3600) / 60)
         s = int(fit_time % 60)
-        comment = "an other way of defining F_ij"
+        comment = "an other way of defining F_ij\n                transformed S_P(Voigt) to S_L(Voigt) using g1"
         # "Using an other definition for the reus model (wreite s(g) =(g_im * g_jn * g_ko * g_lp * c^0_mnop)^-1"  # add some comment here
         time = "%ih %i min %i sec" % (h, m, s)
         date = kwargs["date_of_fit"]
@@ -1198,7 +1198,7 @@ class Fit_strain_with_texture_single_phase(object):
         # print "sigma_33: ", sigma3, self.force, self.diameter
         return sig[i, j]
 
-    def A_reus(self, g2, u, w, i, j):
+    def A_reus(self, g2, g1, u, w, i, j):
         """
         A(g) = s(g)
         :param euler:
@@ -1288,21 +1288,28 @@ class Fit_strain_with_texture_single_phase(object):
         # s = self.invert_tensor(c)
         return s  # [u, w, i, j]
 
-    def __A_voigt_call(self, euler, u, w, i, j):
+    def __A_voigt_call(self, g2, g1, u, w, i, j):
         """
         A(g) = <c(g)>^-1
-        :param euler:
+        :param g1:
         :param u:
         :param w:
         :param i:
         :param j:
         :return:
         """
-        # phi1, phi, phi2 = euler
-        return self.a_voigt[u, w, i, j]
-        # return s  # [u, w, i, j]
+        S_L = 0.
+        for m in xrange(3):
+            for n in xrange(3):
+                for o in xrange(3):
+                    for p in xrange(3):
+                        S_L += g1[2, m] * g1[2, n] * g1[u, o] * g1[w, p] * \
+                               self.a_voigt[m, n, o, p]
 
-    def __A_hill(self, euler, u, w, i, j):
+        return S_L  # self.a_voigt[u, w, i, j]
+
+
+    def __A_hill(self, g2, g1, u, w, i, j):
         """
         A(g) = (s_voigt(g) + s_reus(g))/2
         :param u:
@@ -1311,7 +1318,7 @@ class Fit_strain_with_texture_single_phase(object):
         :param j:
         :return:
         """
-        hill = (self.a_voigt[u, w, i, j] + self.A_reus(euler, u, w, i, j)) / 2
+        hill = (self.a_voigt[u, w, i, j] + self.A_reus(g2, g1, u, w, i, j)) / 2
         return hill
 
     def c(self, g):
@@ -2040,7 +2047,7 @@ class ODF(object):
             phi_b = self.calc_phi_b(h, k, l)
             beta_b = self.calc_betha_b(h, k, l)
             g2 = self.g2(phi2_=phi2_, phi_b=phi_b, beta_b=beta_b)
-            res += A(g2, *args) * g1[2, u] * g1[2, w] * self.f(phi1, phi, phi2) * deg_to_rad(step)  # \
+            res += A(g2, g1, *args) * g1[2, u] * g1[2, w] * self.f(phi1, phi, phi2) * deg_to_rad(step)  # \
             # * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2 # * (2 * np.pi)  # ** 2
             #  * \
 
