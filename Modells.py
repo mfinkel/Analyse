@@ -826,14 +826,13 @@ class Fit_strain_with_texture_single_phase(object):
         print "C_12: ", params["c_12"].value
         print "C_44: ", params["c_44"].value
 
-        self.__constant_c_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_constants_c(
-            self.__constant_c_Matrix_tensor_voigt)
+        self.__constant_c_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_constants_c(self.__constant_c_Matrix_tensor_voigt)
         self.__complience_s_Matrix_tensor_voigt = np.linalg.inv(self.__constant_c_Matrix_tensor_voigt)
         # self.__conv_all_voigtnot_to_extended_not()
-        self.__complience_s_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_compliences_s(
-            self.__complience_s_Matrix_tensor_voigt)
+        self.__complience_s_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_compliences_s(self.__complience_s_Matrix_tensor_voigt)
 
-        # self.__complience_s_Matrix_tensor_extended = np.linalg.inv(self.__constant_c_Matrix_tensor_extended)
+
+        # self.__complience_s_tensor_extended = np.linalg.inv(self.__constant_c_tensor_extended)
 
         # print "tensor identity calc:\n",np.tensordot(self.__constant_c_tensor_extended, self.__complience_s_tensor_extended)
         # print "tensor identity teo:\n",self.fourth_rank_identity()
@@ -974,7 +973,7 @@ class Fit_strain_with_texture_single_phase(object):
 
         return (np.array(data) - np.array(strain_epsilon)) / (np.array(weight))
 
-    def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture=False):
+    def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture = False):
         self.__counter = 0
         params = self.__params_Matrix
         data = self.__strains_data
