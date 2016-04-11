@@ -1009,7 +1009,7 @@ class Fit_strain_with_texture_single_phase(object):
         h = int(fit_time / 3600)
         m = int((fit_time % 3600) / 60)
         s = int(fit_time % 60)
-        comment = "old reus definition"
+        comment = "an other way of defining F_ij"
         # "Using an other definition for the reus model (wreite s(g) =(g_im * g_jn * g_ko * g_lp * c^0_mnop)^-1"  # add some comment here
         time = "%ih %i min %i sec" % (h, m, s)
         date = kwargs["date_of_fit"]
@@ -1198,7 +1198,7 @@ class Fit_strain_with_texture_single_phase(object):
         # print "sigma_33: ", sigma3, self.force, self.diameter
         return sig[i, j]
 
-    def A_reus(self, euler, u, w, i, j):
+    def A_reus(self, g, u, w, i, j):
         """
         A(g) = s(g)
         :param euler:
@@ -1208,16 +1208,16 @@ class Fit_strain_with_texture_single_phase(object):
         :param j:
         :return:
         """
-        phi1, phi, phi2 = euler
-        g = self.__odf_Matrix.g(phi1, phi, phi2).transpose()
+        # phi1, phi, phi2 = euler
+        g = g.transpose()
 
         res = 0.
-        for a in xrange(3):
-            for b in xrange(3):
-                for c in xrange(3):
-                    for d in xrange(3):
-                        res += g[u, a] * g[w, b] * g[i, c] * g[j, d] * \
-                               self.__complience_s_Matrix_tensor_extended[a, b, c, d]
+        for m in xrange(3):
+            for n in xrange(3):
+                for o in xrange(3):
+                    for p in xrange(3):
+                        res += g[3, m] * g[3, n] * g[u, o] * g[w, p] * \
+                               self.__complience_s_Matrix_tensor_extended[m, n, o, p]
 
         # res = np.zeros((3, 3, 3, 3))
         # for a in xrange(3):
@@ -1235,7 +1235,7 @@ class Fit_strain_with_texture_single_phase(object):
         # print self.__constant_c_Matrix_tensor_voigt
 
         # res = self.invert_four_rank_c_tensor(res)
-        return res  # [u, w, i, j]
+        return res  # [3, 3, u, w]  # [u, w, i, j]
 
     def __voigt_inner_sum(self, phi1, phi, phi2, a, b, i, j):
         res = 0
@@ -1759,21 +1759,21 @@ class ODF(object):
         return res
 
     @staticmethod
-    def g2(phi2_, phi_b, betha_b):
+    def g2(phi2_, phi_b, beta_b):
         """
         rotation from the measurement frame to the crystal system
         :param phi2_: rotation angle
         :param phi_b: polar angel of the hkl direction
-        :param betha_b: azimuth angle of the hkl direction
+        :param beta_b: azimuth angle of the hkl direction
         :return:
         """
-        betha_b = np.pi / 2 - betha_b
-        res = np.array([[np.cos(phi2_) * np.sin(betha_b) - np.sin(phi2_) * np.cos(betha_b) * np.cos(phi_b),
-                         np.sin(phi2_) * np.sin(betha_b) + np.cos(phi2_) * np.cos(betha_b) * np.cos(phi_b),
-                         np.cos(betha_b) * np.sin(phi_b)],
-                        [-np.cos(phi2_) * np.cos(betha_b) - np.sin(phi2_) * np.sin(betha_b) * np.cos(phi_b),
-                         -np.sin(phi2_) * np.cos(betha_b) + np.cos(phi2_) * np.sin(betha_b) * np.cos(phi_b),
-                         np.sin(betha_b) * np.sin(phi_b)],
+        beta_b = np.pi / 2 - beta_b
+        res = np.array([[np.cos(phi2_) * np.sin(beta_b) - np.sin(phi2_) * np.cos(beta_b) * np.cos(phi_b),
+                         np.sin(phi2_) * np.sin(beta_b) + np.cos(phi2_) * np.cos(beta_b) * np.cos(phi_b),
+                         np.cos(beta_b) * np.sin(phi_b)],
+                        [-np.cos(phi2_) * np.cos(beta_b) - np.sin(phi2_) * np.sin(beta_b) * np.cos(phi_b),
+                         -np.sin(phi2_) * np.cos(beta_b) + np.cos(phi2_) * np.sin(beta_b) * np.cos(phi_b),
+                         np.sin(beta_b) * np.sin(phi_b)],
                         [np.sin(phi2_) * np.sin(phi_b),
                          -np.cos(phi2_) * np.sin(phi_b),
                          np.cos(phi_b)]
@@ -2027,6 +2027,7 @@ class ODF(object):
         res = 0
         counter = 0
         m = self.m(phi, psi)
+        g1 = self.g1(phi, psi, phi2=0)
         for i in range(0, 360, step):
             counter += 1
             r = deg_to_rad(i)
@@ -2035,8 +2036,11 @@ class ODF(object):
             euler = (rad_to_deg(phi1), rad_to_deg(phi), rad_to_deg(phi2))
             phi1, phi, phi2 = euler
             # print self.f(phi1, phi, phi2), counter, phi1, phi, phi2
-
-            res += A(euler, *args) * m[u] * m[w] * self.f(phi1, phi, phi2) * deg_to_rad(step)  # \
+            phi2_ = deg_to_rad(i)
+            phi_b = self.calc_phi_b(h, k, l)
+            beta_b = self.calc_betha_b(h, k, l)
+            g2 = self.g2(phi2_=phi2_, phi_b=phi_b, beta_b=beta_b)
+            res += A(g2, *args) * g1[3, u] * g1[3, w] * self.f(phi1, phi, phi2) * deg_to_rad(step)  # \
             # * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2 # * (2 * np.pi)  # ** 2
             #  * \
 
