@@ -592,7 +592,8 @@ class Data:
         for i in range(len(self.__epsilon_list)):
             print "phi, psi, hkl: ", self.__phi_psi_hkl_list[i], " eps: ", self.__epsilon_list[i], \
                   " Weight: ", self.__epsilon_weight_list[i]
-        fit.do_the_fitting(filename=filename, material="Iron", method=method, texture=texture)
+        fit.do_the_fitting_self_consistent_sigma_and_el_const(filename=filename, material="Iron", method=method, texture=texture)
+        # fit.do_the_fitting(filename=filename, material="Iron", method=method, texture=texture)
 
     """
     Read the scattering data and process it

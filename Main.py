@@ -42,7 +42,7 @@ Data_Iron.read_scattering_data(path_of_unstraind_data="Euler-Scans ohne Last\\",
                                path_of_straind_data="Euler-Scans unter 5kN\\")
 modi = ["reus", "voigt", "hill", "eshelby"]
 # for i in modi:
-Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=modi[2], number_of_datapoints=None, texture=True)
+Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=modi[0], number_of_datapoints=None, texture=True)
 # Data_Iron.plot_odf()
 # Data_Iron.integral_over_total_odf
 # Data_Iron.calc__deltavals()
@@ -274,7 +274,7 @@ def Plot_chi_Psi(HKL_object_list, hkl, omeg, fig=True):
 
 
 
-def plot_chi2psi(HKL_object_list, hkl):
+def plot_sin2psi(HKL_object_list, hkl):
     '''
     make an sin^2 Psi Plot for the hkl (string for example '110')
     and calculate the REK's
@@ -378,7 +378,7 @@ hkl = []
 s1 = []
 s2 = []
 for i in HKLs:
-    temp = plot_chi2psi(HKL_object_list, i)
+    temp = plot_sin2psi(HKL_object_list, i)
     HHKl = [float(temp[0][0]), float(temp[0][1]), float(temp[0][2])]
     hkl.append(HHKl)
     s1.append(temp[2])

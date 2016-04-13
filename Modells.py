@@ -514,6 +514,13 @@ class Fit_strain_with_texture_single_phase(object):
         self.__params_Matrix = lm.Parameters()  # Parameters of the Matrix
         self.add_params(params=self.__params_Matrix, sym=self.symetry_Matrix)
 
+        self.__params_Matrix.add("sigma_11", value=0, vary=False)
+        self.__params_Matrix.add("sigma_22", value=0, vary=False)
+        self.__params_Matrix.add("sigma_33", value=self.stress_sigma(2, 2), vary=False)
+        self.__params_Matrix.add("sigma_12", value=0, vary=False)
+        self.__params_Matrix.add("sigma_13", value=0, vary=False)
+        self.__params_Matrix.add("sigma_23", value=0, vary=False)
+
         # self.__params_Inclusion = lm.Parameter()
         # if self.phase_flag:
         #     self.add_params(params=self.__params_Inclusion, sym=self.symetry_phase_2)
@@ -894,48 +901,21 @@ class Fit_strain_with_texture_single_phase(object):
         """
         self.__counter += 1
         self.__counter2 = 0
-        print "Iteration #", self.__counter
-        if self.symetry_Matrix == "isotope":
-            self.__constant_c_Matrix_tensor_voigt = \
-                np.array([
-                    [params['c_11'].value, params['c_12'].value, params['c_12'].value, 0, 0, 0],
-                    [params['c_12'].value, params['c_11'].value, params['c_12'].value, 0, 0, 0],
-                    [params['c_12'].value, params['c_12'].value, params['c_11'].value, 0, 0, 0],
-                    [0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value), 0, 0],
-                    [0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value), 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value)]
-                ])
-        elif self.symetry_Matrix == "m-3m":  # cubic
-            print "Symetry:", self.symetry_Matrix
-            self.__constant_c_Matrix_tensor_voigt = \
-                np.array([
-                    [params['c_11'].value, params['c_12'].value, params['c_12'].value, 0, 0, 0],
-                    [params['c_12'].value, params['c_11'].value, params['c_12'].value, 0, 0, 0],
-                    [params['c_12'].value, params['c_12'].value, params['c_11'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44'].value, 0],
-                    [0, 0, 0, 0, 0, params['c_44'].value]
-                ])
-        elif self.symetry_Matrix == "hexagonal" or self.symetry_Matrix == "hexagonal":
-            self.__constant_c_Matrix_tensor_voigt = \
-                np.array([
-                    [params['c_11'].value, params['c_12'].value, params['c_13'].value, 0, 0, 0],
-                    [params['c_12'].value, params['c_11'].value, params['c_13'].value, 0, 0, 0],
-                    [params['c_13'].value, params['c_13'].value, params['c33'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44'].value, 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value)]
-                ])
+        # print "Iteration #", self.__counter
 
-        print "parameter vals:"
-        print "C_11: ", params["c_11"].value
-        print "C_12: ", params["c_12"].value
-        print "C_44: ", params["c_44"].value
+        # print "parameter vals:"
+        # print "C_11: ", params["c_11"].value
+        # print "C_12: ", params["c_12"].value
+        # print "C_44: ", params["c_44"].value
 
-        self.__constant_c_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_constants_c(
-            self.__constant_c_Matrix_tensor_voigt)
         strain_epsilon = []
         t1 = tm.clock()
+        sigma_11 = params["sigma_11"].value
+        sigma_22 = params["sigma_22"].value
+        sigma_33 = params["sigma_33"].value
+        sigma_12 = params["sigma_12"].value
+        sigma_13 = params["sigma_13"].value
+        sigma_23 = params["sigma_23"].value
 
         for m in xvals:
             phi, psi, h, k, l = m
@@ -951,19 +931,20 @@ class Fit_strain_with_texture_single_phase(object):
             if method == "reus":
                 s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=params["c_11"].value, c_12=params["c_12"].value,
                               c_44=params["c_44"].value)
-            eps = s1 * (self.stress_sigma(0, 0) + self.stress_sigma(1, 1) + self.stress_sigma(2, 2)) \
-                  + s2 * (self.stress_sigma(0, 0) * np.cos(phi) ** 2 * np.sin(psi) ** 2 +
-                          self.stress_sigma(1, 1) * np.sin(phi) ** 2 * np.sin(psi) ** 2 +
-                          self.stress_sigma(2, 2) * np.cos(psi) ** 2) \
-                  + s2 * (self.stress_sigma(0, 1) * np.sin(2 * phi) * np.sin(psi) ** 2 +
-                          self.stress_sigma(0, 2) * np.cos(phi) * np.sin(2 * psi) +
-                          self.stress_sigma(1, 2) * np.sin(phi) * np.sin(2 * psi))
+                
+            eps = s1 * (sigma_11 + sigma_22 + sigma_33) \
+                  + s2 * (sigma_11 * np.cos(phi) ** 2 * np.sin(psi) ** 2 +
+                          sigma_22 * np.sin(phi) ** 2 * np.sin(psi) ** 2 +
+                          sigma_33 * np.cos(psi) ** 2) \
+                  + s2 * (sigma_12 * np.sin(2 * phi) * np.sin(psi) ** 2 +
+                          sigma_13 * np.cos(phi) * np.sin(2 * psi) +
+                          sigma_23 * np.sin(phi) * np.sin(2 * psi))
 
             strain_epsilon.append(eps)
 
         t2 = tm.clock()
         dt = t2 - t1
-        print "time for iteration #%i: %i min %i sec" % (self.__counter, int(dt / 60), int(dt % 60))
+        # print "time for iteration #%i: %i min %i sec" % (self.__counter, int(dt / 60), int(dt % 60))
 
         if data is None and weight is None:
             return strain_epsilon
@@ -1003,13 +984,114 @@ class Fit_strain_with_texture_single_phase(object):
         self.__save_data(filename, Material, nice_result)
         return result
 
+    def do_the_fitting_self_consistent_sigma_and_el_const(self, filename, material, method="eshelby",
+                                                          path=".\\results\\",texture=False):
+        self.__counter = 0
+        params = self.__params_Matrix
+        data = self.__strains_data
+        weight = self.__weights
+        xvals = self.xvals
+        t1 = tm.clock()
+        date = tm.localtime()
+        fit_method = 'leastsq'  # the optons are:
+        # leastsq, nelder, lbfgsb, powell, cg, newton, cobyla, tnc, dogleg, slsqp,
+        # differential_evolution
+        # calc elastic constants with given sigma as a start value
+        result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
+                             kws={'data': data, 'weight': weight, 'method': "eshelby"})
+        params_new = result.params
+        # if this token is true, fit sigma else fit the elastic constants
+        sigma_constant_token = False
+        delta=[]
+        upper_limit = np.power(10., 2)
+        while True:
+            if sigma_constant_token:
+                params["c_11"].vary = False
+                params["c_12"].vary = False
+                params["c_44"].vary = False
+                params["sigma_11"].vary = True
+                params["sigma_22"].vary = True
+                params["sigma_33"].vary = True
+                params["sigma_12"].vary = True
+                params["sigma_13"].vary = True
+                params["sigma_23"].vary = True
+                sigma_constant_token = False
+                result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
+                                     kws={'data': data, 'weight': weight, 'method': "eshelby"})
+            else:
+                params["c_11"].vary = True
+                params["c_12"].vary = True
+                params["c_44"].vary = True
+                params["sigma_11"].vary = False
+                params["sigma_22"].vary = False
+                params["sigma_33"].vary = False
+                params["sigma_12"].vary = False
+                params["sigma_13"].vary = False
+                params["sigma_23"].vary = False
+                sigma_constant_token = True
+                result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
+                                     kws={'data': data, 'weight': weight, 'method': "eshelby"})
+            params_new = result.params
+            # now compare the old and the new result:
+            delta1 = abs(params_new["c_11"].value - params["c_11"].value)
+            delta2 = abs(params_new["c_12"].value - params["c_12"].value)
+            delta3 = abs(params_new["c_44"].value - params["c_44"].value)
+            delta4 = abs(params_new["sigma_11"].value - params["sigma_11"].value)
+            delta5 = abs(params_new["sigma_22"].value - params["sigma_22"].value)
+            delta6 = abs(params_new["sigma_33"].value - params["sigma_33"].value)
+            delta7 = abs(params_new["sigma_12"].value - params["sigma_12"].value)
+            delta8 = abs(params_new["sigma_13"].value - params["sigma_13"].value)
+            delta9 = abs(params_new["sigma_23"].value - params["sigma_23"].value)
+            delta_sum = delta1 + delta2 + delta3 + delta4 + delta5 + delta6 + delta7 + delta8 + delta9
+
+            delta.append(delta_sum)
+            print delta_sum, len(delta)
+
+
+            if delta_sum < upper_limit:
+                break
+
+            if len(delta) > 1000000:
+                upper_limit = np.min(np.array(delta))
+            params = params_new
+        params["c_11"].vary = True
+        params["c_12"].vary = True
+        params["c_44"].vary = True
+        params["sigma_11"].vary = False
+        params["sigma_22"].vary = False
+        params["sigma_33"].vary = False
+        params["sigma_12"].vary = False
+        params["sigma_13"].vary = False
+        params["sigma_23"].vary = False
+        result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
+                             kws={'data': data, 'weight': weight, 'method': "eshelby"})
+        # if texture:
+        #     result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
+        #                          kws={'data': data, 'weight': weight, 'method': "eshelby"})
+        #     params = result.params
+        #     self.__counter = 0
+        #     result = lm.minimize(self.__residuum_with_texture, params, method=fit_method, args=(xvals,),
+        #                          kws={'data': data, 'weight': weight, 'method': method})
+        # else:
+        #     result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
+        #                          kws={'data': data, 'weight': weight, 'method': method})
+        t2 = tm.clock()
+        dt = t2 - t1
+        print "time for fit: ", dt
+        print "delta_val: ", delta_sum
+        nice_result = self.__print_result_nicely(result, fitting_time=dt, date_of_fit=date, method=fit_method)
+        Material = material
+        filename = path + filename
+        self.__save_data(filename, Material, nice_result)
+        return result
+
     def __print_result_nicely(self, res, **kwargs):
 
         fit_time = kwargs["fitting_time"]
         h = int(fit_time / 3600)
         m = int((fit_time % 3600) / 60)
         s = int(fit_time % 60)
-        comment = "an other way of defining F_ij\n                transformed S_P(Voigt) to S_L(Voigt) using g1"
+        comment = "selfconsistent calculation of sigma tensor and elastic constants"
         # "Using an other definition for the reus model (wreite s(g) =(g_im * g_jn * g_ko * g_lp * c^0_mnop)^-1"  # add some comment here
         time = "%ih %i min %i sec" % (h, m, s)
         date = kwargs["date_of_fit"]
@@ -1298,15 +1380,15 @@ class Fit_strain_with_texture_single_phase(object):
         :param j:
         :return:
         """
-        S_L = 0.
-        for m in xrange(3):
-            for n in xrange(3):
-                for o in xrange(3):
-                    for p in xrange(3):
-                        S_L += g1[2, m] * g1[2, n] * g1[u, o] * g1[w, p] * \
-                               self.a_voigt[m, n, o, p]
+        # S_L = 0.
+        # for m in xrange(3):
+        #     for n in xrange(3):
+        #         for o in xrange(3):
+        #             for p in xrange(3):
+        #                 S_L += g1[2, m] * g1[2, n] * g1[u, o] * g1[w, p] * \
+        #                        self.a_voigt[m, n, o, p]
 
-        return S_L  # self.a_voigt[u, w, i, j]
+        return self.a_voigt[2, 2, u, w]#S_L  # self.a_voigt[u, w, i, j]
 
 
     def __A_hill(self, g2, g1, u, w, i, j):
