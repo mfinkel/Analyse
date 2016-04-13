@@ -18,6 +18,7 @@ import tempfile
 import itertools as IT
 import os
 import sys
+import gui
 
 
 # import multiprocessing as multi
@@ -860,7 +861,7 @@ class Fit_strain_with_texture_single_phase(object):
                     if abs(self.stress_sigma(i, j)) < 1e-13:
                         pass
                     else:
-                        strain_epsilon += self.__F(phi, psi, h, k, l, i, j, method) * self.stress_sigma(i, j)
+                        strain_epsilon += self.F(phi, psi, h, k, l, i, j, method) * self.stress_sigma(i, j)
         except ValueError:
             for m in xvals:
                 phi, psi, h, k, l = m
@@ -871,8 +872,8 @@ class Fit_strain_with_texture_single_phase(object):
                         if abs(self.stress_sigma(i, j)) < 1e-13:
                             pass
                         else:
-                            strain_epsilon_1 += self.__F(phi, psi, h, k, l, i, j,
-                                                         method) * self.stress_sigma(i, j)
+                            strain_epsilon_1 += self.F(phi, psi, h, k, l, i, j,
+                                                       method) * self.stress_sigma(i, j)
 
                 strain_epsilon_2.append(strain_epsilon_1)
                 cli_progress_test(co, len(xvals))
@@ -1191,7 +1192,7 @@ class Fit_strain_with_texture_single_phase(object):
                                                  self.kronneker_delta(i, l) * self.kronneker_delta(j, k))
         return res
 
-    def __F(self, phi, psi, h, k, l, i, j, method):
+    def F(self, phi, psi, h, k, l, i, j, method):
         """
         :param method:
         :param phi:
@@ -1510,6 +1511,9 @@ class Fit_strain_with_texture_single_phase(object):
                                     res[i, j, k, l] += self.__integrand_int_u(phi1, phi, phi2, C)
         return res
 
+
+
+
 # def __residuum_u_eshelby(self, params, xvals, data=None, weight=None, method=None):
 #         """
 #         :param params: lm.Parameter Object
@@ -1600,6 +1604,9 @@ class Fit_strain_with_texture_single_phase(object):
         # t_g
         return S[u, w, i, j] + t(c, C)[u, w, i, j]
 
+    def set_params(self, params_Matrix, params_Inclusion=None):
+        self.__params_Matrix = params_Matrix
+
 
 def cli_progress_test_voigt(i, end_val, tuple, bar_length=20):
     """
@@ -1655,6 +1662,20 @@ class Fit_strain_with_texture_two_phase_material(Fit_strain_with_texture_single_
         self.__params_Inclusion = lm.Parameters()
         self.add_params(self.__params_Inclusion, self.__sym_Inclusion)
 
+
+'''
+This clas inherits from "Fit_strain_with_texture_single_phase" class and makes nice plots
+as input it is nessessary to define the single krystal elastic constants
+'''
+
+class make_some_nice_plots(Fit_strain_with_texture_single_phase):
+    def __init__(self, odf_Matrix, odf_Inclusion, force, diameter):
+        Fit_strain_with_texture_single_phase.__init__(self, odf_Matrix=odf_Matrix, force=force, diameter=diameter,
+                                                      strains_data=None, xvals=None, weights=None)
+        params=self.insert_constant_params()
+
+    def insert_constant_params(self):
+        gui.gui("Instert the elastic constants")
 
 '''
 Odf classdefinition

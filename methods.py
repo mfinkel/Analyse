@@ -582,18 +582,22 @@ class Data:
 
     def Fit_the_data_with_texture(self, method, filename, number_of_datapoints = None, texture=False):
         print "Number of datapoints: ", len(self.__epsilon_list), method
-        fit = Modells.Fit_strain_with_texture_single_phase(odf_Matrix=self.__odf,
-                                                           force=self.__sample_spezifikations["force"],
-                                                           diameter=self.__sample_spezifikations["diameter"],
-                                                           strains_data=self.__epsilon_list[0:number_of_datapoints],
-                                                           xvals=self.__phi_psi_hkl_list[0:number_of_datapoints],
-                                                           weights=self.__epsilon_weight_list[0:number_of_datapoints])
-        filename = filename + method
-        for i in range(len(self.__epsilon_list)):
-            print "phi, psi, hkl: ", self.__phi_psi_hkl_list[i], " eps: ", self.__epsilon_list[i], \
-                  " Weight: ", self.__epsilon_weight_list[i]
-        fit.do_the_fitting_self_consistent_sigma_and_el_const(filename=filename, material="Iron", method=method, texture=texture)
+        # fit = Modells.Fit_strain_with_texture_single_phase(odf_Matrix=self.__odf,
+        #                                                    force=self.__sample_spezifikations["force"],
+        #                                                    diameter=self.__sample_spezifikations["diameter"],
+        #                                                    strains_data=self.__epsilon_list[0:number_of_datapoints],
+        #                                                    xvals=self.__phi_psi_hkl_list[0:number_of_datapoints],
+        #                                                    weights=self.__epsilon_weight_list[0:number_of_datapoints])
+        # filename = filename + method
+        # for i in range(len(self.__epsilon_list)):
+        #     print "phi, psi, hkl: ", self.__phi_psi_hkl_list[i], " eps: ", self.__epsilon_list[i], \
+        #           " Weight: ", self.__epsilon_weight_list[i]
+        # fit.do_the_fitting_self_consistent_sigma_and_el_const(filename=filename, material="Iron", method=method, texture=texture)
         # fit.do_the_fitting(filename=filename, material="Iron", method=method, texture=texture)
+        plot = Modells.make_some_nice_plots(odf_Matrix=self.__odf, odf_Inclusion=None,
+                                            force=self.__sample_spezifikations["force"],
+                                            diameter=self.__sample_spezifikations["diameter"])
+
 
     """
     Read the scattering data and process it
