@@ -19,6 +19,7 @@ import itertools as IT
 import os
 import sys
 import gui
+import PyQt4.QtGui
 
 
 # import multiprocessing as multi
@@ -1675,7 +1676,11 @@ class make_some_nice_plots(Fit_strain_with_texture_single_phase):
         params=self.insert_constant_params()
 
     def insert_constant_params(self):
-        gui.gui("Instert the elastic constants")
+        app = PyQt4.QtGui.QApplication(sys.argv)
+        mygui = gui.gui("Instert the elastic constants")
+        mygui.show()
+        mygui.exit()
+        app.exec_()
 
 '''
 Odf classdefinition
