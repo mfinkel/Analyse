@@ -35,7 +35,7 @@ def linfunk(x, m, b):
     return y
 
 path_to_data  =  "..\\Daten-bearbeitet\\Stahl ST37\\"
-odf_name = "ST37_MTODF.txt"
+odf_name = "ST37_MTODF.txt"  # "AL_textur_complet.txt"
 
 Data_Iron = methods.Data(path_to_data, odf_name, 6)
 Data_Iron.read_scattering_data(path_of_unstraind_data="Euler-Scans ohne Last\\",
