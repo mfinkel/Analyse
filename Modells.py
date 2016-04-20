@@ -1358,7 +1358,7 @@ class Fit_strain_with_texture_single_phase(object):
             for n in xrange(3):
                 for o in xrange(3):
                     for p in xrange(3):
-                        res += g2[2, m] * g2[2, n] * g2[u, o] * g2[w, p] * \
+                        res += g2[i, m] * g2[j, n] * g2[u, o] * g2[w, p] * \
                                self.__complience_s_Matrix_tensor_extended[m, n, o, p]
 
         # res = np.zeros((3, 3, 3, 3))
@@ -1382,12 +1382,14 @@ class Fit_strain_with_texture_single_phase(object):
     def __voigt_inner_sum(self, phi1, phi, phi2, a, b, i, j):
         res = 0
         g = self.__odf_Matrix.g(phi1, phi, phi2).transpose()
+        g = g.tolist()
+        c_Matrix_tensor = self.__constant_c_Matrix_tensor_extended.tolist()
         for m in xrange(3):
             for n in xrange(3):
                 for o in xrange(3):
                     for p in xrange(3):
-                        res += g[a, m] * g[b, n] * g[i, o] * g[j, p] \
-                               * self.__constant_c_Matrix_tensor_extended[m, n, o, p]
+                        res += g[a][m] * g[b][n] * g[i][o] * g[j][p] \
+                               * c_Matrix_tensor[m][n][o][p]
         return res
 
     # def Queue(self, q, a, b, i, j):
@@ -1415,16 +1417,17 @@ class Fit_strain_with_texture_single_phase(object):
         # phi1, phi, phi2 = g2
         # g = self.odf_phase_1.g(phi1, phi, phi2)
         c = np.zeros((3, 3, 3, 3))  # compliance tensor g independent
+        c = c.tolist()
         cout = 0
         for a in xrange(3):
             for b in xrange(3):
                 for f in xrange(3):
                     for d in xrange(3):
                         cli_progress_test_voigt(cout, 81, (a, b, f, d))
-                        c[a, b, f, d] = self.__odf_Matrix.integrate_a_over_all_orientations_g(self.__voigt_inner_sum,
+                        c[a][b][f][d] = self.__odf_Matrix.integrate_a_over_all_orientations_g(self.__voigt_inner_sum,
                                                                                               a, b, f, d)
                         cout += 1
-
+        c = np.array(c)
         c /= self.odf_integral_over_all_angles
         s = self.invert_four_rank_c_tensor(c)
         # s = self.invert_tensor(c)
@@ -1732,7 +1735,9 @@ class make_some_nice_plots(Fit_strain_with_texture_single_phase):
         self.params_inclusion = lm.Parameters()
         params = self.insert_constant_params()
         self.print_params()
-        self.plot_F_sin_2_psi(1,1,0, 0, "reus")
+        for i in xrange(0,361,45):
+            self.plot_F_sin_2_psi(h=1, k=1, l=0, phi=deg_to_rad(i), method="reus")
+        plt.show()
 
     def recive_data(self, params_matrix, params_inclusion=None):
         self.params_matrix = params_matrix
@@ -1759,31 +1764,31 @@ class make_some_nice_plots(Fit_strain_with_texture_single_phase):
         self.set_params(params_Matrix=self.params_matrix, params_Inclusion=self.params_inclusion)
 
     def plot_F_sin_2_psi(self, h, k, l, phi, method="reus"):
-        Psi = np.arange(0, np.pi, np.pi / 100.)
+        Psi = np.arange(0, np.pi/2, np.pi / 100.)
         F_11_list = []
         F_22_list = []
-        F_21_list = []
+        F_33_list = []
         F_12_list = []
         for b in xrange(len(Psi)):
             a = Psi[b]
-            F_11_list.append(self.F(phi=phi, psi=a, h=h, k=k, l=l, i=2, j=0, method=method, use_in_fit=False))
-            # F_22_list.append(self.F(phi=phi, psi=a, h=h, k=k, l=l, i=1, j=1, method=method, use_in_fit=False))
-            # F_21_list.append(self.F(phi=phi, psi=a, h=h, k=k, l=l, i=1, j=0, method=method, use_in_fit=False))
-            # F_12_list.append(self.F(phi=phi, psi=a, h=h, k=k, l=l, i=0, j=1, method=method, use_in_fit=False))
+            F_11_list.append(self.F(phi=phi, psi=a, h=h, k=k, l=l, i=0, j=0, method=method, use_in_fit=False))
+            F_22_list.append(self.F(phi=phi, psi=a, h=h, k=k, l=l, i=1, j=1, method=method, use_in_fit=False))
+            F_33_list.append(self.F(phi=phi, psi=a, h=h, k=k, l=l, i=2, j=2, method=method, use_in_fit=False))
+            F_12_list.append(self.F(phi=phi, psi=a, h=h, k=k, l=l, i=0, j=1, method=method, use_in_fit=False))
             cli_progress_test(b, len(Psi))
         F_11_list = np.array(F_11_list) * np.power(10., 12.)
         F_22_list = np.array(F_22_list) * np.power(10., 12.)
-        F_21_list = np.array(F_21_list) * np.power(10., 12.)
+        F_33_list = np.array(F_33_list) * np.power(10., 12.)
         F_12_list = np.array(F_12_list) * np.power(10., 12.)
         print F_11_list
 
-        fig = plt.figure("f_sin^2Psi plot")
+        fig = plt.figure("f_sin^2Psi plot phi=%.1f"%(rad_to_deg(phi)))
         ax1 = fig.add_subplot(1, 1, 1)
         # ax2 = fig.add_subplot(2,1,1)
         ax1.plot(np.sin(Psi) ** 2, F_11_list, 'b-', label='F_11, hkl{}{}{}'.format(h, k, l))
-        # ax1.plot(np.sin(Psi) ** 2, F_22_list, 'r-', label='F_22, hkl{}{}{}'.format(h, k, l))
-        # ax1.plot(np.sin(Psi) ** 2, F_21_list, 'g-', label='F_21, hkl{}{}{}'.format(h, k, l))
-        # ax1.plot(np.sin(Psi) ** 2, F_12_list, 'y-', label='F_12, hkl{}{}{}'.format(h, k, l))
+        ax1.plot(np.sin(Psi) ** 2, F_22_list, 'r-', label='F_22, hkl{}{}{}'.format(h, k, l))
+        ax1.plot(np.sin(Psi) ** 2, F_33_list, 'g-', label='F_33, hkl{}{}{}'.format(h, k, l))
+        ax1.plot(np.sin(Psi) ** 2, F_12_list, 'y-', label='F_12, hkl{}{}{}'.format(h, k, l))
         # ax2.plot(np.sin(Psi) ** 2, F_11_list, 'r-', label='fit')
         ax1.set_title('F_11')
 
@@ -1791,7 +1796,7 @@ class make_some_nice_plots(Fit_strain_with_texture_single_phase):
 
         # axarr[1].scatter(x_list, av_count_l - y_)
         ax1.legend(loc='upper right', numpoints=1)
-        plt.show()
+        # plt.show()
 
 
 '''
@@ -1900,10 +1905,10 @@ class ODF(object):
         :param phi2: phi2 in deg
         :return: value of the ODF at (phi1, Phi, phi2)
         """
-        phi1 = phi1 / self.__stepwidth
-        phi = phi / self.__stepwidth
-        phi2 = phi2 / self.__stepwidth
-        res = self.__ODF_data[phi2, phi, phi1]
+        phi1 = int(phi1 / self.__stepwidth)
+        phi = int(phi / self.__stepwidth)
+        phi2 = int(phi2 / self.__stepwidth)
+        res = self.__ODF_data[phi2][phi][phi1]
         return res
 
     @staticmethod
@@ -2420,7 +2425,7 @@ class ODF(object):
             # self.__ODF_data = data_phi2
             print self.__ODF_data
             np.save(self.__path_to_data + 'ODF_data_' + self.name, self.__ODF_data)
-
+        self.__ODF_data = self.__ODF_data.tolist()
         t2 = tm.clock()
         dt = t2 - t1
         print "Time necessary for conversion: ", dt, "sec."

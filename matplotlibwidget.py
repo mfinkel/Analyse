@@ -155,7 +155,7 @@ class Preview(QtGui.QWidget):
         self.vmaxSpinBox.valueChanged.connect(self.choose_img)
         ax = self.figure.add_subplot(111)
 
-        # set the layout
+        # set the layout1
         layout = QtGui.QVBoxLayout()
         layout2 = QtGui.QHBoxLayout()
         layout3 = QtGui.QHBoxLayout()
@@ -538,7 +538,7 @@ class Filter_Preview(QtGui.QWidget):
         ax2 = self.figure.add_subplot(222)
         ax3 = self.figure.add_subplot(223)
 
-        # set the layout
+        # set the layout1
         layout = QtGui.QVBoxLayout()
         layout2 = QtGui.QHBoxLayout()
         layout3 = QtGui.QHBoxLayout()

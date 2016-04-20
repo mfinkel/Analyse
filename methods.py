@@ -14,6 +14,7 @@ import Modells
 import Plot_coordsys as cplot
 import matplotlibwidget
 from glob import glob
+import os
 
 
 def get_index(l, value):
@@ -510,7 +511,11 @@ class one_HKL:
 
 
 class Data:
-    def __init__(self, path, odf_name, diameter):
+    def __init__(self, odf_path, diameter):
+        self.__path_of_odf = odf_path
+        self.__path_of_odf = os.path.normpath(self.__path_of_odf)
+        path, odf_name = os.path.split(self.__path_of_odf)
+        path = path + "\\"
         self.__hkl_object_list = []
         self.__path_to_data = path
         self.__odf = Modells.ODF()
@@ -603,21 +608,23 @@ class Data:
     Read the scattering data and process it
     """
 
-    def read_scattering_data(self, path_of_straind_data, path_of_unstraind_data):
+    def read_scattering_data(self, path_of_straind_data, path_of_unstraind_data, automate=True):
         '''
         :param path_of_straind_data: (e.g. 'Euler-Scans unter 5kN\\')
         :param path_of_unstraind_data: (e.g. 'Euler-Scans ohne Last\\')
         :return: void
         '''
-        unstraind = self.__path_to_data + path_of_unstraind_data + "*.eth"
-        straind = self.__path_to_data + path_of_straind_data + "*.eth"
+        unstraind = path_of_unstraind_data + "*.eth"  # self.__path_to_data +
+        straind = path_of_straind_data + "*.eth"  # self.__path_to_data +
         filelist_unstraind = glob(unstraind)
         filelist_straind = glob(straind)
         filelist_unstraind.sort()
         filelist_straind.sort()
+
         unstraind_data_object_list = self.__creat_data_object_list(filelist_unstraind)
         straind_data_object_list = self.__creat_data_object_list(filelist_straind)
-        self.__select_peaks(unstraind_data_object_list, straind_data_object_list)
+
+        self.__select_peaks(unstraind_data_object_list, straind_data_object_list, automate=automate)
         self.__hkl_object_list = self.__create_hkl_object_list(unstraind_data_object_list, straind_data_object_list)
         # self.__create_epsilon_list()
 
@@ -628,7 +635,7 @@ class Data:
             list.append(dataset(i))
         return list
 
-    def __select_peaks(self, unstraind, straind):
+    def __select_peaks(self, unstraind, straind, automate=True):
         '''
         -------------------------------------------------------------------------------------------
         select the peaks and calculate 2Theta
@@ -647,9 +654,19 @@ class Data:
         # hkl_setting 5 peaks [[1.0, 1.0, 0.0, 852, 904], [2.0, 0.0, 0.0, 1260, 1314], [2.0, 1.0, 1.0, 1600, 1676], [2.0, 2.0, 0.0, 1926, 2020], [3.0, 1.0, 0.0, 2266, 2380]]
         hkl_setting = [[1.0, 1.0, 0.0, 852, 904], [2.0, 0.0, 0.0, 1260, 1314], [2.0, 1.0, 1.0, 1600, 1676],
                        [2.0, 2.0, 0.0, 1926, 2020], [3.0, 1.0, 0.0, 2266, 2380]]
+
         print hkl_setting
         # do it manually:
-        # hkl_setting = unstraind[0].select_hkl(auto=False, rang=[])
+
+        if not automate:
+            hkl_setting = unstraind[0].select_hkl(auto=False, rang=[])
+            hkl_setting_np_array = np.array(hkl_setting)
+            np.save(".\\hkl_setting", hkl_setting_np_array)
+        else:
+            try:
+                hkl_setting = np.load(".\\hkl_setting.npy")
+            except IOError:
+                hkl_setting = unstraind[0].select_hkl(auto=False, rang=[])
 
         # do it for the rest automatically:
         for i in xrange(0, len(unstraind)):

@@ -28,21 +28,27 @@ import methods
 #import DataCursor
 #import lgs
 import Fittingtools
+import gui
 
+if __name__=="__main__":
+    gui.main()
 
+quit()
 def linfunk(x, m, b):
     y = m*x+b
     return y
 
+
+
 path_to_data  =  "..\\Daten-bearbeitet\\Stahl ST37\\"
 odf_name = "ST37_MTODF.txt"  # "AL_textur_complet.txt"
 
-Data_Iron = methods.Data(path_to_data, odf_name, 6)
+Data_Iron = methods.Data(path_to_data+odf_name, 6)
 Data_Iron.read_scattering_data(path_of_unstraind_data="Euler-Scans ohne Last\\",
                                path_of_straind_data="Euler-Scans unter 5kN\\")
 modi = ["reus", "voigt", "hill", "eshelby"]
 # for i in modi:
-Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=modi[0], number_of_datapoints=None, texture=True)
+Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=modi[2], number_of_datapoints=None, texture=False)
 # Data_Iron.plot_odf()
 # Data_Iron.integral_over_total_odf
 # Data_Iron.calc__deltavals()
