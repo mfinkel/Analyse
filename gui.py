@@ -18,6 +18,7 @@ from matplotlib.backends.backend_qt4agg import (
     NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.backends import qt4_compat
 import matplotlibwidget
+
 use_pyside = qt4_compat.QT_API == qt4_compat.QT_API_PYSIDE
 
 if use_pyside:
@@ -27,6 +28,7 @@ else:
     from PyQt4.QtCore import *
     from PyQt4.QtGui import *
 import methods
+
 
 class insert_const_widget(QWidget):
     def __init__(self, name, params, sym, *args):
@@ -238,7 +240,7 @@ class gui(QMainWindow):
         self.connect_csym_matrix()
 
         self.odf_button = QPushButton("insert ODF", self)
-        self.odf_button.move(20,150)
+        self.odf_button.move(20, 150)
         self.textbox_odf = self.create_text_output(self, "odf path", 140, 150, 300, 30)
         self.odf_button.clicked.connect(self.open_odf_file)
 
@@ -259,14 +261,12 @@ class gui(QMainWindow):
 
         self.widget1.connect(self, SIGNAL("Matrix"), self.set_matrix_params)
 
-        #Send Data outside
+        # Send Data outside
         self.button = QPushButton("send Data", self)
         self.button.move(80, 100)
         self.text = self.create_text_output(self, "hallo", 200, 100, 100, 30)
         self.button.clicked.connect(self.set_text)
         self.button.clicked.connect(self.send_data)
-
-
 
     def open_odf_file(self):
         filename = QFileDialog.getOpenFileName(self, 'Open ODF File', '/')
@@ -341,7 +341,6 @@ class Main(QMainWindow):
         self.create_main_enviroment()
         # self.add_buton()
 
-
     def create_main_frame(self):
         self.main_frame = QWidget()
 
@@ -377,13 +376,10 @@ class Main(QMainWindow):
         # self.setLayout(self.layout)
         self.setWindowTitle("Fitting elastic constants")
 
-
-
     def add_buton(self):
         # self.button1 = QPushButton("hallo", self.centralWidget)
         # self.centralWidget.layout.addWidget(self.button1)
         pass
-
 
     def get_data2(self):
         return np.arange(20).reshape([4, 5]).copy()
@@ -399,12 +395,14 @@ class Main(QMainWindow):
     def on_key_press(self, event):
         key_press_handler(event, self.canvas, self.mpl_toolbar)
 
+
 class CentralWidget(QWidget):
     def __init__(self, parent):
         QWidget.__init__(self, parent=parent)
 
         self.ok_button = QPushButton("OK")
         self.cancel_button = QPushButton("Cancel")
+        self.hkl_setting = []
 
         button2 = QPushButton("b1")
         button3 = QPushButton("b2")
@@ -414,9 +412,9 @@ class CentralWidget(QWidget):
         self.unstraind_button = QPushButton("select unstraind")
 
         # self.path_to_data = QTextEdit()
-        self.odf_path = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\"+"ST37_MTODF.txt")  # "AL_textur_complet.txt"
-        self.path_of_unstraind_data = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\"+"Euler-Scans ohne Last\\")
-        self.path_of_straind_data = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\"+"Euler-Scans unter 5kN\\")
+        self.odf_path = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "ST37_MTODF.txt")  # "AL_textur_complet.txt"
+        self.path_of_unstraind_data = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans ohne Last\\")
+        self.path_of_straind_data = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans unter 5kN\\")
 
         self.select_odf = QLabel("select odf:")
         self.select_unstraind = QLabel("select unstraind data:")
@@ -426,16 +424,19 @@ class CentralWidget(QWidget):
         self.odf_button.clicked.connect(self.select_ODF_func)
         self.unstraind_button.clicked.connect(self.select_unstraind_func)
         self.straind_button.clicked.connect(self.select_straind_func)
-        self.figure = plt.figure()
+        # self.figure = plt.figure()
 
         # this is the Canvas Widget that displays the `diffractogram`
         # it takes the `figure` instance as a parameter to __init__
-        self.canvas = FigureCanvas(self.figure)
+        # self.canvas = FigureCanvas(self.figure)
 
         # this is the Navigation widget
         # it takes the Canvas widget and a parent
-        self.toolbar = NavigationToolbar(self.canvas, self)
-        self.toolbar.addWidget(button3)
+        # self.toolbar = NavigationToolbar(self.canvas, self)
+        # self.toolbar.addWidget(button3)
+
+        self.central_plot = matplotlibwidget.Preview("Select_Data")
+        self.connect(self.central_plot, SIGNAL("hkl_setting"), self.set_hkl_setting_and_fit_the_peaks)
 
         # handel the fitting process
         self.modi = self.create_modi_comb_box()
@@ -447,22 +448,15 @@ class CentralWidget(QWidget):
         self.load_data_button = QPushButton('load Data')
         self.do_the_fit_button = QPushButton('fitting Data')
 
-        self.load_data_button.clicked.connect(self.read_scatering_Data)
+        self.load_data_button.clicked.connect(self.read_scatering_SPODI_Data)
         self.do_the_fit_button.clicked.connect(self.fit_the_data)
-
-        # Data_Iron.plot_odf()
-        # Data_Iron.integral_over_total_odf
-        # Data_Iron.calc__deltavals()
-
-
-
+        self.connect(self, SIGNAL("data"), self.central_plot.add_data)
 
         self.layout_handling()
 
-
-    def read_scatering_Data(self):
+    def read_scatering_SPODI_Data(self):
         Bool = False
-        if self.automate_text.currentText()=="Yes":
+        if self.automate_text.currentText() == "Yes":
             Bool = True
 
         print(self.path_of_straind_data.text(), "\n",
@@ -471,24 +465,38 @@ class CentralWidget(QWidget):
               Bool)
 
         self.Data_Iron = methods.Data(str(self.odf_path.text()), 6)
-        self.Data_Iron.read_scattering_data(path_of_unstraind_data=str(self.path_of_unstraind_data.text()),
-                                            path_of_straind_data=str(self.path_of_straind_data.text()),
-                                            automate=Bool)
+        self.Data_Iron.read_scattering_SPODI_data(path_of_unstraind_data=str(self.path_of_unstraind_data.text()),
+                                                  path_of_straind_data=str(self.path_of_straind_data.text()))
+        if Bool:
+            self.select_hkl_SPODI_Data()
+        else:
+            self.Data_Iron.fit_all_peaks()
+
+    def select_hkl_SPODI_Data(self):
+        x_data = self.Data_Iron.unstraind_data_object_list[0].data[0]
+        y_data = self.Data_Iron.unstraind_data_object_list[0].data[1]
+        self.central_plot.add_xy_data(x_data, y_data)
+        self.update()
+        self.central_plot.update()
+
+    def set_hkl_setting_and_fit_the_peaks(self, value):
+        self.hkl_setting = value
+        self.Data_Iron.set_hkl_setting(self.hkl_setting)
+        self.Data_Iron.fit_all_peaks()
+        print("coming from other class:", "\n", self.hkl_setting)
 
     def fit_the_data(self):
-        Bool =True
+        Bool = False
         if self.text_jn.currentText() == "Yes":
-            Bool = False
+            Bool = True
         print(self.modi.currentText(), "\n",
               Bool)
         try:
             self.Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=str(self.modi.currentText()),
-                                                 number_of_datapoints=None, texture=Bool)
+                                                     number_of_datapoints=None, texture=Bool)
         except AttributeError:
-            self.read_scatering_Data()
+            self.read_scatering_SPODI_Data()
             self.fit_the_data()
-            # self.Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=self.modi.currentText(),
-            #                                      number_of_datapoints=None, texture=Bool)
 
     def layout_handling(self):
         # Layout handling
@@ -499,9 +507,9 @@ class CentralWidget(QWidget):
         self.layout_unstraind_data = QHBoxLayout()
         self.layout_fitting = QHBoxLayout()
 
-        self.layout.addWidget(self.toolbar)
-        self.layout.addWidget(self.canvas)
-
+        # self.layout.addWidget(self.toolbar)
+        # self.layout.addWidget(self.canvas)
+        self.layout.addWidget(self.central_plot)
         self.layout1.addStretch(1)
         self.layout1.addWidget(self.ok_button)
         self.layout1.addWidget(self.cancel_button)
@@ -538,7 +546,6 @@ class CentralWidget(QWidget):
 
         self.layout.addLayout(self.layout1)
 
-
         self.setLayout(self.layout)
 
     @staticmethod
@@ -566,13 +573,13 @@ class CentralWidget(QWidget):
     def select_unstraind_func(self):
         filename = QFileDialog.getExistingDirectory(self, 'Open unstraind data', '/')  # (self, 'Open ODF File', '/')
         filename = os.path.normpath(str(filename))
-        self.path_of_unstraind_data.setText(filename+"\\")
+        self.path_of_unstraind_data.setText(filename + "\\")
         print(self.path_of_unstraind_data.text())
 
     def select_straind_func(self):
         filename = QFileDialog.getExistingDirectory(self, 'Open straind data', '/')  # (self, 'Open ODF File', '/')
         filename = os.path.normpath(str(filename))
-        self.path_of_straind_data.setText(filename+"\\")
+        self.path_of_straind_data.setText(filename + "\\")
         print(self.path_of_straind_data.text())
 
 

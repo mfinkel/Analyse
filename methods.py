@@ -15,6 +15,9 @@ import Plot_coordsys as cplot
 import matplotlibwidget
 from glob import glob
 import os
+from PyQt4 import QtCore, QtGui
+import sys
+import gui
 
 
 def get_index(l, value):
@@ -41,7 +44,7 @@ class dataset:
         self.Omega = self.parseFilename()[1]
         self.Chi = self.parseFilename()[2]
         self.data = self.readData()
-        self.hkl_TTheta = np.zeros((3, 4))  # [[h, k, l, TTheta], ...]
+        self.hkl_TTheta = np.zeros((3, 5))  # [[h, k, l, TTheta, TTheta_err], ...]
 
     def parseFilename(self):
         '''
@@ -103,7 +106,7 @@ class dataset:
             except (ValueError):
                 print "type in only int Values"
 
-    def select_hkl(self, auto=False, rang=[]):
+    def select_hkl(self, select_hkl_token=False, rang=[]):
         '''
             With this function the different peaks can be choosen and fittet.
             After all, the h,k,l and the coresponding 2Theta values are stored
@@ -113,70 +116,91 @@ class dataset:
             h,k,l. The first loop is to do this for all peaks you want.
         '''
         number_o_peaks = 0
-        if auto == False:
-            number_o_peaks = self.select_peaks()
-        elif auto == True:
-            number_o_peaks = len(rang)
+        # if select_hkl_token == True:
+        #     number_o_peaks = self.select_peaks()
+        # elif select_hkl_token == False:
+        #     number_o_peaks = len(rang)
 
         self.hkl_TTheta = np.zeros((number_o_peaks, 5))
         # print self.hkl_TTheta
         j = 0
+        # print select_hkl_token, type(Widget)
+        # Widget.central_plot.add_xy_data(data_x=self.data[0], data_y=self.data[1])
+        # Widget.update()
+        #
+        # rang = Widget.hkl_setting
+        # self.emit(QtCore.SIGNAL("data"), gui.gui.centralWidget)
+        print "hallo das war zu schnell"
+
+
         while (j < number_o_peaks):
-            if auto == False:
+            if select_hkl_token == True:
                 print "%d. peak" % j
             beg = 0
             end = 10
             i = 0
             x = 0
             y = 10
-            if auto == False:
+
+            if select_hkl_token == True:
+
+                # app = Main.app
+                # QtCore.emit
+                # myapp = matplotlibwidget.Preview('Diffraktogram')
+                # myapp.add_xy_data(self.data[0], self.data[1])
+                # myapp.show()
+                # myapp.exit()
+
+                # sys.exit(app.exec_())
+
+                """
+                fig=plt.Widget()
+                fig_sub=fig.add_subplot(111)
+                fig_sub.plot(self.data[0], self.data[1], "b.")
+                roi_create = matplotlibwidget.ROI(fig_sub)
+                plt.show()
+                roi_x0, roi_x1, roi_y0, roi_y1=roi_create._exit()
+                print roi_x0
+                """
+
                 while i < 2:
-                    fig = plt.figure(re.split(r'\\', self.filename)[-1])
-                    ax = fig.add_subplot(111)
-                    ax.plot(self.data[0], self.data[1], 'b.', label='roh-Data')
-                    ax.plot(self.data[0][x:y], self.data[1][x:y], 'r-', label='roh-Data')
-                    print "beg: ", beg, "end: ", end
-                    cursor = DataCursor.DataCursor(ax)
-                    plt.show()
-                    print "select the range of the %d. peak" % j
-                    beg = input("begin: ")
-                    end = input("end:  ")
-                    x = get_index(self.data[0], beg)
-                    y = get_index(self.data[0], end)
+                    x_data = self.data[0]
+                    y_data = self.data[1]
+
+                    # fig = plt.Widget(re.split(r'\\', self.filename)[-1])
+                    # ax = fig.add_subplot(111)
+                    # ax.plot(self.data[0], self.data[1], 'b.', label='roh-Data')
+                    # ax.plot(self.data[0][x:y], self.data[1][x:y], 'r-', label='roh-Data')
+                    # print "beg: ", beg, "end: ", end
+                    # cursor = DataCursor.DataCursor(ax)
+                    # plt.show()
+                    # print "select the range of the %d. peak" % j
+                    # beg = input("begin: ")
+                    # end = input("end:  ")
+                    # x = get_index(self.data[0], beg)
+                    # y = get_index(self.data[0], end)
                     i = i + 1
                 print "type in the millerindices of the %d. peak" % j
-                self.hkl_TTheta[j][0] = input("h: ")  # select the millerindizes
-                self.hkl_TTheta[j][1] = input("k: ")
-                self.hkl_TTheta[j][2] = input("l: ")
-                rang.append([self.hkl_TTheta[j][0], self.hkl_TTheta[j][1], self.hkl_TTheta[j][2], x, y])
-            elif auto == True:
-                self.hkl_TTheta[j][0] = rang[j][0]
-                self.hkl_TTheta[j][1] = rang[j][1]
-                self.hkl_TTheta[j][2] = rang[j][2]
-                x = rang[j][3]
-                y = rang[j][4]
+                h = input("h: ")  # select the millerindizes
+                k = input("k: ")
+                l = input("l: ")
+                rang.append([h, k, l, x, y])
+
+        return rang
+
+    def fit_the_peaks(self, peak_regions):
+        self.hkl_TTheta = np.zeros((len(peak_regions), 5))
+        for j in xrange(len(peak_regions)):
+            self.hkl_TTheta[j][0] = peak_regions[j][0]
+            self.hkl_TTheta[j][1] = peak_regions[j][1]
+            self.hkl_TTheta[j][2] = peak_regions[j][2]
+            x = int(peak_regions[j][3])
+            y = int(peak_regions[j][4])
             dax = self.data[0][x:y]
             day = self.data[1][x:y]
             gauss = Fittingtools.gauss_lin_fitting_2(dax, day, plot=False)
-            # print "courffit: ", gauss
-            # Fittingtools.gauss_lin_fitting_2(dax, day)
-            # print "\n\n"
-            # if max(day)<150.:
-            #    self.hkl_TTheta[j][3]='nan'
-
-            # else:
-            # gauss = Fittingtools.gauss_lin_fitting(dax, day)
-
-            # print Fittingtools.gauss_fit(dax, day)
             self.hkl_TTheta[j][3] = gauss[0]
             self.hkl_TTheta[j][4] = gauss[1]
-
-            # print 'Theta: ', gauss[0],' ',self.hkl_TTheta[j][3]
-            #  print "gauss", gauss
-            j = j + 1
-        # print self.hkl_TTheta
-        if not auto:
-            return rang
 
     # def calc_dTheta(self, latice_param, wavelength, h, k, l):
     #     '''
@@ -520,8 +544,14 @@ class Data:
         self.__path_to_data = path
         self.__odf = Modells.ODF()
         self.__set_odf(odf_name)
+
+        self.hkl_setting = [[1.0, 1.0, 0.0, 852, 904], [2.0, 0.0, 0.0, 1260, 1314], [2.0, 1.0, 1.0, 1600, 1676],
+                            [2.0, 2.0, 0.0, 1926, 2020], [3.0, 1.0, 0.0, 2266, 2380]]
+        # default value
         self.__sample_spezifikations = {"diameter": diameter}
-        self.__crystal_sym = {"cubic": "cubic"}
+        # self.__crystal_sym = {"cubic": "cubic"}
+
+        # Data of the measurment
         self.__epsilon_list = []
         self.__epsilon_weight_list = []
         self.__phi_psi_hkl_list = []  # hkl, phi, psi
@@ -599,16 +629,16 @@ class Data:
         #           " Weight: ", self.__epsilon_weight_list[i]
         # fit.do_the_fitting_self_consistent_sigma_and_el_const(filename=filename, material="Iron", method=method, texture=texture)
         fit.do_the_fitting(filename=filename, material="Iron", method=method, texture=texture)  # texture
-        plot = Modells.make_some_nice_plots(odf_Matrix=self.__odf, odf_Inclusion=None,
-                                            force=self.__sample_spezifikations["force"],
-                                            diameter=self.__sample_spezifikations["diameter"])
+        # plot = Modells.make_some_nice_plots(odf_Matrix=self.__odf, odf_Inclusion=None,
+        #                                     force=self.__sample_spezifikations["force"],
+        #                                     diameter=self.__sample_spezifikations["diameter"])
 
 
     """
     Read the scattering data and process it
     """
 
-    def read_scattering_data(self, path_of_straind_data, path_of_unstraind_data, automate=True):
+    def read_scattering_SPODI_data(self, path_of_straind_data, path_of_unstraind_data):
         '''
         :param path_of_straind_data: (e.g. 'Euler-Scans unter 5kN\\')
         :param path_of_unstraind_data: (e.g. 'Euler-Scans ohne Last\\')
@@ -621,12 +651,14 @@ class Data:
         filelist_unstraind.sort()
         filelist_straind.sort()
 
-        unstraind_data_object_list = self.__creat_data_object_list(filelist_unstraind)
-        straind_data_object_list = self.__creat_data_object_list(filelist_straind)
+        self.unstraind_data_object_list = self.__creat_data_object_list(filelist_unstraind)
+        self.straind_data_object_list = self.__creat_data_object_list(filelist_straind)
 
-        self.__select_peaks(unstraind_data_object_list, straind_data_object_list, automate=automate)
-        self.__hkl_object_list = self.__create_hkl_object_list(unstraind_data_object_list, straind_data_object_list)
+        # self.select_peaks(self.unstraind_data_object_list)
+        # self.fit_all_peaks()
+        # self.__hkl_object_list = self.__create_hkl_object_list(self.unstraind_data_object_list, self.straind_data_object_list)
         # self.__create_epsilon_list()
+
 
     def __creat_data_object_list(self, filelist):
         # list of dataset-objekts
@@ -635,7 +667,7 @@ class Data:
             list.append(dataset(i))
         return list
 
-    def __select_peaks(self, unstraind, straind, automate=True):
+    def select_peaks(self, unstraind):
         '''
         -------------------------------------------------------------------------------------------
         select the peaks and calculate 2Theta
@@ -657,21 +689,30 @@ class Data:
 
         print hkl_setting
         # do it manually:
+        self.hkl_setting = unstraind[0].select_hkl(rang=[])
 
-        if not automate:
-            hkl_setting = unstraind[0].select_hkl(auto=False, rang=[])
-            hkl_setting_np_array = np.array(hkl_setting)
-            np.save(".\\hkl_setting", hkl_setting_np_array)
-        else:
-            try:
-                hkl_setting = np.load(".\\hkl_setting.npy")
-            except IOError:
-                hkl_setting = unstraind[0].select_hkl(auto=False, rang=[])
+        hkl_setting_np_array = np.array(self.hkl_setting)
+        np.save(".\\hkl_setting", hkl_setting_np_array)
 
+    def set_hkl_setting(self, hkl_setting):
+        self.hkl_setting = hkl_setting
+        hkl_setting_np_array = np.array(self.hkl_setting)
+        np.save(".\\hkl_setting", hkl_setting_np_array)
+
+
+
+    def fit_all_peaks(self):
         # do it for the rest automatically:
-        for i in xrange(0, len(unstraind)):
-            unstraind[i].select_hkl(auto=True, rang=hkl_setting)
-            straind[i].select_hkl(auto=True, rang=hkl_setting)
+        try:
+            self.hkl_setting = np.load(".\\hkl_setting.npy")
+        except IOError:
+           print "using default hkl_list"
+        print self.hkl_setting
+
+        for i in xrange(0, len(self.unstraind_data_object_list)):
+            self.unstraind_data_object_list[i].fit_the_peaks(peak_regions=self.hkl_setting)
+            self.straind_data_object_list[i].fit_the_peaks(peak_regions=self.hkl_setting)
+        self.__hkl_object_list = self.__create_hkl_object_list(self.unstraind_data_object_list, self.straind_data_object_list)
 
     def __create_hkl_object_list(self, unstraind_data_object_list, straind_data_object_list):
         '''
@@ -721,10 +762,10 @@ class Data:
 
             HKL_object_list += a
 
-        print HKL_object_list
+        # print HKL_object_list
 
         for i in HKL_object_list:
-            if i.chi != 90 :  # fragwürdigand abs(i.d_epsilon/3)>abs(i.d_epsilon_weight)
+            if i.chi != 90:  # fragwürdigand abs(i.d_epsilon/3)>abs(i.d_epsilon_weight)
                 self.__epsilon_list.append(i.d_epsilon)
                 self.__epsilon_weight_list.append(i.d_epsilon_weight)
                 self.__phi_psi_hkl_list.append([i.PHI, i.psi, i.h, i.k, i.l])

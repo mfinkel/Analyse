@@ -44,8 +44,8 @@ path_to_data  =  "..\\Daten-bearbeitet\\Stahl ST37\\"
 odf_name = "ST37_MTODF.txt"  # "AL_textur_complet.txt"
 
 Data_Iron = methods.Data(path_to_data+odf_name, 6)
-Data_Iron.read_scattering_data(path_of_unstraind_data="Euler-Scans ohne Last\\",
-                               path_of_straind_data="Euler-Scans unter 5kN\\")
+Data_Iron.read_scattering_SPODI_data(path_of_unstraind_data="Euler-Scans ohne Last\\",
+                                     path_of_straind_data="Euler-Scans unter 5kN\\")
 modi = ["reus", "voigt", "hill", "eshelby"]
 # for i in modi:
 Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=modi[2], number_of_datapoints=None, texture=False)
@@ -111,8 +111,8 @@ hkl_setting = [[1.0, 1.0, 0.0, 852, 904], [2.0, 0.0, 0.0, 1260, 1314], [2.0, 1.0
 print hkl_setting
 #do it for the rest automaticaly
 for i in xrange(0,len(unstraind)):
-    unstraind[i].select_hkl(auto=True, rang=hkl_setting)
-    straind[i].select_hkl(auto=True, rang=hkl_setting)
+    unstraind[i].select_hkl(select_hkl_token=True, rang=hkl_setting)
+    straind[i].select_hkl(select_hkl_token=True, rang=hkl_setting)
 
 print unstraind[0].hkl_TTheta
 print straind[0].hkl_TTheta
