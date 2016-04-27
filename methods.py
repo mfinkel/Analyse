@@ -536,9 +536,9 @@ class one_HKL:
 
 class Data:
     def __init__(self, odf_path, diameter):
-        self.__path_of_odf = odf_path
-        self.__path_of_odf = os.path.normpath(self.__path_of_odf)
-        path, odf_name = os.path.split(self.__path_of_odf)
+        self.__path_of_odf_phase_1 = odf_path
+        self.__path_of_odf_phase_1 = os.path.normpath(self.__path_of_odf_phase_1)
+        path, odf_name = os.path.split(self.__path_of_odf_phase_1)
         path = path + "\\"
         self.__hkl_object_list = []
         self.__path_to_data = path

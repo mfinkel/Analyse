@@ -1821,19 +1821,6 @@ class ODF(object):
         self.__params = {"psi": 0, "phi": 0, "phi_2": deg_to_rad(0), 'phi_b': 0, 'betha_b': 0,
                          'phi2_': 0}  # "phi_2": deg_to_rad(-90)
 
-        # Tensors of the phase a (not the Matrix)
-        # Single crystal constants
-        # self.__single_crystal_constants_s_0_a = np.zeros((3, 3, 3, 3))
-        # self.__single_crystal_compliance_c_0_a = np.zeros((3, 3, 3, 3))
-
-        # Tensors of the phase b (the Matrix)
-        # Single crystal constants
-        # self.__single_crystal_constants_s_0_b = np.zeros((3,3,3,3))
-        # self.__single_crystal_compliance_c_0_b = np.zeros((3,3,3,3))
-        # isotropic constants of the Matirx calculated in a selfconsistent way by the eschelby model
-        # self.__complinace_of_matrix_C_b = np.zeros((3,3,3,3))
-        # self.__conatants_of_matrix_S_b = np.zeros((3,3,3,3))
-
     def read_data(self, path, filename):
         """
         This Function reads the data stored in filename
