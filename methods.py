@@ -534,7 +534,7 @@ class one_HKL:
         return self.sigma * np.cos(self.psi) ** 2
 
 
-class Data:
+class Data_old:
     def __init__(self, odf_path, diameter):
         self.__path_of_odf_phase_1 = odf_path
         self.__path_of_odf_phase_1 = os.path.normpath(self.__path_of_odf_phase_1)

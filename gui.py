@@ -478,7 +478,7 @@ class CentralWidget(QWidget):
               self.odf_phase_1_path.text(), "\n",
               Bool)
 
-        self.Data_Iron = methods.Data(str(self.odf_phase_1_path.text()), 6)
+        self.Data_Iron = methods.Data_old(str(self.odf_phase_1_path.text()), 6)
         self.Data_Iron.read_scattering_SPODI_data(path_of_unstraind_data=str(self.path_of_unstraind_data.text()),
                                                   path_of_straind_data=str(self.path_of_straind_data_1.text()))
 

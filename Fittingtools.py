@@ -124,17 +124,22 @@ def gauss_lin_fitting(x_list, av_count_l, plot=False):
     # print 'Theta: ',p_final[1], ' ', res[0]
     return res
 
-def gauss_lin_fitting_2(x_list, av_count_l, plot=False):
+def gauss_lin_fitting_2(x_list, av_count_l, weights=None, plot=False):
+    """
+    fitting one peak with a psoido voigt function
+    :param x_list:
+    :param av_count_l:
+    :param weights:
+    :param plot:
+    :return:
+    """
     mod = PseudoVoigtModel()
     p_guess = guesspara(x_list, av_count_l)
     pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2])
-    weights = []
-    for i in av_count_l:
-        weights.append(1/np.sqrt(i))  #
+
     out = mod.fit(av_count_l, pars, x=x_list, weights=weights)  #
     y_ = out.best_fit
-    res = 0
-    n = len(x_list)
+
     if max(av_count_l) < 150. or max(av_count_l - y_) / max(av_count_l) > 0.2:
         res = ['nan', 'nan']
     else:
