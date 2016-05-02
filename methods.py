@@ -753,7 +753,7 @@ class Data_old:
                 if math.isnan(TTheta_0) or math.isnan(TTheta):
                     pass
                 else:
-                    b = one_HKL(h, k, l, TTheta_0,TTheta_0_weight, TTheta,TTheta_weight, chi, chi_, Omega, phi, sigma,
+                    b = one_HKL(h, k, l, TTheta_0, TTheta_0_weight, TTheta,TTheta_weight, chi, chi_, Omega, phi, sigma,
                                 lam)
                     if math.isnan(b.psi) != True and math.isnan(b.PHI) != True:
                         print  "%i%i%i\tTheta: %.3f\tchi: %.0f\tomega: %.0f\tPsi: %.3f\tPhi: %.3f"% \

@@ -158,6 +158,112 @@ class SPODIData(Data):
                 force_dic[j] = help_list  # [[phase, force, omega, chi, h, k, l, 2theta, 2theta_error], ...]
             self.data_dic_phases[phase] = force_dic
 
+            # calculate phi and psi
+
+    def calc_phi_and_psi(self):
+        for i in self.data_dic_phases:  # loop over all phases, i is the key of the dic
+            for j in self.data_dic_phases[i]:  # loop over all forces, j is the key of the force dic
+                for n in self.data_dic_phases[i][j]:  # loop over all data
+                    phase, force, omega, chi, hkl_2_theta = n
+                    h, k, l, two_theta, two_theta_error = hkl_2_theta
+                    
+    @staticmethod
+    def transformation_L_from_I_to_P(chi, omega):
+        """
+           define transformation from lab.frame I to specimen frame P
+           acording to Graesslin
+        """
+        chi = deg_to_rad(chi)
+        omega = -deg_to_rad(omega)
+        phi = 0
+
+        # rot around z_L'
+        O = np.array([[np.cos(phi), np.sin(phi), 0.],
+                      [-np.sin(phi), np.cos(phi), 0.],
+                      [0., 0., 1.]
+                      ]
+                     )
+        # rotation around y_L' axis (lefthanded if chi<0)
+        X = np.array([[np.cos(chi), 0., -np.sin(chi)],
+                      [0., 1., 0.],
+                      [np.sin(chi), 0., np.cos(chi)]
+                      ]
+                     )
+        # rot around z_L
+        W = np.array([[np.cos(omega), np.sin(omega), 0.],
+                      [-np.sin(omega), np.cos(omega), 0.],
+                      [0., 0., 1.]
+                      ]
+                     )
+        res = W.dot(X.dot(O))
+        # res = O.dot(X.dot(W))
+        # L_1 = np.dot(res, np.array([[1], [0], [0]]))
+        # L_2 = np.dot(res, np.array([[0], [1], [0]]))
+        # L_3 = np.dot(res, np.array([[0], [0], [1]]))
+        # titel = "chi: {}, omega: {}, phi: {}".format(r_t_d(chi), r_t_d(omega), r_t_d(phi))
+        # cplot.plot_coordinatframe(L_1, L_2, L_3, Q=self.q(), titel=titel)
+        # plt.show()
+        # # print self.chi, self.Omega, W*X*O
+        # print "PSI: ", r_t_d(np.arccos(np.dot(L_3.transpose(), self.q())))
+        return res  # O.dot(X.dot(W))  # .transpose()
+
+    def z_P_in_lab_frame(self, chi, omega):
+        '''
+            z of probsys in the lab frame
+        '''
+        # chi = -deg_to_rad(chi)
+        # omega = deg_to_rad(Omega)
+        # x = np.sin(chi) * np.cos(omega)
+        # y = np.sin(chi) * np.sin(omega)
+        # z = np.cos(chi)
+        return np.dot(self.transformation_L_from_I_to_P(chi, omega), np.array([[0], [0], [1]])).transpose()
+
+    @staticmethod
+    def q(chi_of_scatteringvector, theta, theta_o):
+        """Direction of the scattering vector in the Lab.sys."""
+        chi_ = deg_to_rad(chi_of_scatteringvector)
+        Theta = deg_to_rad(-(90. + (theta + theta_o) / 2.))
+        q = np.array([[np.sin(chi_) * np.cos(Theta)],
+                      [np.sin(chi_) * np.sin(Theta)],
+                      [np.cos(chi_)]])
+        # q=np.array([[-1/np.sqrt(2)], [-1/np.sqrt(2)], [0]])
+        return q
+
+    def LQ(self, chi_of_scatteringvector, theta, theta_o, chi, omega):
+        '''q in specimen frame'''
+        L = self.transformation_L_from_I_to_P(chi, omega).transpose()
+        # Q = np.array(self.q())
+        # print Q
+        return L.dot(self.q(chi_of_scatteringvector, theta, theta_o))
+
+    def psii(self, chi_of_scatteringvector, theta, theta_o, chi, omega):
+        '''polar angle of q in the Specimen frame'''
+        r = 1.
+        # psi = np.arccos(self.LQ()[2] / r)
+        psi = np.arccos(np.dot(self.z_P_in_lab_frame(chi, omega), self.q(chi_of_scatteringvector, theta, theta_o)))
+        return float(psi)
+
+    def PHII(self, chi_of_scatteringvector, theta, theta_o, chi, omega):
+        '''Acimut angle of q in the Specimen frame'''
+        lq = self.LQ(chi_of_scatteringvector, theta, theta_o, chi, omega)
+        # print "lq", lq
+        # lq = self.LQ()
+        phi = 'nan'
+        if (lq[0] > 0):
+            phi = np.arctan((lq[1] / lq[0]))
+        elif (lq[0] == 0):
+            phi = np.sign(lq[1]) * np.pi / 2
+        elif lq[0] < 0 and lq[1] >= 0:
+            phi = np.arctan((lq[1] / lq[0])) + np.pi
+        elif lq[0] < 0 and lq[1] < 0:
+            phi = np.arctan((lq[1] / lq[0])) - np.pi
+            # print "PHI: ",float(phi)
+
+            # try an other way to compute this
+        # phi = np.arccos(np.dot(self.x_I(), self.q_()))
+        # print "phi: ", r_t_d(phi)
+        return float(phi)
+
 
 class DataContainer(object):
     def __init__(self):
@@ -171,3 +277,11 @@ class DataContainer(object):
         self.epsilon_list.append(epsilon)
         self.epsilon_weight_list.append(delta_epsilon)
         self.stress = stress
+
+
+def deg_to_rad(deg):
+    return np.pi * deg / 180.
+
+
+def r_t_d(rad):
+    return 180. * rad / np.pi
