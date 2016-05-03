@@ -127,13 +127,17 @@ class SPODIData(Data):
         data.close()
         return [TTheta, Intens, err]
 
-    def fit_the_peaks_for_on_diffraktin_pattern(self, data, peak_regions, plot=False):
+    @staticmethod
+    def fit_the_peaks_for_on_diffraction_pattern(data, peak_regions, plot=False):
         """
-        fitting the indiwidual peaks of each difraction pattern
-        :param peak_regions:
+        fitting the individual peaks of each diffraction pattern
+        :param plot: plot each fit.
+        :param data: list containing the data [two_theta, intensity, error], two_theta, intensity and error ar lists
+                     containing the data of the diffraction pattern
+        :param peak_regions: [[h, k, l, 2 Theta min, 2 Theta max]]
         :return:
         """
-        # hkl_2_theta = [[h, k, l, 2Theta, 2Theta_error, phase], [], ...
+        # hkl_2_theta = [[h, k, l, 2Theta, 2Theta_error], [], ...
         hkl_2_theta = np.zeros((len(peak_regions), 5))
         for j in xrange(len(peak_regions)):
             hkl_2_theta[j][0] = peak_regions[j][0]
@@ -165,7 +169,7 @@ class SPODIData(Data):
                 for n in self.data_dic_raw[j]:  # loop over all orientations of the sample
                     force, omega, chi, two_theta, intens, error = n
                     data = [two_theta, intens, error]
-                    hkl_2_theta = self.fit_the_peaks_for_on_diffraktin_pattern(data=data, peak_regions=peak_regions)
+                    hkl_2_theta = self.fit_the_peaks_for_on_diffraction_pattern(data=data, peak_regions=peak_regions)
                     hkl_2_theta = hkl_2_theta.tolist()
                     for m in hkl_2_theta:
                         help_list.append([phase, force, omega, chi, m])

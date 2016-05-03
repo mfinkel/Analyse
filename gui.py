@@ -412,6 +412,7 @@ class CentralWidget(QWidget):
         self.choose_experiment_comb_box = self.create_choose_exp_combbox()
         self.number_of_phases_selecttion = self.create_n_o_phases_combbox()
         self.number_of_datasets_under_strain = self.create_number_of_datasets_combbox()
+
         # add the central plot to display the data
         self.central_plot = matplotlibwidget.Preview("Select_Data")
         self.connect(self.central_plot, SIGNAL("hkl_setting"), self.set_hkl_setting_and_fit_the_peaks)
@@ -423,7 +424,7 @@ class CentralWidget(QWidget):
         self.text_jn = self.create_jn_combbox()
         self.modi_text = QLabel("Theory")
         self.ODF_text = QLabel("Texture?")
-        self.automate = QLabel("select hkl?")
+        self.automate = QLabel("select hkl manualy?")
         self.automate_text = self.create_jn_combbox()
         self.load_data_button = QPushButton('load Data')
         self.do_the_fit_button = QPushButton('fitting Data')
