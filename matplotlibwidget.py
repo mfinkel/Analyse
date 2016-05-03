@@ -256,7 +256,13 @@ class Preview(QtGui.QWidget):
         layout3.addLayout(layout3_1)
         # layout3.addWidget(self.add_hkl_button)
 
+
+        horizontal_line = QtGui.QFrame()
+        horizontal_line.setFrameStyle(QtGui.QFrame.HLine)
+        horizontal_line.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
+
         layout.addLayout(layout3)
+        layout.addWidget(horizontal_line)
         # layout.addLayout(layout2)
         self.setLayout(layout)
 

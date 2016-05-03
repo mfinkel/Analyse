@@ -173,7 +173,11 @@ class SPODIData(Data):
             self.data_dic_phases[phase] = force_dic
 
         # calculate phi, psi, strain and stress and store it in
-        self.calc_phi_psi_epsilon()
+        try:
+            self.calc_phi_psi_epsilon()
+        except ValueError:
+            print "the data arnt nicely sorted. use the slow function to calc epsilon, phi and psi"
+            self.calc_phi_psi_epsilon_slow()
 
     def calc_phi_psi_epsilon(self):
         """
@@ -204,6 +208,10 @@ class SPODIData(Data):
                         phase_0, force_0, omega_0, chi_0, hkl_2_theta_0 = force_dict[key_list[0]][n]
                         h_0, k_0, l_0, two_theta_0, two_theta_error_0 = hkl_2_theta_0
 
+                        if not (int(omega) == int(omega_0) and int(chi) == int(chi_0) and int(h) == int(h_0) and int(
+                                k) == int(k_0) and int(l) == int(l_0)):
+                            raise ValueError
+
                         phi = self.PHII(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta_0 / 2,
                                         chi=chi, omega=omega)
 
@@ -219,6 +227,58 @@ class SPODIData(Data):
 
                         stress, stress_err = self.calc_applied_stress(force=force)
                         strain_stress.append([strain, strain_error, stress, stress_err])
+                    force_stress_dict[v] = [phi_psi_hkl, strain_stress]
+            self.fitted_data.data_dict[i] = force_stress_dict
+
+    def calc_phi_psi_epsilon_slow(self):
+        for i, force_dict in self.data_dic_phases:  # loop over all phases, i is the key of the dic
+            key_list = sorted(force_dict.keys())  # key list of the force dict
+            self.fitted_data.data_dict[i] = []
+            # self.data_dict[i] = []
+
+            force_stress_dict = {}
+            for j, v in enumerate(key_list):
+                # loop over all forces, v is the key of the force dic (it is equal to the force)
+                # j is the position of the key, j+1 is the next force, j-1 is the previous force
+                phi_psi_hkl = []
+                strain_stress = []
+                if v == 0:
+                    pass
+                else:
+                    for n in xrange(len(force_dict[v])):  # loop over all data of each force
+                        # vals of the unstraind data
+                        phase_0, force_0, omega_0, chi_0, hkl_2_theta_0 = force_dict[key_list[0]][n]
+                        h_0, k_0, l_0, two_theta_0, two_theta_error_0 = hkl_2_theta_0
+
+                        for i in xrange(len(force_dict[v])):
+                            # values of the straind data:
+                            phase, force, omega, chi, hkl_2_theta = force_dict[v][n]
+                            h, k, l, two_theta, two_theta_error = hkl_2_theta
+
+                            # check if the orientation is correct
+                            if (int(omega) == int(omega_0) and int(chi) == int(chi_0) and int(h) == int(h_0) and
+                                int(k) == int(k_0) and int(l) == int(l_0)):
+
+                                # calc phi
+                                phi = self.PHII(chi_of_scatteringvector=90, theta=two_theta / 2,
+                                                theta_o=two_theta_0 / 2,
+                                                chi=chi, omega=omega)
+
+                                # calc psi
+                                psi = self.psii(chi_of_scatteringvector=90, theta=two_theta / 2,
+                                                theta_o=two_theta_0 / 2,
+                                                chi=chi, omega=omega)
+
+                                phi_psi_hkl.append([phi, psi, h, k, l])
+
+                                # calc the strain
+                                strain, strain_error = self.delta_epsilon(two_theta=two_theta,
+                                                                          two_theta_0=two_theta_0,
+                                                                          two_theta_err=two_theta_error,
+                                                                          two_theta_0_err=two_theta_error_0)
+
+                                stress, stress_err = self.calc_applied_stress(force=force)
+                                strain_stress.append([strain, strain_error, stress, stress_err])
                     force_stress_dict[v] = [phi_psi_hkl, strain_stress]
             self.fitted_data.data_dict[i] = force_stress_dict
 

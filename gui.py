@@ -28,6 +28,7 @@ else:
     from PyQt4.QtCore import *
     from PyQt4.QtGui import *
 import methods
+from functools import partial
 
 
 class insert_const_widget(QWidget):
@@ -366,7 +367,7 @@ class Main(QMainWindow):
         :return:
         """
         # self.layout=QGridLayout()
-        self.resize(800, 800)
+        self.resize(900, 900)
         self.centralWidget = CentralWidget(self)  # CentralWidget(self)
         self.setCentralWidget(self.centralWidget)
 
@@ -404,55 +405,20 @@ class CentralWidget(QWidget):
         self.ok_button = QPushButton("OK")
         self.cancel_button = QPushButton("Cancel")
         self.hkl_setting = []
-        self.set_data_path = QPushButton("set data path")
-        self.set_data_path.clicked.connect(self.set_data_path_func)
-        # self.odf_phase_1_button = QPushButton("select ODF of phase 1")
-        # self.odf_phase_2_button = QPushButton("select ODF of phase 1")
-        # self.straind_button_1 = QPushButton("select straind 1")
-        # self.straind_button_2 = QPushButton("select straind 2")
-        # self.straind_button_3 = QPushButton("select straind 3")
-        # self.straind_button_4 = QPushButton("select straind 4")
-        # self.unstraind_button = QPushButton("select unstraind")
-        #
-        # # self.path_to_data = QTextEdit()
-        # self.odf_phase_1_path = QLineEdit(
-        #     "..\\Daten-bearbeitet\\Stahl ST37\\" + "ST37_MTODF.txt")  # "AL_textur_complet.txt"
-        # self.odf_phase_2_path = QLineEdit("None")  # "AL_textur_complet.txt"
-        # self.path_of_unstraind_data = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans ohne Last\\")
-        # self.path_of_straind_data_1 = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans unter 5kN\\")
-        # self.path_of_straind_data_2 = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans unter 5kN\\")
-        # self.path_of_straind_data_3 = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans unter 5kN\\")
-        # self.path_of_straind_data_4 = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans unter 5kN\\")
-        #
-        # self.select_odf_phase_1 = QLabel("select odf phase 1:   ")
-        # self.select_odf_phase_2 = QLabel("select odf phase 2:   ")
-        # self.select_unstraind = QLabel("select unstraind data:")
-        # self.select_straind_1 = QLabel("select straind data 1:")
-        # self.select_straind_2 = QLabel("select straind data 2:")
-        # self.select_straind_3 = QLabel("select straind data 3:")
-        # self.select_straind_4 = QLabel("select straind data 4:")
-        #
-        # # self.odf_phase_1_button.click.connect(self.select_ODF_func)
-        # self.odf_phase_1_button.clicked.connect(self.select_ODF_phase_1_func)
-        # self.unstraind_button.clicked.connect(self.select_unstraind_func)
-        # self.straind_button_1.clicked.connect(self.select_straind_func_1)
-        # self.figure = plt.figure()
 
-        # this is the Canvas Widget that displays the `diffractogram`
-        # it takes the `figure` instance as a parameter to __init__
-        # self.canvas = FigureCanvas(self.figure)
-
-        # this is the Navigation widget
-        # it takes the Canvas widget and a parent
-        # self.toolbar = NavigationToolbar(self.canvas, self)
-        # self.toolbar.addWidget(button3)
-
+        # Load the data
+        self.open_data_folders = QPushButton("open data")
+        self.open_data_folders.clicked.connect(self.set_data_path_func)
+        self.choose_experiment_comb_box = self.create_choose_exp_combbox()
+        self.number_of_phases_selecttion = self.create_n_o_phases_combbox()
+        self.number_of_datasets_under_strain = self.create_number_of_datasets_combbox()
+        # add the central plot to display the data
         self.central_plot = matplotlibwidget.Preview("Select_Data")
         self.connect(self.central_plot, SIGNAL("hkl_setting"), self.set_hkl_setting_and_fit_the_peaks)
 
         # handel the fitting process
-        self.number_of_phases_text = QLabel("# phases: ")
-        self.number_of_phases_selecttion = self.create_n_o_phases_combbox()
+        self.Fit_phase = QLabel("Fit phases: ")
+        self.fit_phase_combbox = self.create_n_o_phases_combbox()
         self.modi = self.create_modi_comb_box()
         self.text_jn = self.create_jn_combbox()
         self.modi_text = QLabel("Theory")
@@ -471,8 +437,10 @@ class CentralWidget(QWidget):
     def set_data_path_func(self):
         n_o_p = self.number_of_phases_selecttion.currentText()
         n_o_p = int(n_o_p)
-        print ("phases", n_o_p)
-        self.widget_set_data_path = LOAD_SPODI_DATA("set data path", number_of_phases=n_o_p)
+        n_o_d = int(self.number_of_datasets_under_strain.currentText())
+        print("phases", n_o_p)
+        self.widget_set_data_path = LOAD_SPODI_DATA("set data path", number_of_phases=n_o_p,
+                                                    number_of_straind_datasets=n_o_d)
 
     def read_scatering_SPODI_Data(self):
         Bool = False
@@ -521,84 +489,60 @@ class CentralWidget(QWidget):
 
     def layout_handling(self):
         # Layout handling
-        self.layout = QVBoxLayout()
-        self.layout1 = QHBoxLayout()
-        # self.layout_odf_phase_1_input = QHBoxLayout()
-        # self.layout_odf_phase_2_input = QHBoxLayout()
-        # self.layout_straind_data_1 = QHBoxLayout()
-        # self.layout_straind_data_2 = QHBoxLayout()
-        # self.layout_straind_data_3 = QHBoxLayout()
-        # self.layout_straind_data_4 = QHBoxLayout()
-        # self.layout_unstraind_data = QHBoxLayout()
-        self.layout_fitting = QHBoxLayout()
+        layout = QVBoxLayout()
+        layout_ok_and_cancel_button = QHBoxLayout()
+        layout_fitting = QHBoxLayout()
 
-        # self.layout.addWidget(self.toolbar)
-        # self.layout.addWidget(self.canvas)
-        self.layout.addWidget(self.central_plot)
-        self.layout1.addStretch(1)
-        self.layout1.addWidget(self.ok_button)
-        self.layout1.addWidget(self.cancel_button)
-        self.layout1.addWidget(self.set_data_path)
+        # layout.addWidget(self.toolbar)
+        # layout.addWidget(self.canvas)
+        layout.addWidget(self.central_plot)
+        layout_ok_and_cancel_button.addStretch(1)
+        layout_ok_and_cancel_button.addWidget(self.ok_button)
+        layout_ok_and_cancel_button.addWidget(self.cancel_button)
+        layout_ok_and_cancel_button.addWidget(self.open_data_folders)
 
-        # insert odf phase 1 path
-        # self.layout_odf_phase_1_input.addWidget(self.select_odf_phase_1)
-        # self.layout_odf_phase_1_input.addWidget(self.odf_phase_1_path)
-        # self.layout_odf_phase_1_input.addWidget(self.odf_phase_1_button)
-        #
-        # # insert odf phase 2 path
-        # self.layout_odf_phase_2_input.addWidget(self.select_odf_phase_2)
-        # self.layout_odf_phase_2_input.addWidget(self.odf_phase_2_path)
-        # self.layout_odf_phase_2_input.addWidget(self.odf_phase_2_button)
-        #
-        # # insert straind data 1
-        # self.layout_straind_data_1.addWidget(self.select_straind_1)
-        # self.layout_straind_data_1.addWidget(self.path_of_straind_data_1)
-        # self.layout_straind_data_1.addWidget(self.straind_button_1)
-        #
-        # # insert straind data 2
-        # self.layout_straind_data_2.addWidget(self.select_straind_2)
-        # self.layout_straind_data_2.addWidget(self.path_of_straind_data_2)
-        # self.layout_straind_data_2.addWidget(self.straind_button_2)
-        #
-        # # insert straind data 3
-        # self.layout_straind_data_3.addWidget(self.select_straind_3)
-        # self.layout_straind_data_3.addWidget(self.path_of_straind_data_3)
-        # self.layout_straind_data_3.addWidget(self.straind_button_3)
-        #
-        # # insert straind data 4
-        # self.layout_straind_data_4.addWidget(self.select_straind_4)
-        # self.layout_straind_data_4.addWidget(self.path_of_straind_data_4)
-        # self.layout_straind_data_4.addWidget(self.straind_button_4)
-        #
-        # # insert unstraind data
-        # self.layout_unstraind_data.addWidget(self.select_unstraind)
-        # self.layout_unstraind_data.addWidget(self.path_of_unstraind_data)
-        # self.layout_unstraind_data.addWidget(self.unstraind_button)
+        # Load the data
+        HLine = []
+        for i in xrange(10):
+            HLine.append(self.HLine())
+
+        layout_load_data_h1 = QHBoxLayout()
+        layout_load_data_h2 = QHBoxLayout()
+        layout_load_data_h3 = QHBoxLayout()
+        layout_load_data_h1.addWidget(self.label("Load the Data: "))
+        layout_load_data_h2.addWidget(self.label("chose expermient: "))
+        layout_load_data_h2.addWidget(self.choose_experiment_comb_box)
+        layout_load_data_h2.addWidget(self.label("# of phases: "))
+        layout_load_data_h2.addWidget(self.number_of_phases_selecttion)
+        layout_load_data_h2.addWidget(self.label("# of dataset's under strain: "))
+        layout_load_data_h2.addWidget(self.number_of_datasets_under_strain)
+        layout_load_data_h2.addWidget(self.open_data_folders)
+        layout_load_data_h3.addWidget(self.automate)
+        layout_load_data_h3.addWidget(self.automate_text)
+        layout_load_data_h3.addWidget(self.load_data_button)
+        layout.addLayout(layout_load_data_h1)
+        layout.addLayout(layout_load_data_h2)
+        layout.addLayout(layout_load_data_h3)
+        layout.addWidget(HLine[2])
 
         # handel the fitting process
-        self.layout_fitting.addWidget(self.number_of_phases_text)
-        self.layout_fitting.addWidget(self.number_of_phases_selecttion)
-        self.layout_fitting.addWidget(self.modi_text)
-        self.layout_fitting.addWidget(self.modi)
-        self.layout_fitting.addWidget(self.ODF_text)
-        self.layout_fitting.addWidget(self.text_jn)
-        self.layout_fitting.addWidget(self.automate)
-        self.layout_fitting.addWidget(self.automate_text)
-        self.layout_fitting.addWidget(self.load_data_button)
-        self.layout_fitting.addWidget(self.do_the_fit_button)
+        layout.addWidget(self.label("Fit the data: "))
+        layout_fitting.addWidget(self.Fit_phase)
+        layout_fitting.addWidget(self.fit_phase_combbox)
+        layout_fitting.addWidget(self.modi_text)
+        layout_fitting.addWidget(self.modi)
+        layout_fitting.addWidget(self.ODF_text)
+        layout_fitting.addWidget(self.text_jn)
+        layout_fitting.addWidget(self.do_the_fit_button)
 
-        # self.layout.addLayout(self.layout_odf_phase_1_input)
-        # self.layout.addLayout(self.layout_odf_phase_2_input)
-        # self.layout.addLayout(self.layout_unstraind_data)
-        # self.layout.addLayout(self.layout_straind_data_1)
-        # self.layout.addLayout(self.layout_straind_data_2)
-        # self.layout.addLayout(self.layout_straind_data_3)
-        # self.layout.addLayout(self.layout_straind_data_4)
-        self.layout.addLayout(self.layout_fitting)
+        layout.addLayout(layout_fitting)
+        layout.addLayout(layout_ok_and_cancel_button)
 
-        self.layout.addLayout(self.layout1)
+        self.setLayout(layout)
 
-        self.setLayout(self.layout)
+    def label(self, text):
+        label = QLabel(text)
+        return label
 
     @staticmethod
     def create_modi_comb_box():
@@ -617,33 +561,53 @@ class CentralWidget(QWidget):
         return combo
 
     @staticmethod
+    def create_number_of_datasets_combbox():
+        combo = QComboBox()
+        for i in range(1, 11):
+            combo.addItem("{0}".format(i))
+        return combo
+
+    @staticmethod
+    def create_choose_exp_combbox():
+        combo = QComboBox()
+        combo.addItem("SPODI")
+        combo.addItem("POLDI")
+        return combo
+
+    @staticmethod
     def create_n_o_phases_combbox():
         combo = QComboBox()
         combo.addItem("1")
         combo.addItem("2")
         return combo
 
-    # def select_ODF_phase_1_func(self):
-    #     filename = QFileDialog.getOpenFileName(self, 'Open ODF File', '/')  # (self, 'Open ODF File', '/')
-    #     filename = os.path.normpath(str(filename))
-    #     self.odf_phase_1_path.setText(filename)
-    #     print(self.odf_phase_1_path.text())
-    #
-    # def select_unstraind_func(self):
-    #     filename = QFileDialog.getExistingDirectory(self, 'Open unstraind data', '/')  # (self, 'Open ODF File', '/')
-    #     filename = os.path.normpath(str(filename))
-    #     self.path_of_unstraind_data.setText(filename + "\\")
-    #     print(self.path_of_unstraind_data.text())
-    #
-    # def select_straind_func_1(self):
-    #     filename = QFileDialog.getExistingDirectory(self, 'Open straind data', '/')  # (self, 'Open ODF File', '/')
-    #     filename = os.path.normpath(str(filename))
-    #     self.path_of_straind_data.setText(filename + "\\")
-    #     print(self.path_of_straind_data.text())
+        # def select_ODF_phase_1_func(self):
+        #     filename = QFileDialog.getOpenFileName(self, 'Open ODF File', '/')  # (self, 'Open ODF File', '/')
+        #     filename = os.path.normpath(str(filename))
+        #     self.odf_phase_1_path.setText(filename)
+        #     print(self.odf_phase_1_path.text())
+        #
+        # def select_unstraind_func(self):
+        #     filename = QFileDialog.getExistingDirectory(self, 'Open unstraind data', '/')  # (self, 'Open ODF File', '/')
+        #     filename = os.path.normpath(str(filename))
+        #     self.path_of_unstraind_data.setText(filename + "\\")
+        #     print(self.path_of_unstraind_data.text())
+        #
+        # def select_straind_func_1(self):
+        #     filename = QFileDialog.getExistingDirectory(self, 'Open straind data', '/')  # (self, 'Open ODF File', '/')
+        #     filename = os.path.normpath(str(filename))
+        #     self.path_of_straind_data.setText(filename + "\\")
+        #     print(self.path_of_straind_data.text())
+
+    def HLine(self):
+        horizontal_line = QFrame()
+        horizontal_line.setFrameStyle(QFrame.HLine)
+        horizontal_line.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
+        return horizontal_line
 
 
 class LOAD_SPODI_DATA(QWidget):
-    def __init__(self, name, number_of_phases=1):
+    def __init__(self, name, number_of_phases=1, number_of_straind_datasets=1):
         super(LOAD_SPODI_DATA, self).__init__()
         self.setWindowTitle(name)
 
@@ -653,40 +617,39 @@ class LOAD_SPODI_DATA(QWidget):
 
         self.odf_phase_1_button = QPushButton("select ODF of phase 1")
         self.odf_phase_2_button = QPushButton("select ODF of phase 1")
-        self.straind_button_1 = QPushButton("select straind 1")
-        self.straind_button_2 = QPushButton("select straind 2")
-        self.straind_button_3 = QPushButton("select straind 3")
-        self.straind_button_4 = QPushButton("select straind 4")
         self.unstraind_button = QPushButton("select unstraind")
 
-        # self.path_to_data = QTextEdit()
         self.odf_phase_1_path = QLineEdit(
             "..\\Daten-bearbeitet\\Stahl ST37\\" + "ST37_MTODF.txt")  # "AL_textur_complet.txt"
         self.odf_phase_2_path = QLineEdit("None")  # "AL_textur_complet.txt"
         self.path_of_unstraind_data = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans ohne Last\\")
-        self.path_of_straind_data_1 = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans unter 5kN\\")
-        self.path_of_straind_data_2 = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans unter 5kN\\")
-        self.path_of_straind_data_3 = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans unter 5kN\\")
-        self.path_of_straind_data_4 = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans unter 5kN\\")
+
+        self.straind_data = []
+        self.straind_data_lable = []
+        self.straind_data_button = []
+
+        # create boxes for all datafiles of different load
+        for i in xrange(number_of_straind_datasets):
+            self.straind_data.append(QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans unter 5kN\\"))
+            self.straind_data_lable.append(QLabel("select straind data %i:" % (i)))
+            self.straind_data_button.append(QPushButton("select straind %i:" % (i)))
 
         self.select_odf_phase_1 = QLabel("select odf phase 1:   ")
         self.select_odf_phase_2 = QLabel("select odf phase 2:   ")
         self.select_unstraind = QLabel("select unstraind data:")
-        self.select_straind_1 = QLabel("select straind data 1:")
-        self.select_straind_2 = QLabel("select straind data 2:")
-        self.select_straind_3 = QLabel("select straind data 3:")
-        self.select_straind_4 = QLabel("select straind data 4:")
 
-        # self.odf_phase_1_button.click.connect(self.select_ODF_func)
         self.odf_phase_1_button.clicked.connect(self.select_odf_phase_1_func)
         self.odf_phase_2_button.clicked.connect(self.select_odf_phase_2_func)
         self.unstraind_button.clicked.connect(self.select_unstraind_func)
-        self.straind_button_1.clicked.connect(self.select_straind_func_1)
 
-        if number_of_phases==1:
+        for i in xrange(len(self.straind_data_button)):
+            self.straind_data_button[i].clicked.connect(partial(self.select_straind_func, i))
+        # self.straind_button_1.clicked.connect(self.select_straind_func_1)
+
+        if number_of_phases == 1:
             self.odf_phase_2_button.setDisabled(True)
             self.odf_phase_2_path.setReadOnly(True)
-        if number_of_phases==2:
+        if number_of_phases == 2:
             self.odf_phase_2_button.setDisabled(False)
             self.odf_phase_2_path.setReadOnly(False)
 
@@ -698,69 +661,60 @@ class LOAD_SPODI_DATA(QWidget):
     def layout_handling(self):
         # Layout handling
         self.resize(800, 800)
-        self.layout = QVBoxLayout()
-        self.layout1 = QHBoxLayout()
-        self.layout_odf_phase_1_input = QHBoxLayout()
-        self.layout_odf_phase_2_input = QHBoxLayout()
-        self.layout_straind_data_1 = QHBoxLayout()
-        self.layout_straind_data_2 = QHBoxLayout()
-        self.layout_straind_data_3 = QHBoxLayout()
-        self.layout_straind_data_4 = QHBoxLayout()
-        self.layout_unstraind_data = QHBoxLayout()
+        layout = QVBoxLayout()
+        layout1 = QHBoxLayout()
+        layout_odf_phase_1_input = QHBoxLayout()
+        layout_odf_phase_2_input = QHBoxLayout()
+        layout_straind_data = []
+        for i in xrange(len(self.straind_data)):
+            layout_straind_data.append(QHBoxLayout())
+        # layout_straind_data_1 = QHBoxLayout()
+        # layout_straind_data_2 = QHBoxLayout()
+        # layout_straind_data_3 = QHBoxLayout()
+        # layout_straind_data_4 = QHBoxLayout()
+        layout_unstraind_data = QHBoxLayout()
 
-        # self.layout.addWidget(self.toolbar)
-        # self.layout.addWidget(self.canvas)
+        # layout.addWidget(self.toolbar)
+        # layout.addWidget(self.canvas)
 
-        self.layout1.addStretch(1)
-        self.layout1.addWidget(self.ok_button)
-        # self.layout1.addWidget(self.cancel_button)
+        layout1.addStretch(1)
+        layout1.addWidget(self.ok_button)
+        # layout1.addWidget(self.cancel_button)
 
         # insert odf phase 1 path
-        self.layout_odf_phase_1_input.addWidget(self.select_odf_phase_1)
-        self.layout_odf_phase_1_input.addWidget(self.odf_phase_1_path)
-        self.layout_odf_phase_1_input.addWidget(self.odf_phase_1_button)
+        layout_odf_phase_1_input.addWidget(self.select_odf_phase_1)
+        layout_odf_phase_1_input.addWidget(self.odf_phase_1_path)
+        layout_odf_phase_1_input.addWidget(self.odf_phase_1_button)
 
         # insert odf phase 2 path
-        self.layout_odf_phase_2_input.addWidget(self.select_odf_phase_2)
-        self.layout_odf_phase_2_input.addWidget(self.odf_phase_2_path)
-        self.layout_odf_phase_2_input.addWidget(self.odf_phase_2_button)
+        layout_odf_phase_2_input.addWidget(self.select_odf_phase_2)
+        layout_odf_phase_2_input.addWidget(self.odf_phase_2_path)
+        layout_odf_phase_2_input.addWidget(self.odf_phase_2_button)
 
-        # insert straind data 1
-        self.layout_straind_data_1.addWidget(self.select_straind_1)
-        self.layout_straind_data_1.addWidget(self.path_of_straind_data_1)
-        self.layout_straind_data_1.addWidget(self.straind_button_1)
-
-        # insert straind data 2
-        self.layout_straind_data_2.addWidget(self.select_straind_2)
-        self.layout_straind_data_2.addWidget(self.path_of_straind_data_2)
-        self.layout_straind_data_2.addWidget(self.straind_button_2)
-
-        # insert straind data 3
-        self.layout_straind_data_3.addWidget(self.select_straind_3)
-        self.layout_straind_data_3.addWidget(self.path_of_straind_data_3)
-        self.layout_straind_data_3.addWidget(self.straind_button_3)
-
-        # insert straind data 4
-        self.layout_straind_data_4.addWidget(self.select_straind_4)
-        self.layout_straind_data_4.addWidget(self.path_of_straind_data_4)
-        self.layout_straind_data_4.addWidget(self.straind_button_4)
+        # insert straind datasets
+        for i in xrange(len(layout_straind_data)):
+            layout_straind_data[i].addWidget(self.straind_data_lable[i])
+            layout_straind_data[i].addWidget(self.straind_data[i])
+            layout_straind_data[i].addWidget(self.straind_data_button[i])
 
         # insert unstraind data
-        self.layout_unstraind_data.addWidget(self.select_unstraind)
-        self.layout_unstraind_data.addWidget(self.path_of_unstraind_data)
-        self.layout_unstraind_data.addWidget(self.unstraind_button)
+        layout_unstraind_data.addWidget(self.select_unstraind)
+        layout_unstraind_data.addWidget(self.path_of_unstraind_data)
+        layout_unstraind_data.addWidget(self.unstraind_button)
 
-        self.layout.addLayout(self.layout_odf_phase_1_input)
-        self.layout.addLayout(self.layout_odf_phase_2_input)
-        self.layout.addLayout(self.layout_unstraind_data)
-        self.layout.addLayout(self.layout_straind_data_1)
-        self.layout.addLayout(self.layout_straind_data_2)
-        self.layout.addLayout(self.layout_straind_data_3)
-        self.layout.addLayout(self.layout_straind_data_4)
+        layout.addLayout(layout_odf_phase_1_input)
+        layout.addLayout(layout_odf_phase_2_input)
+        layout.addLayout(layout_unstraind_data)
+        for i in layout_straind_data:
+            layout.addLayout(i)
+        # layout.addLayout(layout_straind_data_1)
+        # layout.addLayout(layout_straind_data_2)
+        # layout.addLayout(layout_straind_data_3)
+        # layout.addLayout(layout_straind_data_4)
 
-        self.layout.addLayout(self.layout1)
+        layout.addLayout(layout1)
 
-        self.setLayout(self.layout)
+        self.setLayout(layout)
 
     def select_odf_phase_1_func(self):
         filename = QFileDialog.getOpenFileName(self, 'Open ODF of phase 1 File', '/')  # (self, 'Open ODF File', '/')
@@ -780,29 +734,11 @@ class LOAD_SPODI_DATA(QWidget):
         self.path_of_unstraind_data.setText(filename + "\\")
         print(self.path_of_unstraind_data.text())
 
-    def select_straind_func_1(self):
+    def select_straind_func(self, i):
         filename = QFileDialog.getExistingDirectory(self, 'Open straind data', '/')  # (self, 'Open ODF File', '/')
         filename = os.path.normpath(str(filename))
-        self.path_of_straind_data_1.setText(filename + "\\")
-        print(self.path_of_straind_data_1.text())
-
-    def select_straind_func_2(self):
-        filename = QFileDialog.getExistingDirectory(self, 'Open straind data', '/')  # (self, 'Open ODF File', '/')
-        filename = os.path.normpath(str(filename))
-        self.path_of_straind_data_2.setText(filename + "\\")
-        print(self.path_of_straind_data_2.text())
-
-    def select_straind_func_3(self):
-        filename = QFileDialog.getExistingDirectory(self, 'Open straind data', '/')  # (self, 'Open ODF File', '/')
-        filename = os.path.normpath(str(filename))
-        self.path_of_straind_data_3.setText(filename + "\\")
-        print(self.path_of_straind_data_3.text())
-
-    def select_straind_func_4(self):
-        filename = QFileDialog.getExistingDirectory(self, 'Open straind data', '/')  # (self, 'Open ODF File', '/')
-        filename = os.path.normpath(str(filename))
-        self.path_of_straind_data_4.setText(filename + "\\")
-        print(self.path_of_straind_data_4.text())
+        self.straind_data[i].setText(filename + "\\")
+        print(self.straind_data[i].text())
 
     def emit_and_quit(self):
         """
@@ -812,13 +748,11 @@ class LOAD_SPODI_DATA(QWidget):
         self.emit(SIGNAL("ODF_phase_1"), self.odf_phase_1_path.text)
         self.emit(SIGNAL("ODF_phase_2"), self.odf_phase_2_path.text)
         self.emit(SIGNAL("unstraind_data_path"), self.path_of_unstraind_data.text)
-        self.emit(SIGNAL("straind_data_path_1"), self.path_of_straind_data_1.text)
-        self.emit(SIGNAL("straind_data_path_2"), self.path_of_straind_data_2.text)
-        self.emit(SIGNAL("straind_data_path_3"), self.path_of_straind_data_3.text)
-        self.emit(SIGNAL("straind_data_path_4"), self.path_of_straind_data_4.text)
+        data_dir_list = []
+        for i in xrange(len(self.straind_data)):
+            data_dir_list.append(self.straind_data[i].text)
+        self.emit(SIGNAL("data_dir_list"), data_dir_list)
         self.close()
-
-
 
 
 def main():
