@@ -324,7 +324,7 @@ class Preview(QtGui.QWidget):
             hkl_setting[i][3] = min
             hkl_setting[i][4] = max
 
-        self.emit(QtCore.SIGNAL("hkl_setting"), hkl_setting)
+        self.emit(QtCore.SIGNAL("phase_peak_region"), hkl_setting)
 
 
     def roi(self):

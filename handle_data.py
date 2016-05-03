@@ -54,8 +54,8 @@ class Data(object):
 
 
 class SPODIData(Data):
-    def __init__(self, sample_diameter):
-        super(SPODIData, self).__init__(sample_diameter)
+    def __init__(self, sample_diameter, odf_phase_1_file=None, odf_phase_2_file=None):
+        super(SPODIData, self).__init__(sample_diameter, odf_phase_1_file, odf_phase_2_file)
         self.data_dic_raw = {}  # a dictionary containing the raw data, the key is the applied force, the values
         # are lists of all measured orientation angles with the measured two_theta, intens, error data
         self.data_dic_phases = {}  # dictionary containing dictionaries of all peaks of the different phases

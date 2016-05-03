@@ -29,6 +29,7 @@ else:
     from PyQt4.QtGui import *
 import methods
 from functools import partial
+import handle_data
 
 
 class insert_const_widget(QWidget):
@@ -400,48 +401,88 @@ class Main(QMainWindow):
 class CentralWidget(QWidget):
     def __init__(self, parent):
         super(CentralWidget, self).__init__(parent)
-        # QWidget.__init__(self, parent=parent)
 
         self.ok_button = QPushButton("OK")
         self.cancel_button = QPushButton("Cancel")
-        self.hkl_setting = []
+        try:
+            self.phase_peak_region = np.load(".\\phase_peak_region.npy")
+        except IOError:
+            self.phase_peak_region = []
 
-        # Load the data
+        # Load the data and sample specifications
         self.open_data_folders = QPushButton("open data")
-        self.open_data_folders.clicked.connect(self.set_data_path_func)
+
         self.choose_experiment_comb_box = self.create_choose_exp_combbox()
         self.number_of_phases_selecttion = self.create_n_o_phases_combbox()
         self.number_of_datasets_under_strain = self.create_number_of_datasets_combbox()
+        self.diameter = QLineEdit("6")
+        self.automate = QLabel("select hkl manualy?")
+        self.automate_text = self.create_jn_combbox()
+        self.load_data_button = QPushButton('load Data')
+        self.load_data_button.setEnabled(False)
+
+        self.open_data_folders.clicked.connect(self.set_data_path_func)
+
+        # select the experimental setup (SPODI, POLDI, ....)
+        self.load_data_button.clicked.connect(self.read_scatering_SPODI_Data)
+        self.choose_experiment_comb_box.currentIndexChanged.connect(self.connect_read_scattering_data)
 
         # add the central plot to display the data
         self.central_plot = matplotlibwidget.Preview("Select_Data")
-        self.connect(self.central_plot, SIGNAL("hkl_setting"), self.set_hkl_setting_and_fit_the_peaks)
+        self.connect(self.central_plot, SIGNAL("phase_peak_region"), self.set_hkl_setting_and_fit_the_peaks)
 
         # handel the fitting process
         self.Fit_phase = QLabel("Fit phases: ")
         self.fit_phase_combbox = self.create_n_o_phases_combbox()
-        self.modi = self.create_modi_comb_box()
-        self.text_jn = self.create_jn_combbox()
         self.modi_text = QLabel("Theory")
+        self.modi = self.create_modi_comb_box()
         self.ODF_text = QLabel("Texture?")
-        self.automate = QLabel("select hkl manualy?")
-        self.automate_text = self.create_jn_combbox()
-        self.load_data_button = QPushButton('load Data')
-        self.do_the_fit_button = QPushButton('fitting Data')
+        self.text_jn = self.create_jn_combbox()
 
-        self.load_data_button.clicked.connect(self.read_scatering_SPODI_Data)
+        self.do_the_fit_button = QPushButton('fitting Data')
         self.do_the_fit_button.clicked.connect(self.fit_the_data)
+
         self.connect(self, SIGNAL("data"), self.central_plot.add_data)
 
         self.layout_handling()
+
+    def connect_read_scattering_data(self):
+        if self.choose_experiment_comb_box.currentText()=="SPODI":
+            self.load_data_button.clicked.connect(self.read_scatering_SPODI_Data)
+        elif self.choose_experiment_comb_box.currentText()=="POLDI":
+            print("need to be implemented")
 
     def set_data_path_func(self):
         n_o_p = self.number_of_phases_selecttion.currentText()
         n_o_p = int(n_o_p)
         n_o_d = int(self.number_of_datasets_under_strain.currentText())
         print("phases", n_o_p)
-        self.widget_set_data_path = LOAD_SPODI_DATA("set data path", number_of_phases=n_o_p,
-                                                    number_of_straind_datasets=n_o_d)
+        if self.choose_experiment_comb_box.currentText() == "SPODI":
+            self.widget_set_data_path = LOAD_SPODI_DATA("set data path", number_of_phases=n_o_p,
+                                                        number_of_straind_datasets=n_o_d)
+            self.connect(self.widget_set_data_path, SIGNAL("data_dir_list"), self.receve_the_pathes)
+        elif self.choose_experiment_comb_box.currentText() == "POLDI":
+            print('is stil to implement')
+            pass
+
+    def receve_the_pathes(self, *args):
+        print(args, len(args[0]))
+        odf1, odf2, unstraind, data_dir_list = args[0]
+        odf1 = str(odf1)
+        odf2 = str(odf2)
+        unstraind = str(unstraind)
+        for i in data_dir_list:
+            i = str(i)
+            print(i, type(i))
+        print(odf1)
+        if odf2 == "None":
+            odf2 = None
+        print(odf1, odf2, unstraind, data_dir_list)
+        self.path_of_odf_phase1 = odf1
+        self.path_of_odf_phase2 = odf2
+        self.path_of_unstraind_data = unstraind
+        self.path_of_data_under_strain = data_dir_list
+        self.load_data_button.setEnabled(True)
 
     def read_scatering_SPODI_Data(self):
         Bool = False
@@ -452,6 +493,11 @@ class CentralWidget(QWidget):
               self.path_of_unstraind_data.text(), "\n",
               self.odf_phase_1_path.text(), "\n",
               Bool)
+
+        self.data_object = handle_data.SPODIData(sample_diameter=int(str(self.diameter.text())),
+                                                 odf_phase_1_file=self.path_of_odf_phase1,
+                                                 odf_phase_2_file=self.path_of_odf_phase2)
+        self.data_object.load_data(self.path_of_data_under_strain)
 
         self.Data_Iron = methods.Data_old(str(self.odf_phase_1_path.text()), 6)
         self.Data_Iron.read_scattering_SPODI_data(path_of_unstraind_data=str(self.path_of_unstraind_data.text()),
@@ -470,10 +516,10 @@ class CentralWidget(QWidget):
         self.central_plot.update()
 
     def set_hkl_setting_and_fit_the_peaks(self, value):
-        self.hkl_setting = value
-        self.Data_Iron.set_hkl_setting(self.hkl_setting)
+        self.phase_peak_region = value
+        self.Data_Iron.set_hkl_setting(self.phase_peak_region)
         self.Data_Iron.fit_all_peaks()
-        print("coming from other class:", "\n", self.hkl_setting)
+        print("coming from other class:", "\n", self.phase_peak_region)
 
     def fit_the_data(self):
         Bool = False
@@ -500,7 +546,6 @@ class CentralWidget(QWidget):
         layout_ok_and_cancel_button.addStretch(1)
         layout_ok_and_cancel_button.addWidget(self.ok_button)
         layout_ok_and_cancel_button.addWidget(self.cancel_button)
-        layout_ok_and_cancel_button.addWidget(self.open_data_folders)
 
         # Load the data
         HLine = []
@@ -518,6 +563,8 @@ class CentralWidget(QWidget):
         layout_load_data_h2.addWidget(self.label("# of dataset's under strain: "))
         layout_load_data_h2.addWidget(self.number_of_datasets_under_strain)
         layout_load_data_h2.addWidget(self.open_data_folders)
+        layout_load_data_h3.addWidget(self.label("set diameter in mm: "))
+        layout_load_data_h3.addWidget(self.diameter)
         layout_load_data_h3.addWidget(self.automate)
         layout_load_data_h3.addWidget(self.automate_text)
         layout_load_data_h3.addWidget(self.load_data_button)
@@ -617,7 +664,7 @@ class LOAD_SPODI_DATA(QWidget):
         self.hkl_setting = []
 
         self.odf_phase_1_button = QPushButton("select ODF of phase 1")
-        self.odf_phase_2_button = QPushButton("select ODF of phase 1")
+        self.odf_phase_2_button = QPushButton("select ODF of phase 2")
         self.unstraind_button = QPushButton("select unstraind")
 
         self.odf_phase_1_path = QLineEdit(
@@ -746,13 +793,13 @@ class LOAD_SPODI_DATA(QWidget):
         emit the selected path's
         :return:
         """
-        self.emit(SIGNAL("ODF_phase_1"), self.odf_phase_1_path.text)
-        self.emit(SIGNAL("ODF_phase_2"), self.odf_phase_2_path.text)
-        self.emit(SIGNAL("unstraind_data_path"), self.path_of_unstraind_data.text)
+        odf1 = self.odf_phase_1_path.text()
+        odf2 = self.odf_phase_2_path.text()
+        unstraind = self.path_of_unstraind_data.text()
         data_dir_list = []
         for i in xrange(len(self.straind_data)):
-            data_dir_list.append(self.straind_data[i].text)
-        self.emit(SIGNAL("data_dir_list"), data_dir_list)
+            data_dir_list.append(self.straind_data[i].text())
+        self.emit(SIGNAL("data_dir_list"), (odf1, odf2, unstraind, data_dir_list))
         self.close()
 
 
