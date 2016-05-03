@@ -402,6 +402,15 @@ class SPODIData(Data):
         # print "phi: ", r_t_d(phi)
         return float(phi)
 
+    def get_sum_data(self):
+        omega1 = self.data_dic_raw[0][1]
+        sum_intens=np.zeros((len(self.data_dic_raw[0][4])))
+        for i in self.data_dic_raw[0]:
+            if omega1==i[1]:
+                sum_intens+=np.array(i[4])
+        return self.data_dic_raw[0][3], sum_intens
+
+
 
 class DataContainer(object):
     def __init__(self):

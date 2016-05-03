@@ -401,7 +401,7 @@ class Main(QMainWindow):
 class CentralWidget(QWidget):
     def __init__(self, parent):
         super(CentralWidget, self).__init__(parent)
-
+        self.data_object = handle_data.Data(sample_diameter=None)
         self.ok_button = QPushButton("OK")
         self.cancel_button = QPushButton("Cancel")
         try:
@@ -424,7 +424,7 @@ class CentralWidget(QWidget):
         self.open_data_folders.clicked.connect(self.set_data_path_func)
 
         # select the experimental setup (SPODI, POLDI, ....)
-        self.load_data_button.clicked.connect(self.read_scatering_SPODI_Data)
+        self.load_data_button.clicked.connect(self.read_scattering_data_SPODI_case)
         self.choose_experiment_comb_box.currentIndexChanged.connect(self.connect_read_scattering_data)
 
         # add the central plot to display the data
@@ -447,12 +447,21 @@ class CentralWidget(QWidget):
         self.layout_handling()
 
     def connect_read_scattering_data(self):
+        """
+        select the setup (SPODI, POLDI, ...)
+        :return:
+        """
         if self.choose_experiment_comb_box.currentText()=="SPODI":
-            self.load_data_button.clicked.connect(self.read_scatering_SPODI_Data)
+            self.load_data_button.clicked.connect(self.read_scattering_data_SPODI_case)
         elif self.choose_experiment_comb_box.currentText()=="POLDI":
             print("need to be implemented")
 
     def set_data_path_func(self):
+        """
+        open a widget to select the directory's of the input data
+        use different methods vor the different experiments
+        :return:
+        """
         n_o_p = self.number_of_phases_selecttion.currentText()
         n_o_p = int(n_o_p)
         n_o_d = int(self.number_of_datasets_under_strain.currentText())
@@ -460,12 +469,16 @@ class CentralWidget(QWidget):
         if self.choose_experiment_comb_box.currentText() == "SPODI":
             self.widget_set_data_path = LOAD_SPODI_DATA("set data path", number_of_phases=n_o_p,
                                                         number_of_straind_datasets=n_o_d)
-            self.connect(self.widget_set_data_path, SIGNAL("data_dir_list"), self.receve_the_pathes)
+            self.connect(self.widget_set_data_path, SIGNAL("data_dir_list"), self.receve_the_pathes_SPODI_case)
         elif self.choose_experiment_comb_box.currentText() == "POLDI":
-            print('is stil to implement')
-            pass
+            print('is still to implement')
 
-    def receve_the_pathes(self, *args):
+    def receve_the_pathes_SPODI_case(self, *args):
+        """
+        receve the data path
+        :param args:
+        :return:
+        """
         print(args, len(args[0]))
         odf1, odf2, unstraind, data_dir_list = args[0]
         odf1 = str(odf1)
@@ -484,7 +497,7 @@ class CentralWidget(QWidget):
         self.path_of_data_under_strain = data_dir_list
         self.load_data_button.setEnabled(True)
 
-    def read_scatering_SPODI_Data(self):
+    def read_scattering_data_SPODI_case(self):
         Bool = False
         if self.automate_text.currentText() == "Yes":
             Bool = True
@@ -499,16 +512,18 @@ class CentralWidget(QWidget):
                                                  odf_phase_2_file=self.path_of_odf_phase2)
         self.data_object.load_data(self.path_of_data_under_strain)
 
-        self.Data_Iron = methods.Data_old(str(self.odf_phase_1_path.text()), 6)
-        self.Data_Iron.read_scattering_SPODI_data(path_of_unstraind_data=str(self.path_of_unstraind_data.text()),
-                                                  path_of_straind_data=str(self.path_of_straind_data_1.text()))
+        # self.Data_Iron = methods.Data_old(str(self.odf_phase_1_path.text()), 6)
+        # self.Data_Iron.read_scattering_SPODI_data(path_of_unstraind_data=str(self.path_of_unstraind_data.text()),
+        #                                           path_of_straind_data=str(self.path_of_straind_data_1.text()))
 
         if Bool:
             self.select_hkl_SPODI_Data()
         else:
-            self.Data_Iron.fit_all_peaks()
+            self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region, plot=False)
+            # self.Data_Iron.fit_all_peaks()
 
     def select_hkl_SPODI_Data(self):
+        self.data_object.get_sum_data()
         x_data = self.Data_Iron.unstraind_data_object_list[0].data[0]
         y_data = self.Data_Iron.unstraind_data_object_list[0].data[1]
         self.central_plot.add_xy_data(x_data, y_data)
@@ -531,7 +546,7 @@ class CentralWidget(QWidget):
             self.Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=str(self.modi.currentText()),
                                                      number_of_datapoints=None, texture=Bool)
         except AttributeError:
-            self.read_scatering_SPODI_Data()
+            self.read_scattering_data_SPODI_case()
             self.fit_the_data()
 
     def layout_handling(self):
