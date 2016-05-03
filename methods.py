@@ -554,7 +554,7 @@ class Data_old:
         # Data of the measurment
         self.__epsilon_list = []
         self.__epsilon_weight_list = []
-        self.__phi_psi_hkl_list = []  # hkl, phi, psi
+        self.__phi_psi_hkl_list = []  # phi, psihkl,
 
     """
     Deal with the ODF

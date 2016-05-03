@@ -20,13 +20,21 @@ from glob import glob
 
 class Data(object):
     def __init__(self, sample_diameter, odf_phase_1_file=None, odf_phase_2_file=None):
-        self.data_list = []
+        self.fitted_data = DataContainer()  # contains the phi_psi_hkl and the strain_stress list for all phases and
+        # applied forces
         self.odf_phase_1 = self.get_odf(odf_phase_1_file)
         self.odf_phase_2 = self.get_odf(odf_phase_2_file)
         self.sample_diameter = sample_diameter
 
     @staticmethod
     def get_odf(odf_file):
+        """
+        this function reads the odf from the odf_file and creates a ODF() object.
+        :param odf_file:
+        :return:
+        """
+        if odf_file is None:
+            return None
         odf = Modells.ODF()
         odf_file = os.path.normpath(odf_file)
         path, filename = os.path.split(odf_file)
@@ -39,8 +47,10 @@ class Data(object):
         :param force: applied force in kN
         :return: stress
         """
-        area = (self.diameter * np.power(10., -3.)) ** 2 / 4 * np.pi
-        return force * np.power(10., 3) / area  # *np.power(10.,-9)
+        area = (self.sample_diameter * np.power(10., -3.)) ** 2 / 4 * np.pi
+        stress = force * np.power(10., 3) / area
+        stress_error = stress * (2 * 0.01 / self.sample_diameter + 0.05)
+        return stress, stress_error
 
 
 class SPODIData(Data):
@@ -140,15 +150,19 @@ class SPODIData(Data):
         return hkl_2_theta
 
     def fit_all_data(self, peak_regions_phase, plot=False):
-        # peak_region_phase is a list: [[phase_1, peak_region], [phase_2, peak_region]]
-
+        """
+        Fit all data and 
+        :param peak_regions_phase: is a list: [[phase_1, peak_region], [phase_2, peak_region]]
+        :param plot:
+        :return:
+        """
         for i in peak_regions_phase:  # loop over all phases
             phase, peak_regions = i
             # self.data_dic_phases[phase] = list()
             force_dic = {}
             for j in self.data_dic_raw:  # loop over all forces
                 help_list = []
-                for n in self.data_dic_raw[j]:  # loop over all orientations
+                for n in self.data_dic_raw[j]:  # loop over all orientations of the sample
                     force, omega, chi, two_theta, intens, error = n
                     data = [two_theta, intens, error]
                     hkl_2_theta = self.fit_the_peaks_for_on_diffraktin_pattern(data=data, peak_regions=peak_regions)
@@ -158,15 +172,75 @@ class SPODIData(Data):
                 force_dic[j] = help_list  # [[phase, force, omega, chi, h, k, l, 2theta, 2theta_error], ...]
             self.data_dic_phases[phase] = force_dic
 
-            # calculate phi and psi
+        # calculate phi, psi, strain and stress and store it in
+        self.calc_phi_psi_epsilon()
 
-    def calc_phi_and_psi(self):
-        for i in self.data_dic_phases:  # loop over all phases, i is the key of the dic
-            for j in self.data_dic_phases[i]:  # loop over all forces, j is the key of the force dic
-                for n in self.data_dic_phases[i][j]:  # loop over all data
-                    phase, force, omega, chi, hkl_2_theta = n
-                    h, k, l, two_theta, two_theta_error = hkl_2_theta
-                    
+    def calc_phi_psi_epsilon(self):
+        """
+        calculate phi and psi angles of the scattering direction with respect to the specimen frame using the
+        angles chi and omega, and calculating the strain
+        :return: None
+        """
+        for i, force_dict in self.data_dic_phases:  # loop over all phases, i is the key of the dic
+            key_list = sorted(force_dict.keys())  # key list of the force dict
+            self.fitted_data.data_dict[i] = []
+            # self.data_dict[i] = []
+
+            force_stress_dict = {}
+            for j, v in enumerate(key_list):
+                # loop over all forces, v is the key of the force dic (it is equal to the force)
+                # j is the position of the key, j+1 is the next force, j-1 is the previous force
+                phi_psi_hkl = []
+                strain_stress = []
+                if v == 0:
+                    pass
+                else:
+                    for n in xrange(len(force_dict[v])):  # loop over all data of each force
+                        # values of the straind data:
+                        phase, force, omega, chi, hkl_2_theta = force_dict[v][n]
+                        h, k, l, two_theta, two_theta_error = hkl_2_theta
+
+                        # vals of the unstraind data
+                        phase_0, force_0, omega_0, chi_0, hkl_2_theta_0 = force_dict[key_list[0]][n]
+                        h_0, k_0, l_0, two_theta_0, two_theta_error_0 = hkl_2_theta_0
+
+                        phi = self.PHII(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta_0 / 2,
+                                        chi=chi, omega=omega)
+
+                        psi = self.psii(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta_0 / 2,
+                                        chi=chi, omega=omega)
+
+                        phi_psi_hkl.append([phi, psi, h, k, l])
+
+                        strain, strain_error = self.delta_epsilon(two_theta=two_theta,
+                                                                  two_theta_0=two_theta_0,
+                                                                  two_theta_err=two_theta_error,
+                                                                  two_theta_0_err=two_theta_error_0)
+
+                        stress, stress_err = self.calc_applied_stress(force=force)
+                        strain_stress.append([strain, strain_error, stress, stress_err])
+                    force_stress_dict[v] = [phi_psi_hkl, strain_stress]
+            self.fitted_data.data_dict[i] = force_stress_dict
+
+    @staticmethod
+    def delta_epsilon(two_theta, two_theta_0, two_theta_err, two_theta_0_err):
+        """
+            This method determines the strain. epsilon = (sin(Theta0)/sin(Theta))-1
+        """
+        Theta = deg_to_rad(two_theta)
+        Theta0 = deg_to_rad(two_theta_0)
+        Theta_weight = two_theta_err / 180. * np.pi / 2
+        Theta_0_weight = two_theta_0_err * np.pi / 180. / 2
+
+        e1 = np.sin(Theta0) / np.sin(Theta) - 1.
+
+        weight = np.sqrt((np.cos(Theta0) / np.sin(Theta) * Theta_0_weight) ** 2 +
+                         (np.sin(Theta0) / (np.sin(Theta) ** 2) * np.cos(Theta) * Theta_weight) ** 2)
+        # e2=(Theta0-Theta)/np.tan(Theta)
+        # print 'Epsilon: ',e1, "weight: ", weight, self.Theta_0_weight, Theta_0_weight
+        # print "strain: ", e1, weight
+        return e1, weight
+
     @staticmethod
     def transformation_L_from_I_to_P(chi, omega):
         """
@@ -267,16 +341,13 @@ class SPODIData(Data):
 
 class DataContainer(object):
     def __init__(self):
-        self.phi_psi_hkl_list = []
-        self.epsilon_list = []
-        self.epsilon_weight_list = []
-        self.stress = 0.
+        self.data_dict = {}  # dictionary of the data. Key is the phase. val is the list [hkl_phi_psi, epsilon_sigma]
 
-    def insert_data_point(self, phi, psi, h, k, l, epsilon, delta_epsilon, stress):
-        self.phi_psi_hkl_list.append([phi, psi, h, k, l])
-        self.epsilon_list.append(epsilon)
-        self.epsilon_weight_list.append(delta_epsilon)
-        self.stress = stress
+    def get_data_phase_1_force(self, force):
+        return self.data_dict[1][force]
+
+    def get_data_phase_2_force(self, force):
+        return self.data_dict[2][force]
 
 
 def deg_to_rad(deg):
