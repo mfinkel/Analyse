@@ -261,8 +261,7 @@ class SPODIData(Data):
 
                             # check if the orientation is correct
                             if (int(omega) == int(omega_0) and int(chi) == int(chi_0) and int(h) == int(h_0) and
-                                int(k) == int(k_0) and int(l) == int(l_0)):
-
+                                        int(k) == int(k_0) and int(l) == int(l_0)):
                                 # calc phi
                                 phi = self.PHII(chi_of_scatteringvector=90, theta=two_theta / 2,
                                                 theta_o=two_theta_0 / 2,
@@ -404,12 +403,11 @@ class SPODIData(Data):
 
     def get_sum_data(self):
         omega1 = self.data_dic_raw[0][1]
-        sum_intens=np.zeros((len(self.data_dic_raw[0][4])))
+        sum_intens = np.zeros((len(self.data_dic_raw[0][4])))
         for i in self.data_dic_raw[0]:
-            if omega1==i[1]:
-                sum_intens+=np.array(i[4])
+            if omega1 == i[1]:
+                sum_intens += np.array(i[4])
         return self.data_dic_raw[0][3], sum_intens
-
 
 
 class DataContainer(object):

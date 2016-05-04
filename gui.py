@@ -523,12 +523,8 @@ class CentralWidget(QWidget):
             # self.Data_Iron.fit_all_peaks()
 
     def select_hkl_SPODI_Data(self):
-        self.data_object.get_sum_data()
-        x_data = self.Data_Iron.unstraind_data_object_list[0].data[0]
-        y_data = self.Data_Iron.unstraind_data_object_list[0].data[1]
+        x_data, y_data = self.data_object.get_sum_data()
         self.central_plot.add_xy_data(x_data, y_data)
-        self.update()
-        self.central_plot.update()
 
     def set_hkl_setting_and_fit_the_peaks(self, value):
         self.phase_peak_region = value
