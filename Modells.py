@@ -496,13 +496,14 @@ Methods:
 
 
 class Fit_strain_with_texture_single_phase(object):
-    def __init__(self, odf_Matrix, force, diameter, strains_data, xvals, weights=None):
+    def __init__(self, odf_Matrix, odf_Inclusion,  data_object):
         self.xvals = xvals
         self.force = force
         self.diameter = diameter
         self.__strains_data = strains_data
         self.__weights = weights
         self.__odf_Matrix = odf_Matrix
+        self.__odf_Inclusion = odf_Inclusion
         self.counter2 = 0
         self.symetry_Matrix = self.__odf_Matrix.crystal_symmetry
         try:
@@ -1009,6 +1010,14 @@ class Fit_strain_with_texture_single_phase(object):
         return (np.array(data) - np.array(strain_epsilon)) / (np.array(weight))
 
     def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture=False):
+        """
+        :param filename: name of the outputfile
+        :param material: name of the material
+        :param method: name of the used fitting method
+        :param path: path to the output file (default: .\\results\\)
+        :param texture: use the texture for the fit: Yes-> True, No-> False
+        :return: result of the fit
+        """
         self.__counter = 0
         params = self.__params_Matrix
         data = self.__strains_data
@@ -1035,9 +1044,9 @@ class Fit_strain_with_texture_single_phase(object):
         dt = t2 - t1
         print "time for fit: ", dt
         nice_result = self.__print_result_nicely(result, fitting_time=dt, date_of_fit=date, method=fit_method)
-        Material = material
+
         filename = path + filename
-        self.__save_data(filename, Material, nice_result)
+        self.__save_data(filename, material, nice_result)
         return result
 
     def do_the_fitting_self_consistent_sigma_and_el_const(self, filename, material, method="eshelby",
@@ -1821,10 +1830,13 @@ class ODF(object):
         self.__params = {"psi": 0, "phi": 0, "phi_2": deg_to_rad(0), 'phi_b': 0, 'betha_b': 0,
                          'phi2_': 0}  # "phi_2": deg_to_rad(-90)
 
-    def read_data(self, path, filename):
+    def read_data(self, filename):
         """
         This Function reads the data stored in filename
         """
+        filename = os.path.normpath(filename)
+        path, filename = os.path.split(filename)
+        path = "{0}\\".format(path)
         self.name = filename.split(".")[0]
         self.__path_to_data = path
         filename = path + filename

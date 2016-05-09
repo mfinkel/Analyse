@@ -30,6 +30,8 @@ else:
 import methods
 from functools import partial
 import handle_data
+import Modells
+import lmfit
 
 
 class insert_const_widget(QWidget):
@@ -401,7 +403,9 @@ class Main(QMainWindow):
 class CentralWidget(QWidget):
     def __init__(self, parent):
         super(CentralWidget, self).__init__(parent)
+        # object containing the data (scattering data end texture data)
         self.data_object = handle_data.Data(sample_diameter=None)
+
         self.ok_button = QPushButton("OK")
         self.cancel_button = QPushButton("Cancel")
         self.region = phase_region_class()
@@ -439,16 +443,25 @@ class CentralWidget(QWidget):
         self.fit_phase_combbox = self.create_n_o_phases_combbox()
         self.modi_text = QLabel("Theory")
         self.modi = self.create_modi_comb_box()
+
+
         self.ODF_text = QLabel("Texture?")
         self.text_jn = self.create_jn_combbox()
 
         self.do_the_fit_button = QPushButton('fitting Data')
         self.do_the_fit_button.setEnabled(False)
         self.do_the_fit_button.clicked.connect(self.fit_the_data)
-
+        self.output_filename = QLineEdit("Result_")
+        self.material = QLineEdit("iron")
+        self.material.returnPressed.connect(self.change_outputfile_name)
+        self.modi.currentIndexChanged.connect(self.change_outputfile_name)
         self.connect(self, SIGNAL("data"), self.central_plot.add_data)
 
         self.layout_handling()
+
+    def change_outputfile_name(self):
+        text = "Result_" + str(self.material.text()) + "_" + str(self.modi.currentText())
+        self.output_filename.setText(text)
 
     def connect_read_scattering_data(self):
         """
@@ -474,6 +487,7 @@ class CentralWidget(QWidget):
             self.widget_set_data_path = LOAD_SPODI_DATA("set data path", number_of_phases=n_o_p,
                                                         number_of_straind_datasets=n_o_d)
             self.connect(self.widget_set_data_path, SIGNAL("data_dir_list"), self.receve_the_pathes_SPODI_case)
+
         elif self.choose_experiment_comb_box.currentText() == "POLDI":
             print('is still to implement')
 
@@ -550,12 +564,29 @@ class CentralWidget(QWidget):
             Bool = True
         print(self.modi.currentText(), "\n",
               Bool)
-        try:
-            self.Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=str(self.modi.currentText()),
-                                                     number_of_datapoints=None, texture=Bool)
-        except AttributeError:
-            self.read_scattering_data_SPODI_case()
-            self.fit_the_data()
+        print("----------------------------\n",
+              "Fit the data using model: " +
+              self.modi.currentText() +
+              "\n",
+              "With texture: ", self.text_jn.currentText(), "\n",
+              "Fitting phase: ", self.fit_phase_combbox, "\n",
+              "----------------------------")
+
+        fit_object = Modells.Fit_strain_with_texture_single_phase(data_object=self.data_object)
+
+
+        result = 0
+        if Bool:
+            result = fit_object.do_the_fitting(filename=str(self.output_filename.text()),
+                                               material="iron",
+                                               method=str(self.modi.currentText()))
+
+            # try:
+            #     self.Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=str(self.modi.currentText()),
+            #                                              number_of_datapoints=None, texture=Bool)
+            # except AttributeError:
+            #     self.read_scattering_data_SPODI_case()
+            #     self.fit_the_data()
 
     def layout_handling(self):
         # Layout handling
@@ -604,6 +635,10 @@ class CentralWidget(QWidget):
         layout_fitting.addWidget(self.modi)
         layout_fitting.addWidget(self.ODF_text)
         layout_fitting.addWidget(self.text_jn)
+        layout_fitting.addWidget(self.label("material:"))
+        layout_fitting.addWidget(self.material)
+        layout_fitting.addWidget(self.label("output filename:"))
+        layout_fitting.addWidget(self.output_filename)
         layout_fitting.addWidget(self.do_the_fit_button)
 
         layout.addLayout(layout_fitting)
@@ -836,14 +871,14 @@ class phase_region_class(object):
         for i in phase_region_list:
             f.write("phase: " + str(i[0]))
             f.write("\nhkl:    2Theta_min_pos:          2Theta_max_pos:\n")
-            print ("i: ", i)
+            print("i: ", i)
             for j in i[1]:
-                print ("hkl: ", j)
-                print (j[0], j[1], j[2], j[3], j[4])
+                print("hkl: ", j)
+                print(j[0], j[1], j[2], j[3], j[4])
                 try:
                     string = "{} {} {} {} {} ".format(int(j[0]), int(j[1]), int(j[2]), j[3], j[4])
-                    f.write(string+"\n")
-                    print ("string: ", string)
+                    f.write(string + "\n")
+                    print("string: ", string)
                 except IndexError:
                     pass
             f.write("########\n")
@@ -872,14 +907,14 @@ class phase_region_class(object):
 
 
             else:
-                print ("else_case: ", split)
+                print("else_case: ", split)
                 h = int(split[0])
                 k = int(split[1])
                 l = int(split[2])
                 theta_min = int(split[3])
                 theta_max = int(split[4])
                 hkl_2_theta.append([h, k, l, theta_min, theta_max])
-        print ("REGION: ", self.region)
+        print("REGION: ", self.region)
         return self.region
 
 

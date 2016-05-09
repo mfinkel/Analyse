@@ -26,20 +26,19 @@ class Data(object):
         self.odf_phase_2 = self.get_odf(odf_phase_2_file)
         self.sample_diameter = sample_diameter
 
-    @staticmethod
-    def get_odf(odf_file):
+    def get_odf(self, odf_file):
         """
         this function reads the odf from the odf_file and creates a ODF() object.
         :param odf_file:
         :return:
         """
         if odf_file is None:
+            self.n_o_p = 1
             return None
+
+        self.n_o_p = 2  # number of phases
         odf = Modells.ODF()
-        odf_file = os.path.normpath(odf_file)
-        path, filename = os.path.split(odf_file)
-        path = "{0}\\".format(path)
-        odf.read_data(path=path, filename=filename)
+        odf.read_data(filename=odf_file)
         return odf
 
     def calc_applied_stress(self, force):
