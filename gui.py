@@ -579,7 +579,12 @@ class CentralWidget(QWidget):
         if Bool:
             result = fit_object.do_the_fitting(filename=str(self.output_filename.text()),
                                                material="iron",
-                                               method=str(self.modi.currentText()))
+                                               method=str(self.modi.currentText()),
+                                               phase=int(str(self.fit_phase_combbox.currentText())))
+        text = "Finnished calculation\nresults are stored under {}".format(result[1])
+        mbox = QMessageBox()
+        mbox.setIcon(QMessageBox.Information)
+        mbox.text(text)
 
             # try:
             #     self.Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=str(self.modi.currentText()),

@@ -235,7 +235,7 @@ class SPODIData(Data):
                                         chi=chi, omega=omega)
                         if not (np.isnan(phi) or np.isnan(psi)):
                             phi_psi_hkl.append([phi, psi, h, k, l])
-                            print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}".\
+                            print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
                                 format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
 
                             strain, strain_error = self.delta_epsilon(two_theta=two_theta,
@@ -253,7 +253,6 @@ class SPODIData(Data):
 
     def calc_phi_psi_epsilon_slow(self):
         keys = sorted(self.data_dic_phases.keys())
-
 
         for i in keys:  # loop over all phases, i is the key of the dic
             force_dict = self.data_dic_phases[i]
@@ -446,6 +445,12 @@ class DataContainer(object):
 
     def get_data_phase_2_force(self, force):
         return self.data_dict[2][force]
+
+    def get_force_dict_phase_1(self):
+        return self.data_dict[1]
+
+    def get_force_dict_phase_2(self):
+        return self.data_dict[2]
 
 
 def deg_to_rad(deg):

@@ -496,18 +496,19 @@ Methods:
 
 
 class Fit_strain_with_texture_single_phase(object):
-    def __init__(self, odf_Matrix, odf_Inclusion,  data_object):
-        self.xvals = xvals
+    def __init__(self, data_object):
+        self.data_object = data_object
+        self.xvals =
         self.force = force
         self.diameter = diameter
         self.__strains_data = strains_data
         self.__weights = weights
-        self.__odf_Matrix = odf_Matrix
-        self.__odf_Inclusion = odf_Inclusion
+        self.__odf_Matrix = self.data_object.odf_phase_1
+        self.__odf_Inclusion = self.data_object.odf_phase_1
         self.counter2 = 0
         self.symetry_Matrix = self.__odf_Matrix.crystal_symmetry
         try:
-            self.symetry_Inclusion = self.odf_Inclusion.crystal_symmetry
+            self.symetry_Inclusion = self.__odf_Inclusion.crystal_symmetry
             self.phase_flag = True  # multi phase material
         except:
             self.phase_flag = False  # single phase material
@@ -850,37 +851,6 @@ class Fit_strain_with_texture_single_phase(object):
         self.counter2 = 0
         print "Iteration #", self.__counter
         self.set_parameters_of_the_Matrix_in_matrix_representation(params)
-        # if self.symetry_Matrix == "isotope":
-        #     self.__constant_c_Matrix_tensor_voigt = \
-        #         np.array([
-        #             [params['c_11'].value, params['c_12'].value, params['c_12'].value, 0, 0, 0],
-        #             [params['c_12'].value, params['c_11'].value, params['c_12'].value, 0, 0, 0],
-        #             [params['c_12'].value, params['c_12'].value, params['c_11'].value, 0, 0, 0],
-        #             [0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value), 0, 0],
-        #             [0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value), 0],
-        #             [0, 0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value)]
-        #         ])
-        # elif self.symetry_Matrix == "m-3m":  # cubic
-        #     print "Symetry:", self.symetry_Matrix
-        #     self.__constant_c_Matrix_tensor_voigt = \
-        #         np.array([
-        #             [params['c_11'].value, params['c_12'].value, params['c_12'].value, 0, 0, 0],
-        #             [params['c_12'].value, params['c_11'].value, params['c_12'].value, 0, 0, 0],
-        #             [params['c_12'].value, params['c_12'].value, params['c_11'].value, 0, 0, 0],
-        #             [0, 0, 0, params['c_44'].value, 0, 0],
-        #             [0, 0, 0, 0, params['c_44'].value, 0],
-        #             [0, 0, 0, 0, 0, params['c_44'].value]
-        #         ])
-        # elif self.symetry_Matrix == "hexagonal" or self.symetry_Matrix == "hexagonal":
-        #     self.__constant_c_Matrix_tensor_voigt = \
-        #         np.array([
-        #             [params['c_11'].value, params['c_12'].value, params['c_13'].value, 0, 0, 0],
-        #             [params['c_12'].value, params['c_11'].value, params['c_13'].value, 0, 0, 0],
-        #             [params['c_13'].value, params['c_13'].value, params['c33'].value, 0, 0, 0],
-        #             [0, 0, 0, params['c_44'].value, 0, 0],
-        #             [0, 0, 0, 0, params['c_44'].value, 0],
-        #             [0, 0, 0, 0, 0, 2 * (params['c_11'].value - params['c_12'].value)]
-        #         ])
 
         print "parameter vals:"
         print "C_11: ", params["c_11"].value
@@ -1009,8 +979,10 @@ class Fit_strain_with_texture_single_phase(object):
 
         return (np.array(data) - np.array(strain_epsilon)) / (np.array(weight))
 
-    def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture=False):
+    def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture=False, phase=1,
+                       phase_name=""):
         """
+        :param phase: phase to fit
         :param filename: name of the outputfile
         :param material: name of the material
         :param method: name of the used fitting method
@@ -1028,6 +1000,9 @@ class Fit_strain_with_texture_single_phase(object):
         fit_method = 'leastsq'  # the optons are:
         # leastsq, nelder, lbfgsb, powell, cg, newton, cobyla, tnc, dogleg, slsqp,
         # differential_evolution
+        data_phase_1 = self.data_object.fittet_data.get_force_dict_phase_1()
+        data_phase_2 = self.data_object.fittet_data.get_force_dict_phase_2()
+
         if texture:
             result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
                                  kws={'data': data, 'weight': weight, 'method': "eshelby"})
@@ -1036,7 +1011,8 @@ class Fit_strain_with_texture_single_phase(object):
             print lm.fit_report(result.params)
             self.__counter = 0
             result = lm.minimize(self.__residuum_with_texture, params, method=fit_method, args=(xvals,),
-                                 kws={'data': data, 'weight': weight, 'method': method})
+                                 kws={'data_matrix': data_phase_1, 'data_inclusion': data_phase_2, 'method': method,
+                                      'fitted_phase': phase})
         else:
             result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
                                  kws={'data': data, 'weight': weight, 'method': method})
@@ -1046,8 +1022,8 @@ class Fit_strain_with_texture_single_phase(object):
         nice_result = self.__print_result_nicely(result, fitting_time=dt, date_of_fit=date, method=fit_method)
 
         filename = path + filename
-        self.__save_data(filename, material, nice_result)
-        return result
+        filename = self.__save_data(filename, material, phase_name, nice_result)
+        return result, filename
 
     def do_the_fitting_self_consistent_sigma_and_el_const(self, filename, material, method="eshelby",
                                                           path=".\\results\\", texture=False):
@@ -1213,13 +1189,15 @@ class Fit_strain_with_texture_single_phase(object):
             tempfile._name_sequence = orig
         return filename
 
-    def __save_data(self, filename, material, data):
-        filename = '%s.txt' % (filename)
+    def __save_data(self, filename, material, phase, data):
+        filename = u'{0:s}.txt'.format(filename)
         # filename = self.__test_if_file_exists(filename)
         filename = self.__uniquify(filename)
         result = open(filename, "w")
-        string_to_write = "Material: %s\n" % (material) + data
+        string_to_write = "Material: %s\nPhase: %s" % (material, phase) + data
         result.write(string_to_write)
+        result.close()
+        return filename
 
     def invert_four_rank_c_tensor(self, c_tensor):
         c_voigt = self.__conv_extended_not_to_voigt_not_constants_c(c_tensor)
@@ -1305,8 +1283,11 @@ class Fit_strain_with_texture_single_phase(object):
 
     def stress_sigma(self, i, j):
         """
+            seting up the stress tensor, the applied stress is draged out of the tensor
             This function determines the 33-component of the macro-straintensor due
-            to the Force in this (and only in this) direction with respekt to
+
+
+            to the Force in this (and only in this) direction with respect to
             the specimen reference frame.
             The component is:
                 sigma33 = F/A
@@ -1314,11 +1295,9 @@ class Fit_strain_with_texture_single_phase(object):
             :param j:
             :param i:
         """
-        A = (self.diameter * np.power(10., -3.)) ** 2 / 4 * np.pi
-        sigma3 = self.force * np.power(10., 3) / A  # *np.power(10.,-9)
         sig = np.zeros((3, 3))
         nu = 0.3
-        sig[2, 2] = sigma3
+        sig[2, 2] = 1
         # sig[1, 1] = - nu * sigma3
         # sig[0, 0] = - nu * sigma3
         # sig = add_rot().dot(sig.dot(add_rot().transpose()))
@@ -1345,7 +1324,7 @@ class Fit_strain_with_texture_single_phase(object):
         g = self.__odf_Matrix.g1(phi, psi, phi2)
         for i in xrange(3):
             for j in xrange(3):
-                sig[i, j] = g[i, 2] * g[j, 2] * sigma3
+                sig[i, j] = g[i, 2] * g[j, 2] * 1
         # print "sigma_33: ", sigma3, self.force, self.diameter
         return sig[i, j]
 
@@ -1744,7 +1723,7 @@ class make_some_nice_plots(Fit_strain_with_texture_single_phase):
         self.params_inclusion = lm.Parameters()
         params = self.insert_constant_params()
         self.print_params()
-        for i in xrange(0,361,45):
+        for i in xrange(0, 361, 45):
             self.plot_F_sin_2_psi(h=1, k=1, l=0, phi=deg_to_rad(i), method="reus")
         plt.show()
 
@@ -1773,7 +1752,7 @@ class make_some_nice_plots(Fit_strain_with_texture_single_phase):
         self.set_params(params_Matrix=self.params_matrix, params_Inclusion=self.params_inclusion)
 
     def plot_F_sin_2_psi(self, h, k, l, phi, method="reus"):
-        Psi = np.arange(0, np.pi/2, np.pi / 100.)
+        Psi = np.arange(0, np.pi / 2, np.pi / 100.)
         F_11_list = []
         F_22_list = []
         F_33_list = []
@@ -1791,7 +1770,7 @@ class make_some_nice_plots(Fit_strain_with_texture_single_phase):
         F_12_list = np.array(F_12_list) * np.power(10., 12.)
         print F_11_list
 
-        fig = plt.figure("f_sin^2Psi plot phi=%.1f"%(rad_to_deg(phi)))
+        fig = plt.figure("f_sin^2Psi plot phi=%.1f" % (rad_to_deg(phi)))
         ax1 = fig.add_subplot(1, 1, 1)
         # ax2 = fig.add_subplot(2,1,1)
         ax1.plot(np.sin(Psi) ** 2, F_11_list, 'b-', label='F_11, hkl{}{}{}'.format(h, k, l))
@@ -1967,7 +1946,6 @@ class ODF(object):
                          np.cos(psi)]
                         ])
         return res  # np.dot(add_rot(), np.dot(res, add_rot().transpose()))
-
 
     @staticmethod
     def omega(phi, psi, phi2):
@@ -2485,23 +2463,24 @@ class ODF(object):
 
 
 def add_rot():
-        """
-        rotates the ND perp to axis of the stick and the LD parallel to the stick axis
-        :return:
-        """
-        psi, phi, phi2 = deg_to_rad(0), -deg_to_rad(90), deg_to_rad(0)
-        # phi += np.pi / 2
-        # O = np.array([[np.cos(phi), np.sin(phi), 0.],
-        #               [-np.sin(phi), np.cos(phi), 0.],
-        #               [0., 0., 1.]
-        #               ]
-        #              )
-        res = np.array([[np.cos(phi), 0., -np.sin(phi)],
-                      [0., 1., 0.],
-                      [np.sin(phi), 0., np.cos(phi)]
-                      ]
-                     )
-        return res
+    """
+    rotates the ND perp to axis of the stick and the LD parallel to the stick axis
+    :return:
+    """
+    psi, phi, phi2 = deg_to_rad(0), -deg_to_rad(90), deg_to_rad(0)
+    # phi += np.pi / 2
+    # O = np.array([[np.cos(phi), np.sin(phi), 0.],
+    #               [-np.sin(phi), np.cos(phi), 0.],
+    #               [0., 0., 1.]
+    #               ]
+    #              )
+    res = np.array([[np.cos(phi), 0., -np.sin(phi)],
+                    [0., 1., 0.],
+                    [np.sin(phi), 0., np.cos(phi)]
+                    ]
+                   )
+    return res
+
 
 '''
 Printing the result and call the fittingfunctions
