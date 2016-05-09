@@ -405,7 +405,7 @@ class CentralWidget(QWidget):
         super(CentralWidget, self).__init__(parent)
         # object containing the data (scattering data end texture data)
         self.data_object = handle_data.Data(sample_diameter=None)
-
+        self.name_of_phase_dic = {1: "alpha", 2: "betha"}
         self.ok_button = QPushButton("OK")
         self.cancel_button = QPushButton("Cancel")
         self.region = phase_region_class()
@@ -441,9 +441,11 @@ class CentralWidget(QWidget):
         # handel the fitting process
         self.Fit_phase = QLabel("Fit phases: ")
         self.fit_phase_combbox = self.create_n_o_phases_combbox()
+        self.name_of_phase = QLineEdit(self.name_of_phase_dic[int(str(self.fit_phase_combbox.currentText()))])
+        self.name_of_phase.returnPressed.connect(self.change_name_of_phase)
+        self.fit_phase_combbox.currentIndexChanged.connect(self.change_name_of_phase_qlineedit)
         self.modi_text = QLabel("Theory")
         self.modi = self.create_modi_comb_box()
-
 
         self.ODF_text = QLabel("Texture?")
         self.text_jn = self.create_jn_combbox()
@@ -458,6 +460,12 @@ class CentralWidget(QWidget):
         self.connect(self, SIGNAL("data"), self.central_plot.add_data)
 
         self.layout_handling()
+
+    def change_name_of_phase_qlineedit(self):
+        self.name_of_phase.setText(self.name_of_phase_dic[int(str(self.fit_phase_combbox.currentText()))])
+
+    def change_name_of_phase(self):
+        self.name_of_phase_dic[int(str(self.fit_phase_combbox.currentText()))] = str(self.name_of_phase.text())
 
     def change_outputfile_name(self):
         text = "Result_" + str(self.material.text()) + "_" + str(self.modi.currentText())
@@ -572,26 +580,27 @@ class CentralWidget(QWidget):
               "Fitting phase: ", self.fit_phase_combbox, "\n",
               "----------------------------")
 
-        fit_object = Modells.Fit_strain_with_texture_single_phase(data_object=self.data_object)
+        fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
 
+        result = fit_object.do_the_fitting(filename=str(self.output_filename.text()),
+                                           material="iron",
+                                           method=str(self.modi.currentText()),
+                                           phase=int(str(self.fit_phase_combbox.currentText())),
+                                           phase_name=self.name_of_phase_dic[
+                                               int(str(self.fit_phase_combbox.currentText()))],
+                                           texture=Bool)
 
-        result = 0
-        if Bool:
-            result = fit_object.do_the_fitting(filename=str(self.output_filename.text()),
-                                               material="iron",
-                                               method=str(self.modi.currentText()),
-                                               phase=int(str(self.fit_phase_combbox.currentText())))
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
         mbox = QMessageBox()
         mbox.setIcon(QMessageBox.Information)
-        mbox.text(text)
+        mbox.setText(text)
 
-            # try:
-            #     self.Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=str(self.modi.currentText()),
-            #                                              number_of_datapoints=None, texture=Bool)
-            # except AttributeError:
-            #     self.read_scattering_data_SPODI_case()
-            #     self.fit_the_data()
+        # try:
+        #     self.Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=str(self.modi.currentText()),
+        #                                              number_of_datapoints=None, texture=Bool)
+        # except AttributeError:
+        #     self.read_scattering_data_SPODI_case()
+        #     self.fit_the_data()
 
     def layout_handling(self):
         # Layout handling
@@ -636,6 +645,8 @@ class CentralWidget(QWidget):
         layout.addWidget(self.label("Fit the data: "))
         layout_fitting.addWidget(self.Fit_phase)
         layout_fitting.addWidget(self.fit_phase_combbox)
+        layout_fitting.addWidget(self.label("phase name:"))
+        layout_fitting.addWidget(self.name_of_phase)
         layout_fitting.addWidget(self.modi_text)
         layout_fitting.addWidget(self.modi)
         layout_fitting.addWidget(self.ODF_text)
