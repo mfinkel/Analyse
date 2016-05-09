@@ -404,8 +404,9 @@ class CentralWidget(QWidget):
         self.data_object = handle_data.Data(sample_diameter=None)
         self.ok_button = QPushButton("OK")
         self.cancel_button = QPushButton("Cancel")
+        self.region = phase_region_class()
         try:
-            self.phase_peak_region = np.load(".\\phase_peak_region.npy")
+            self.phase_peak_region = self.region.load()
             self.loaded_peak_region = True
         except IOError:
             self.loaded_peak_region = False
@@ -454,9 +455,9 @@ class CentralWidget(QWidget):
         select the setup (SPODI, POLDI, ...)
         :return:
         """
-        if self.choose_experiment_comb_box.currentText()=="SPODI":
+        if self.choose_experiment_comb_box.currentText() == "SPODI":
             self.load_data_button.clicked.connect(self.read_scattering_data_SPODI_case)
-        elif self.choose_experiment_comb_box.currentText()=="POLDI":
+        elif self.choose_experiment_comb_box.currentText() == "POLDI":
             print("need to be implemented")
 
     def set_data_path_func(self):
@@ -528,12 +529,14 @@ class CentralWidget(QWidget):
 
     def set_hkl_setting_and_fit_the_peaks_SPODI(self, value):
         self.phase_peak_region = value
-        print ("------------------------------------")
-        print ("peak region: ", self.phase_peak_region)
-        region = phase_region_class(self.phase_peak_region)
-        np.save(".\\phase_peak_region", np.array(self.phase_peak_region))
-        print ("saved peak region")
-        print ("------------------------------------")
+        print("------------------------------------")
+        print("peak region: ", self.phase_peak_region)
+
+        self.region.save(self.phase_peak_region)
+        self.region.load()
+        # np.save(".\\phase_peak_region", np.array(self.phase_peak_region))
+        print("saved peak region")
+        print("------------------------------------")
         self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region)
         # self.Data_Iron.set_hkl_setting(self.phase_peak_region)
         # self.Data_Iron.fit_all_peaks()
@@ -825,19 +828,60 @@ class LOAD_SPODI_DATA(QWidget):
 
 
 class phase_region_class(object):
-    def __init__(self, phase_region_list):
-        self.region = phase_region_list
+    def __init__(self):
+        self.region = [[1, []], [2, []]]  # phase_region_list
 
-    def save(self):
+    def save(self, phase_region_list):
         f = open(".\\phase_region_list.dat", "w")
-        for i in self.region:
-            f.write(i)
-            f.write("\n")
+        for i in phase_region_list:
+            f.write("phase: " + str(i[0]))
+            f.write("\nhkl:    2Theta_min_pos:          2Theta_max_pos:\n")
+            print ("i: ", i)
+            for j in i[1]:
+                print ("hkl: ", j)
+                print (j[0], j[1], j[2], j[3], j[4])
+                try:
+                    string = "{} {} {} {} {} ".format(int(j[0]), int(j[1]), int(j[2]), j[3], j[4])
+                    f.write(string+"\n")
+                    print ("string: ", string)
+                except IndexError:
+                    pass
+            f.write("########\n")
         f.close()
 
     def load(self):
         f = open(".\\phase_region_list.dat", "r")
         lines = f.readlines()
+        phase = 0
+        hkl_2_theta = []
+        for i in lines:
+            i.strip()
+            split = i.split(" ")
+
+            print(split)
+            if split[0] == "phase:":
+                phase = int(split[1])
+
+            elif split[0] == "hkl:":
+                print("hkl: ")
+                pass
+
+            elif split[0] == "########\n":
+                self.region[phase - 1][1] = hkl_2_theta
+                hkl_2_theta = []
+
+
+            else:
+                print ("else_case: ", split)
+                h = int(split[0])
+                k = int(split[1])
+                l = int(split[2])
+                theta_min = int(split[3])
+                theta_max = int(split[4])
+                hkl_2_theta.append([h, k, l, theta_min, theta_max])
+        print ("REGION: ", self.region)
+        return self.region
+
 
 def main():
     app = QApplication(sys.argv)
