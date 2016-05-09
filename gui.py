@@ -406,7 +406,9 @@ class CentralWidget(QWidget):
         self.cancel_button = QPushButton("Cancel")
         try:
             self.phase_peak_region = np.load(".\\phase_peak_region.npy")
+            self.loaded_peak_region = True
         except IOError:
+            self.loaded_peak_region = False
             self.phase_peak_region = []
 
         # Load the data and sample specifications
@@ -417,7 +419,7 @@ class CentralWidget(QWidget):
         self.number_of_datasets_under_strain = self.create_number_of_datasets_combbox()
         self.diameter = QLineEdit("6")
         self.automate = QLabel("select hkl manualy?")
-        self.automate_text = self.create_jn_combbox()
+        self.select_hkl_setting_manualy_coice = self.create_jn_combbox()
         self.load_data_button = QPushButton('load Data')
         self.load_data_button.setEnabled(False)
 
@@ -429,7 +431,7 @@ class CentralWidget(QWidget):
 
         # add the central plot to display the data
         self.central_plot = matplotlibwidget.Preview("Select_Data")
-        self.connect(self.central_plot, SIGNAL("phase_peak_region"), self.set_hkl_setting_and_fit_the_peaks)
+        self.connect(self.central_plot, SIGNAL("phase_peak_region"), self.set_hkl_setting_and_fit_the_peaks_SPODI)
 
         # handel the fitting process
         self.Fit_phase = QLabel("Fit phases: ")
@@ -440,6 +442,7 @@ class CentralWidget(QWidget):
         self.text_jn = self.create_jn_combbox()
 
         self.do_the_fit_button = QPushButton('fitting Data')
+        self.do_the_fit_button.setEnabled(False)
         self.do_the_fit_button.clicked.connect(self.fit_the_data)
 
         self.connect(self, SIGNAL("data"), self.central_plot.add_data)
@@ -499,13 +502,8 @@ class CentralWidget(QWidget):
 
     def read_scattering_data_SPODI_case(self):
         Bool = False
-        if self.automate_text.currentText() == "Yes":
+        if self.select_hkl_setting_manualy_coice.currentText() == "Yes":
             Bool = True
-
-        print(self.path_of_straind_data_1.text(), "\n",
-              self.path_of_unstraind_data.text(), "\n",
-              self.odf_phase_1_path.text(), "\n",
-              Bool)
 
         self.data_object = handle_data.SPODIData(sample_diameter=int(str(self.diameter.text())),
                                                  odf_phase_1_file=self.path_of_odf_phase1,
@@ -516,20 +514,31 @@ class CentralWidget(QWidget):
         # self.Data_Iron.read_scattering_SPODI_data(path_of_unstraind_data=str(self.path_of_unstraind_data.text()),
         #                                           path_of_straind_data=str(self.path_of_straind_data_1.text()))
 
-        if Bool:
+        if Bool or not self.loaded_peak_region:
             self.select_hkl_SPODI_Data()
         else:
             self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region, plot=False)
+            self.do_the_fit_button.setEnabled(True)
             # self.Data_Iron.fit_all_peaks()
 
     def select_hkl_SPODI_Data(self):
         x_data, y_data = self.data_object.get_sum_data()
+        print("data_x:", x_data)
         self.central_plot.add_xy_data(x_data, y_data)
 
-    def set_hkl_setting_and_fit_the_peaks(self, value):
+    def set_hkl_setting_and_fit_the_peaks_SPODI(self, value):
         self.phase_peak_region = value
-        self.Data_Iron.set_hkl_setting(self.phase_peak_region)
-        self.Data_Iron.fit_all_peaks()
+        print ("------------------------------------")
+        print ("peak region: ", self.phase_peak_region)
+        region = phase_region_class(self.phase_peak_region)
+        np.save(".\\phase_peak_region", np.array(self.phase_peak_region))
+        print ("saved peak region")
+        print ("------------------------------------")
+        self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region)
+        # self.Data_Iron.set_hkl_setting(self.phase_peak_region)
+        # self.Data_Iron.fit_all_peaks()
+
+        self.do_the_fit_button.setEnabled(True)
         print("coming from other class:", "\n", self.phase_peak_region)
 
     def fit_the_data(self):
@@ -577,7 +586,7 @@ class CentralWidget(QWidget):
         layout_load_data_h3.addWidget(self.label("set diameter in mm: "))
         layout_load_data_h3.addWidget(self.diameter)
         layout_load_data_h3.addWidget(self.automate)
-        layout_load_data_h3.addWidget(self.automate_text)
+        layout_load_data_h3.addWidget(self.select_hkl_setting_manualy_coice)
         layout_load_data_h3.addWidget(self.load_data_button)
         layout.addLayout(layout_load_data_h1)
         layout.addLayout(layout_load_data_h2)
@@ -808,11 +817,27 @@ class LOAD_SPODI_DATA(QWidget):
         odf2 = self.odf_phase_2_path.text()
         unstraind = self.path_of_unstraind_data.text()
         data_dir_list = []
+        data_dir_list.append(self.path_of_unstraind_data.text())
         for i in xrange(len(self.straind_data)):
             data_dir_list.append(self.straind_data[i].text())
         self.emit(SIGNAL("data_dir_list"), (odf1, odf2, unstraind, data_dir_list))
         self.close()
 
+
+class phase_region_class(object):
+    def __init__(self, phase_region_list):
+        self.region = phase_region_list
+
+    def save(self):
+        f = open(".\\phase_region_list.dat", "w")
+        for i in self.region:
+            f.write(i)
+            f.write("\n")
+        f.close()
+
+    def load(self):
+        f = open(".\\phase_region_list.dat", "r")
+        lines = f.readlines()
 
 def main():
     app = QApplication(sys.argv)

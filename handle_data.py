@@ -72,7 +72,8 @@ class SPODIData(Data):
 
         for i in list_of_dirs:
             data_files = i + "*.eth"
-            data_files = glob(data_files)
+            print data_files
+            data_files = glob(str(data_files))
             data_files.sort()
             help_list = []
             force = 0
@@ -160,8 +161,10 @@ class SPODIData(Data):
         :param plot:
         :return:
         """
+        print "called fit_all_data method", peak_regions_phase
         for i in peak_regions_phase:  # loop over all phases
             phase, peak_regions = i
+            print "phase, peak_regin: ", phase, peak_regions
             # self.data_dic_phases[phase] = list()
             force_dic = {}
             for j in self.data_dic_raw:  # loop over all forces
@@ -171,9 +174,11 @@ class SPODIData(Data):
                     data = [two_theta, intens, error]
                     hkl_2_theta = self.fit_the_peaks_for_on_diffraction_pattern(data=data, peak_regions=peak_regions)
                     hkl_2_theta = hkl_2_theta.tolist()
+                    print hkl_2_theta
                     for m in hkl_2_theta:
                         help_list.append([phase, force, omega, chi, m])
                 force_dic[j] = help_list  # [[phase, force, omega, chi, h, k, l, 2theta, 2theta_error], ...]
+            print "force dict: ", force_dic
             self.data_dic_phases[phase] = force_dic
 
         # calculate phi, psi, strain and stress and store it in
@@ -189,6 +194,7 @@ class SPODIData(Data):
         angles chi and omega, and calculating the strain
         :return: None
         """
+        print "call calc_phi_psi_epsilon: ", self.data_dic_phases
         for i, force_dict in self.data_dic_phases:  # loop over all phases, i is the key of the dic
             key_list = sorted(force_dict.keys())  # key list of the force dict
             self.fitted_data.data_dict[i] = []
@@ -223,6 +229,7 @@ class SPODIData(Data):
                                         chi=chi, omega=omega)
 
                         phi_psi_hkl.append([phi, psi, h, k, l])
+                        print "omega: {i}, chi: {i}, phi: {.2d}, psi: {.2d}".format(omega, chi, phi, psi)
 
                         strain, strain_error = self.delta_epsilon(two_theta=two_theta,
                                                                   two_theta_0=two_theta_0,
@@ -402,12 +409,17 @@ class SPODIData(Data):
         return float(phi)
 
     def get_sum_data(self):
-        omega1 = self.data_dic_raw[0][1]
-        sum_intens = np.zeros((len(self.data_dic_raw[0][4])))
+        omega1 = self.data_dic_raw[0][0][1]
+        print "omega", omega1
+        sum_intens = np.zeros((len(self.data_dic_raw[0][0][4])))
         for i in self.data_dic_raw[0]:
+            print len(i[3]), len(i[4]), len(i[5])
             if omega1 == i[1]:
-                sum_intens += np.array(i[4])
-        return self.data_dic_raw[0][3], sum_intens
+                try:
+                    sum_intens += np.array(i[4])
+                except ValueError:
+                    pass
+        return self.data_dic_raw[0][0][3], sum_intens
 
 
 class DataContainer(object):

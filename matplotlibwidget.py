@@ -19,12 +19,13 @@ import numpy as np
 
 rcParams['font.size'] = 9
 
+
 def get_index_from_arry(array, value):
-    array= abs(np.array(array) - value)
+    array = abs(np.array(array) - value)
     m = min(array)
     for i in xrange(len(array)):
-        print abs(abs(m)-abs(array[i]))
-        if abs(abs(m)-abs(array[i])) < np.power(10., -10):
+        # print abs(abs(m) - abs(array[i]))
+        if abs(abs(m) - abs(array[i])) < np.power(10., -10):
             return i
     return -1
 
@@ -169,6 +170,14 @@ class hkl_input_class(QtGui.QWidget):
                 n += 1
             m += 1
 
+    def reset(self):
+        print("reset: ")
+        for i in xrange(0, len(self.lines)):
+            for j in range(1, 6):
+                self.lines[i][j].setReadOnly(True)
+                self.lines[i][j].setText("-1")
+                self.lines[i][j].setStyleSheet("color: rgb(255, 100, 0);")
+
     def get_last_1(self):
         for i in range(0, len(self.lines)):
             if self.lines[i][1].text() == "-1":
@@ -179,7 +188,7 @@ class hkl_input_class(QtGui.QWidget):
                     self.lines[i][j].setStyleSheet("color: rgb(0, 0, 0);")
                 return i
             for j in range(0, 6):
-                print self.lines[i][j].text()
+                print "get last: ", self.lines[i][j].text()
                 try:
                     self.lines[i][j].setReadOnly(True)
                 except AttributeError:
@@ -200,6 +209,7 @@ class Preview(QtGui.QWidget):
         self.filter_list = []
         self.load_filter_list = []
         self.img_filter_list = []
+        self.peak_region = [[1, []], [2, []]]
         # a figure instance to plot on
         self.figure = plt.figure()
 
@@ -228,11 +238,15 @@ class Preview(QtGui.QWidget):
 
         newitem = QtGui.QTableWidgetItem("hallo")
         # self.table.setItem(0, 0, newitem)
+        self.active_phase = QtGui.QComboBox()
+        self.active_phase.addItem("phase 1")
+        self.active_phase.addItem("phase 2")
+        self.active_phase.currentIndexChanged.connect(self.changed_active_phase)
         self.add_hkl_button = QtGui.QPushButton("add hkl")
         self.add_hkl_button.clicked.connect(self.add_reflex)
         self.add_hkl_button.setEnabled(False)
         self.send_hkl_list_button = QtGui.QPushButton("finish")
-        self.send_hkl_list_button.clicked.connect(self.create_hkl_list)
+        self.send_hkl_list_button.clicked.connect(self.send_hkl_list)
 
         self.roi_Button.clicked.connect(self.roi)
         self.oscillation_Button.clicked.connect(self.oscillation)
@@ -248,6 +262,7 @@ class Preview(QtGui.QWidget):
         # layout.addWidget(self.table)
 
         # for i in self.table:
+        layout3_1.addWidget(self.active_phase)
         layout3_1.addWidget(self.add_hkl_button)
         layout3_1.addWidget(self.send_hkl_list_button)
         # layout3.addLayout(layout3_1)
@@ -265,6 +280,48 @@ class Preview(QtGui.QWidget):
         layout.addWidget(horizontal_line)
         # layout.addLayout(layout2)
         self.setLayout(layout)
+
+    def changed_active_phase(self):
+        self.create_hkl_list()
+        self.table1_5.reset()
+        self.table6_10.reset()
+        self.write_hkl_to_table()
+
+    def write_hkl_to_table(self):
+        """
+        write the hkl list from the table to self.peak_region, al
+        :return:
+        """
+        phase = 0
+        if self.active_phase.currentText() == "phase 2":
+            phase = 1
+            print ("phase: ", self.active_phase.currentText(), phase)
+        region = self.peak_region[phase][1]
+        print "region: ", region, "phase_peak_region: ", self.peak_region
+        for i in xrange(len(region)):
+            self.add_a_line(line=region[i], position=i)
+
+    def add_a_line(self, line, position):
+        table2 = False
+        if position >= 4:
+            position -= 5
+            table2 = True
+        h, k, l, Theta_min, Theta_max = line
+        Theta_min = self.data_x[Theta_min]
+        Theta_max = self.data_x[Theta_max]
+        if not table2:
+            self.table1_5.lines[position][1].setText(str(h))
+            self.table1_5.lines[position][2].setText(str(k))
+            self.table1_5.lines[position][3].setText(str(l))
+            self.table1_5.lines[position][4].setText(str(Theta_min))
+            self.table1_5.lines[position][5].setText(str(Theta_max))
+
+        else:
+            self.table6_10.lines[position][1].setText(str(h))
+            self.table6_10.lines[position][2].setText(str(k))
+            self.table6_10.lines[position][3].setText(str(l))
+            self.table6_10.lines[position][4].setText(str(Theta_min))
+            self.table6_10.lines[position][5].setText(str(Theta_max))
 
     def add_reflex(self):
         print("add")
@@ -290,7 +347,7 @@ class Preview(QtGui.QWidget):
     def dis_hkl_but(self):
         self.add_hkl_button.setEnabled(False)
 
-    def create_hkl_list(self):
+    def create_hkl_list(self, swap = True):
         hkl_setting = []
         table2 = False
         buffer = self.table1_5.get_last_1()
@@ -310,8 +367,8 @@ class Preview(QtGui.QWidget):
                 for j in xrange(1, 6):
                     l.append(float(self.table1_5.lines[i][j].text()))
                 hkl_setting.append(l)
-            if buffer==-1:
-                buffer=len(self.table6_10.lines)
+            if buffer == -1:
+                buffer = len(self.table6_10.lines)
 
             for i in xrange(0, buffer):
                 l = []
@@ -323,9 +380,26 @@ class Preview(QtGui.QWidget):
             max = int(get_index_from_arry(self.data_x, hkl_setting[i][4]))
             hkl_setting[i][3] = min
             hkl_setting[i][4] = max
+        if swap:
+            if self.active_phase.currentText() == "phase 1":
+                self.peak_region[1][1] = hkl_setting
 
-        self.emit(QtCore.SIGNAL("phase_peak_region"), hkl_setting)
+            if self.active_phase.currentText() == "phase 2":
+                self.peak_region[0][1] = hkl_setting
+        if not swap:
+            if self.active_phase.currentText() == "phase 1":
+                self.peak_region[0][1] = hkl_setting
 
+            if self.active_phase.currentText() == "phase 2":
+                self.peak_region[1][1] = hkl_setting
+
+
+    def send_hkl_list(self):
+        self.create_hkl_list(swap=False)
+        print ("##################################")
+        print("peak region mpl widget side: ", self.peak_region)
+        print ("##################################")
+        self.emit(QtCore.SIGNAL("phase_peak_region"), self.peak_region)
 
     def roi(self):
 
