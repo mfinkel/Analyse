@@ -226,6 +226,10 @@ class SPODIData(Data):
                         # print "omega: {0:d}, chi: {1:d}".format(int(omega), int(chi))
                         if not (int(omega) == int(omega_0) and int(chi) == int(chi_0) and int(h) == int(h_0) and int(
                                 k) == int(k_0) and int(l) == int(l_0)):
+                            print "######################################################################"
+                            print "mismach"
+                            print "ome: %i, ome0: %i, chi: %i, chi0: %i" % (int(omega), int(omega_0), int(chi), int(chi_0))
+                            print "######################################################################"
                             raise ValueError
 
                         phi = self.PHII(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta_0 / 2,
@@ -234,17 +238,18 @@ class SPODIData(Data):
                         psi = self.psii(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta_0 / 2,
                                         chi=chi, omega=omega)
                         if not (np.isnan(phi) or np.isnan(psi)):
-                            phi_psi_hkl.append([phi, psi, h, k, l])
-                            print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
-                                format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
+                            if chi != 90:
+                                phi_psi_hkl.append([phi, psi, h, k, l])
+                                print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
+                                    format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
 
-                            strain, strain_error = self.delta_epsilon(two_theta=two_theta,
-                                                                      two_theta_0=two_theta_0,
-                                                                      two_theta_err=two_theta_error,
-                                                                      two_theta_0_err=two_theta_error_0)
+                                strain, strain_error = self.delta_epsilon(two_theta=two_theta,
+                                                                          two_theta_0=two_theta_0,
+                                                                          two_theta_err=two_theta_error,
+                                                                          two_theta_0_err=two_theta_error_0)
 
-                            stress, stress_err = self.calc_applied_stress(force=force)
-                            strain_stress.append([strain, strain_error, stress, stress_err])
+                                stress, stress_err = self.calc_applied_stress(force=force)
+                                strain_stress.append([strain, strain_error, stress, stress_err])
                     force_stress_dict[v] = [phi_psi_hkl, strain_stress]
 
             self.fitted_data.data_dict[i] = force_stress_dict
@@ -311,8 +316,8 @@ class SPODIData(Data):
         """
             This method determines the strain. epsilon = (sin(Theta0)/sin(Theta))-1
         """
-        Theta = deg_to_rad(two_theta)
-        Theta0 = deg_to_rad(two_theta_0)
+        Theta = deg_to_rad(two_theta)/2
+        Theta0 = deg_to_rad(two_theta_0)/2
         Theta_weight = two_theta_err / 180. * np.pi / 2
         Theta_0_weight = two_theta_0_err * np.pi / 180. / 2
 

@@ -886,7 +886,6 @@ class FitStrainWithTexture(object):
         else:
             self.set_parameters_of_the_INCLUSION_in_matrix_representation_single_phase(params)
 
-
         print "parameter vals:"
         print "C_11_m: ", params["c_11_m"].value
         print "C_12_m: ", params["c_12_m"].value
@@ -954,9 +953,11 @@ class FitStrainWithTexture(object):
                 phi, psi, h, k, l = xvals_mat[m]
                 # print "phi: ", phi
                 strain_mat, strain_mat_err, stress_mat, stress_mat_err = strain_stress_data_matrix[n][m]
-                data_mat.append(strain_mat/stress_mat)
-                data_mat_err.append(abs(strain_mat/stress_mat)*(abs(strain_mat_err/strain_mat) +
-                                                                abs(stress_mat_err/stress_mat)))
+                # data_mat.append(strain_mat / stress_mat)
+                data_mat.append(strain_mat)
+                # data_mat_err.append(abs(strain_mat / stress_mat) * (abs(strain_mat_err / strain_mat) +
+                #                                                     abs(stress_mat_err / stress_mat)))
+                data_mat_err.append(strain_mat_err)
 
                 theory_val = 0.
                 for i in xrange(3):
@@ -964,13 +965,14 @@ class FitStrainWithTexture(object):
                         if self.phase_flag:
                             theory_val += self.F(phi, psi, h, k, l, i, j, method)  # * self.force_factor(i, j)
                         else:
-                            theory_val += self.F(phi, psi, h, k, l, 2, 2, method)  # * self.force_factor(i, j)
                             break
+                            # if i == j:
+                            #     theory_val += self.F(phi, psi, h, k, l, i, j, method)  # * self.force_factor(i, j)
+                theory_val += self.F(phi, psi, h, k, l, 2, 2, method) * stress_mat
                 # print theory_val
                 theory_mat.append(theory_val)
                 cli_progress_test(co, len(xvals_matrix[n]))
                 co += 1
-
 
         # try:
         #     # just on data point (can be neglected)
@@ -1688,7 +1690,6 @@ class FitStrainWithTexture(object):
     def force_factor(self, i, j):
         res = 1
         return res
-
 
 
 def cli_progress_test_voigt(i, end_val, tuple, bar_length=20):
