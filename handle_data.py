@@ -228,7 +228,8 @@ class SPODIData(Data):
                                 k) == int(k_0) and int(l) == int(l_0)):
                             print "######################################################################"
                             print "mismach"
-                            print "ome: %i, ome0: %i, chi: %i, chi0: %i" % (int(omega), int(omega_0), int(chi), int(chi_0))
+                            print "ome: %i, ome0: %i, chi: %i, chi0: %i" % (
+                                int(omega), int(omega_0), int(chi), int(chi_0))
                             print "######################################################################"
                             raise ValueError
 
@@ -316,8 +317,8 @@ class SPODIData(Data):
         """
             This method determines the strain. epsilon = (sin(Theta0)/sin(Theta))-1
         """
-        Theta = deg_to_rad(two_theta)/2
-        Theta0 = deg_to_rad(two_theta_0)/2
+        Theta = deg_to_rad(two_theta) / 2
+        Theta0 = deg_to_rad(two_theta_0) / 2
         Theta_weight = two_theta_err / 180. * np.pi / 2
         Theta_0_weight = two_theta_0_err * np.pi / 180. / 2
 
@@ -407,7 +408,9 @@ class SPODIData(Data):
         return float(psi)
 
     def PHII(self, chi_of_scatteringvector, theta, theta_o, chi, omega):
-        '''Acimut angle of q in the Specimen frame'''
+        """
+        Azimuth angle of q in the Specimen frame
+        """
         lq = self.LQ(chi_of_scatteringvector, theta, theta_o, chi, omega)
         # print "lq", lq
         # lq = self.LQ()
@@ -464,3 +467,47 @@ def deg_to_rad(deg):
 
 def r_t_d(rad):
     return 180. * rad / np.pi
+
+
+"""
+calculate the phi, psi for specific omega and chi
+"""
+if __name__ == "__main__":
+    import Plot_coordsys as cplot
+    import matplotlib.pyplot as plt
+    data = SPODIData(6)
+    theta = 30
+    omega = 90-theta
+    CHI = [0, 15, 30, 45, 60, 75, 90]
+    PHI = []
+    PSI = []
+    for chi in CHI:
+        phi = data.PHII(chi=chi,
+                        omega=omega,
+                        chi_of_scatteringvector=90,
+                        theta_o=theta,
+                        theta=theta)
+        psi = data.psii(chi=chi,
+                        omega=omega,
+                        chi_of_scatteringvector=90,
+                        theta_o=theta,
+                        theta=theta)
+        phi = r_t_d(phi)
+        psi = r_t_d(psi)
+        PHI.append(phi)
+        PSI.append(psi)
+        Q = data.q(chi_of_scatteringvector=90,
+                   theta=theta,
+                   theta_o=theta)
+        title = "omega: {}, chi: {}, phi: {}, psi: {}".format(omega, chi, phi, psi)
+
+        res = data.transformation_L_from_I_to_P(chi=chi, omega=omega)
+
+        L_1 = np.dot(res, np.array([[1], [0], [0]]))
+        L_2 = np.dot(res, np.array([[0], [1], [0]]))
+        L_3 = np.dot(res, np.array([[0], [0], [1]]))
+
+        cplot.plot_coordinatframe(L_1, L_2, L_3, Q=Q, titel=title)
+
+        print "omega: {}, chi: {}, phi: {}, psi: {}".format(omega, chi, phi, psi)
+    plt.show()

@@ -453,8 +453,8 @@ class CentralWidget(QWidget):
         self.do_the_fit_button = QPushButton('fitting Data')
         self.do_the_fit_button.setEnabled(False)
         self.do_the_fit_button.clicked.connect(self.fit_the_data)
-        self.output_filename = QLineEdit("Result_")
         self.material = QLineEdit("iron")
+        self.output_filename = QLineEdit("Result_" + str(self.material.text()) + "_" + str(self.modi.currentText()))
         self.material.returnPressed.connect(self.change_outputfile_name)
         self.modi.currentIndexChanged.connect(self.change_outputfile_name)
         self.connect(self, SIGNAL("data"), self.central_plot.add_data)
@@ -591,9 +591,12 @@ class CentralWidget(QWidget):
                                            texture=Bool)
 
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
+        print (text)
         mbox = QMessageBox()
+        mbox.standardButtons()
         mbox.setIcon(QMessageBox.Information)
         mbox.setText(text)
+        mbox.exec_()
 
         # try:
         #     self.Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=str(self.modi.currentText()),
