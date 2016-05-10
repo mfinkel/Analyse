@@ -1133,7 +1133,6 @@ class FitStrainWithTexture(object):
         theory_fit = []
         t1 = tm.clock()
 
-
         for n in xrange(len(applied_forces)):  # Loop over all forces
             xvals_fit = xvals_fitted[n]
             for m in xrange(len(xvals_fit)):
@@ -1971,6 +1970,7 @@ class ODF(object):
         self.__imax = 0
         self.__imin = 0
         self.__path_to_data = ""
+        self.__odf_is_interpolated = False
         # dictionary containing some angles
         # phi, psi = angles of m in specimen frame
         # phi_2 = rotation around m in measurement frame
@@ -2380,22 +2380,89 @@ class ODF(object):
         """
         this function interpolates between the neighboring values.
         It is a simple linear interpolation.
+        just using a one rank taylor approximation
         It should increase the precision of the calculations.
         :param phi1: Eulerangle 1
         :param phi: Eulerangle 2
         :param phi2: Eulerangle 3
         :return: Value of the ODF
         """
-        pass
+        phi1_0 = int(phi1 / self.__stepwidth) * int(self.__stepwidth)
+        phi_0 = int(phi / self.__stepwidth) * int(self.__stepwidth)
+        phi2_0 = int(phi2 / self.__stepwidth) * int(self.__stepwidth)
+
+        f_0 = self.f(phi1_0, phi_0, phi2_0)  # 0. rank approx
+        f_1_phi1 = ((self.f(phi1_0 + int(self.__stepwidth), phi_0, phi2_0) - f_0) / int(self.__stepwidth)) * \
+                   (phi1 - phi1_0)
+
+        f_1_phi = ((self.f(phi1_0, phi_0 + int(self.__stepwidth), phi2_0) - f_0) / int(self.__stepwidth)) * \
+                  (phi - phi_0)
+
+        f_1_phi2 = ((self.f(phi1_0, phi_0, phi2_0 + int(self.__stepwidth)) - f_0) / int(self.__stepwidth)) * \
+                   (phi2 - phi2_0)
+
+        f = f_0 + f_1_phi + f_1_phi1 + f_1_phi2
+        return f
+
+    def f_interpol(self, phi1, phi, phi2):
+        phi1 = int(phi1 / self.__interpolated_stebwidth)
+        phi = int(phi / self.__interpolated_stebwidth)
+        phi2 = int(phi2 / self.__interpolated_stebwidth)
+        res = self.__ODF_interpolated[phi2][phi][phi1]
+        return res
+
+    def interpolate_whole_odf(self):
+        if not self.__odf_is_interpolated:
+            step = 1
+            number_of_phi1vals = int(self.__phi1_max / step + 1)
+            number_of_Phivals = int(self.__Phi_max / step + 1)
+            number_of_phi2vals = int(self.__phi2_max / step + 1)
+
+            interpolated_odf = np.zeros((number_of_phi2vals, number_of_Phivals, number_of_phi1vals))
+            try:
+                interpolated_odf = np.load(self.__path_to_data + 'ODF_data_interpolated' + self.name)
+            except IOError:
+                for phi1 in xrange(0, 360, step):
+                    for phi in xrange(0, 360, step):
+                        for phi2 in xrange(0, 360, step):
+                            f = self.f_interpolate(phi1, phi, phi2)
+                            interpolated_odf[phi2, phi, phi1] = f
+                np.save(self.__path_to_data + 'ODF_data_interpolated' + self.name, interpolated_odf)
+            self.__interpolated_stebwidth = step
+            self.__ODF_interpolated = interpolated_odf.tolist()
+            self.__odf_is_interpolated = True
+        else:
+            pass
 
     def plot_polfigure(self, h, k, l):
         """
+        this function should plot the hkl pole figure (once it is implemented :D)
         :param h: Millerindex
         :param k: Millerindex
         :param l: Millerindex
         :return: None
         """
-        pass
+        # self.interpolate_whole_odf()
+        step = 5
+        PHI = np.array(xrange(0, 360, step))
+        PSI = np.array(xrange(0, 90, step))
+        VAL = np.zeros((PHI.size, PSI.size))
+        endval = 360 * 90 / step
+        i = 0
+        for m in range(len(PHI)):
+            for n in range(len(PSI)):
+                phi = PHI[m]
+                psi = PSI[n]
+                val = self.integrate_(phi, psi, h, k, l)
+                VAL[m, n] = val
+                cli_progress_test(i=i, end_val=endval)
+                i += step
+
+        r, theta = np.meshgrid(PSI, PHI)
+        fig, ax = plt.subplots(subplot_kw=dict(projection='polar'))
+
+        ax.contourf(theta, r, VAL)
+        plt.show()
 
     def integrate(self, A, phi, psi, h, k, l, *args):
         # performe the integration around q//h
@@ -2432,6 +2499,16 @@ class ODF(object):
         return res / (2 * np.pi)
 
     def integrate_(self, phi, psi, h, k, l, *args):
+        """
+        integrate around scattering vector using the original ODF (not interpolated)
+        :param phi:
+        :param psi:
+        :param h:
+        :param k:
+        :param l:
+        :param args:
+        :return:
+        """
         # performe the integration around q//h
         self.__params["phi"] = phi
         self.__params["psi"] = psi
@@ -2449,34 +2526,33 @@ class ODF(object):
 
         return res / (2 * np.pi)
 
-    # def integrate_voigt(self, A, phi, psi, h, k, l, *args):
-    #     # performe the integration around q//h
-    #     self.__params["phi"] = phi
-    #     self.__params["psi"] = psi
-    #     u = args[0]
-    #     w = args[1]
-    #     step = 5
-    #     res = 0
-    #     counter = 0
-    #     m = self.m(phi, psi)
-    #     euler = (0, 0, 0)
-    #     a = A[args[0], args[1], args[2], args[3]]
-    #     for i in range(0, 360, step):
-    #         counter += 1
-    #         r = deg_to_rad(i)
-    #         phi1, phi, phi2 = self.calc_eulerangles(r % (2 * np.pi), h, k, l)
-    #         dphi1, dphi, dphi2 = self.calc_delta_vals(h, k, l, rad_to_deg(psi), rad_to_deg(phi), r, step)  # [0]
-    #         euler = (rad_to_deg(phi1), rad_to_deg(phi), rad_to_deg(phi2))
-    #         phi1, phi, phi2 = euler
-    #         # print self.f(phi1, phi, phi2), counter, phi1, phi, phi2
-    #
-    #         res += a * m[u] * m[w] * self.f(phi1, phi, phi2) * deg_to_rad(step)  # \
-    #         # * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2 # * (2 * np.pi)  # ** 2
-    #         #  * \
-    #
-    #     return res / (2 * np.pi)
+    def integrate_interpol(self, phi, psi, h, k, l, *args):
+        """
+        integrate around scattering vector using the interpolated ODF
+        :param phi:
+        :param psi:
+        :param h:
+        :param k:
+        :param l:
+        :param args:
+        :return:
+        """
+        # performe the integration around q//h
+        self.__params["phi"] = phi
+        self.__params["psi"] = psi
+        step = 5
+        res = 0
+        for i in range(0, 360, step):
+            r = deg_to_rad(i)
+            phi1, phi, phi2 = self.calc_eulerangles(r % (2 * np.pi), h, k, l)
+            euler = (rad_to_deg(phi1), rad_to_deg(phi), rad_to_deg(phi2))
+            phi1, phi, phi2 = euler
+            # dphi1, dphi, dphi2 = self.calc_delta_vals(h, k, l, rad_to_deg(psi), rad_to_deg(phi), i, step)  # [0]
 
+            res += self.f(phi1, phi, phi2) * deg_to_rad(step)
+            # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2
 
+        return res / (2 * np.pi)
 
     @property
     def integral_over_all_orientations_g(self):
@@ -2631,25 +2707,25 @@ class ODF(object):
         plt.setp([a.get_yticklabels() for a in axs[:, 1]], visible=False)
         plt.show()
 
-
-def add_rot():
-    """
-    rotates the ND perp to axis of the stick and the LD parallel to the stick axis
-    :return:
-    """
-    psi, phi, phi2 = deg_to_rad(0), -deg_to_rad(90), deg_to_rad(0)
-    # phi += np.pi / 2
-    # O = np.array([[np.cos(phi), np.sin(phi), 0.],
-    #               [-np.sin(phi), np.cos(phi), 0.],
-    #               [0., 0., 1.]
-    #               ]
-    #              )
-    res = np.array([[np.cos(phi), 0., -np.sin(phi)],
-                    [0., 1., 0.],
-                    [np.sin(phi), 0., np.cos(phi)]
-                    ]
-                   )
-    return res
+    @staticmethod
+    def add_rot():
+        """
+        rotates the ND perp to axis of the stick and the LD parallel to the stick axis
+        :return:
+        """
+        psi, phi, phi2 = deg_to_rad(0), -deg_to_rad(90), deg_to_rad(0)
+        # phi += np.pi / 2
+        # O = np.array([[np.cos(phi), np.sin(phi), 0.],
+        #               [-np.sin(phi), np.cos(phi), 0.],
+        #               [0., 0., 1.]
+        #               ]
+        #              )
+        res = np.array([[np.cos(phi), 0., -np.sin(phi)],
+                        [0., 1., 0.],
+                        [np.sin(phi), 0., np.cos(phi)]
+                        ]
+                       )
+        return res
 
 
 '''

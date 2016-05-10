@@ -479,7 +479,22 @@ class CentralWidget(QWidget):
         self.insert_startvals_button = QPushButton("ins params")
         self.insert_startvals_button.clicked.connect(self.set_const_vals)
 
+        self.plot_polefig_button = QPushButton("plot pole figure")
+        self.miller_h = QLineEdit("h")
+        self.miller_k = QLineEdit("k")
+        self.miller_l = QLineEdit("l")
+        self.plot_polefig_button.clicked.connect(self.plot_pole_figure)
+
         self.layout_handling()
+
+    def plot_pole_figure(self):
+        h = int(str(self.miller_h.text()))
+        k = int(str(self.miller_k.text()))
+        l = int(str(self.miller_l.text()))
+        if str(self.fit_phase_combbox.currentText()) == "1":
+            self.data_object.odf_phase_1.plot_polfigure(h, k, l)
+        if str(self.fit_phase_combbox.currentText()) == "2":
+            self.data_object.odf_phase_1.plot_polfigure(h, k, l)
 
     def change_name_of_phase_qlineedit(self):
         self.name_of_phase.setText(self.name_of_phase_dic[int(str(self.fit_phase_combbox.currentText()))])
@@ -607,12 +622,12 @@ class CentralWidget(QWidget):
         # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
 
         result = self.fit_object.do_the_fitting(filename=str(self.output_filename.text()),
-                                           material="iron",
-                                           method=str(self.modi.currentText()),
-                                           phase=int(str(self.fit_phase_combbox.currentText())),
-                                           phase_name=self.name_of_phase_dic[
-                                               int(str(self.fit_phase_combbox.currentText()))],
-                                           texture=Bool)
+                                                material="iron",
+                                                method=str(self.modi.currentText()),
+                                                phase=int(str(self.fit_phase_combbox.currentText())),
+                                                phase_name=self.name_of_phase_dic[
+                                                    int(str(self.fit_phase_combbox.currentText()))],
+                                                texture=Bool)
 
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
         print(text)
@@ -687,6 +702,10 @@ class CentralWidget(QWidget):
         layout_fitting.addWidget(self.do_the_fit_button)
 
         layout.addLayout(layout_fitting)
+        layout.addWidget(self.miller_h)
+        layout.addWidget(self.miller_k)
+        layout.addWidget(self.miller_l)
+        layout.addWidget(self.plot_polefig_button)
         layout.addWidget(self.insert_startvals_button)
         layout.addLayout(layout_ok_and_cancel_button)
 
@@ -763,9 +782,9 @@ class CentralWidget(QWidget):
             sym = self.data_object.odf_phase_1.crystal_symmetry
         else:
             sym = self.data_object.odf_phase_2.crystal_symmetry
-        print (str(self.fit_phase_combbox.currentText()))
+        print(str(self.fit_phase_combbox.currentText()))
         self.ins_params = insert_const_widget(name=str(self.fit_phase_combbox.currentText()),
-                            sym=sym)
+                                              sym=sym)
         self.fit_object.print_params()
 
 
