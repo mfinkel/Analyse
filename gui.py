@@ -620,6 +620,7 @@ class CentralWidget(QWidget):
         mbox.standardButtons()
         mbox.setIcon(QMessageBox.Information)
         mbox.setText(text)
+        mbox.setDetailedText(lm.fit_report(result[0].params))
         mbox.exec_()
 
         # try:

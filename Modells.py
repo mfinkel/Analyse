@@ -644,6 +644,10 @@ class FitStrainWithTexture(object):
         return res
 
     def __conv_all_voigtnot_to_extended_not(self):
+        """
+        not longer used
+        :return:
+        """
         for i in xrange(3):
             for j in xrange(3):
                 for k in xrange(3):
@@ -674,6 +678,10 @@ class FitStrainWithTexture(object):
                                     m - 1, n - 1] / 4.
 
     def __conv_all_extended_not_to_voigt_not(self):
+        """
+        not longer used
+        :return:
+        """
         for i in xrange(3):
             for j in xrange(3):
                 for k in xrange(3):
@@ -694,18 +702,18 @@ class FitStrainWithTexture(object):
                                     i, j, k, l]
                             self.__complience_s_tensor_voigt_notation_fitted_phase[m - 1, n - 1] = 2 * \
                                                                                                    self.__complience_s_tensor_extended_notation_fitted_phase[
-                                                                                                  i, j, k, l]
+                                                                                                       i, j, k, l]
                         elif m > 3 and n > 3:
                             self.__constant_c_tensor_voigt_notation_fitted_phase[m - 1, n - 1] = \
                                 self.__constant_c_tensor_extended_notation_fitted_phase[
                                     i, j, k, l]
                             self.__complience_s_tensor_voigt_notation_fitted_phase[m - 1, n - 1] = 4 * \
                                                                                                    self.__complience_s_tensor_extended_notation_fitted_phase[
-                                                                                                  i, j, k, l]
+                                                                                                       i, j, k, l]
 
     def __conv_voigtnot_to_extended_not_compliences_s(self, tensor_in_voigt_not):
         """
-
+        convert the tensor of the elasic compliences from the woigt notation (m,n) to the extended notation (i,j,k,l)
         :rtype: extendet_tensor
         """
         extendet_tensor = np.zeros((3, 3, 3, 3))
@@ -726,6 +734,10 @@ class FitStrainWithTexture(object):
         return extendet_tensor
 
     def __conv_extended_not_to_voigt_not_compliences_s(self, tensor_in_extendet_notation):
+        """
+        convert the tensor of the elasic compliences from the extended notation (i,j,k,l) to the woigt notation (m,n)
+        :rtype: extendet_tensor
+        """
         tennsor_in_voigt_notation = np.zeros((6, 6))
         for i in xrange(3):
             for j in xrange(3):
@@ -745,8 +757,8 @@ class FitStrainWithTexture(object):
 
     def __conv_voigtnot_to_extended_not_constants_c(self, tensor_in_voigt_not):
         """
-
-        :rtype: extendet_tensor
+        convert the tensor of the elastic constants from the woigt notation (m,n) to the extended notation (i,j,k,l)
+        :rtype: extended_tensor
         """
         extendet_tensor = np.zeros((3, 3, 3, 3))
         for i in xrange(3):
@@ -766,6 +778,10 @@ class FitStrainWithTexture(object):
         return extendet_tensor
 
     def __conv_extended_not_to_voigt_not_constants_c(self, tensor_in_extendet_notation):
+        """
+        convert the tensor of the elastic constants from the extended notation (i,j,k,l) to the woigt notation (m,n)
+        :rtype: extended_tensor
+        """
         tennsor_in_voigt_notation = np.zeros((6, 6))
         for i in xrange(3):
             for j in xrange(3):
@@ -782,9 +798,9 @@ class FitStrainWithTexture(object):
                             tennsor_in_voigt_notation[m - 1, n - 1] = tensor_in_extendet_notation[i, j, k, l]
         return tennsor_in_voigt_notation
 
-    def set_parameters_of_the_MATRIX_in_matrix_representation(self, params):
+    def set_parameters_of_the_FITTED_PHASE_in_matrix_representation(self, params, symmetry):
         # params = self.__params
-        if self.symmetry_phase_1 == "isotope":
+        if symmetry == "isotope":
             self.__constant_c_tensor_voigt_notation_fitted_phase = \
                 np.array([
                     [params['c_11_p1'].value, params['c_12_p1'].value, params['c_12_p1'].value, 0, 0, 0],
@@ -794,7 +810,8 @@ class FitStrainWithTexture(object):
                     [0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value), 0],
                     [0, 0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value)]
                 ])
-        elif self.symmetry_phase_1 == "m-3m":  # cubic
+
+        elif symmetry == "m-3m":  # cubic
             # print "Symmetry:", self.symmetry_phase_1
             self.__constant_c_tensor_voigt_notation_fitted_phase = \
                 np.array([
@@ -805,7 +822,8 @@ class FitStrainWithTexture(object):
                     [0, 0, 0, 0, params['c_44_p1'].value, 0],
                     [0, 0, 0, 0, 0, params['c_44_p1'].value]
                 ])
-        elif self.symmetry_phase_1 == "hexagonal" or self.symmetry_phase_1 == "hexagonal":
+
+        elif symmetry == "hexagonal" or symmetry == "hexagonal":
             self.__constant_c_tensor_voigt_notation_fitted_phase = \
                 np.array([
                     [params['c_11_p1'].value, params['c_12_p1'].value, params['c_13_p1'].value, 0, 0, 0],
@@ -824,8 +842,8 @@ class FitStrainWithTexture(object):
         self.__complience_s_tensor_extended_notation_fitted_phase = self.__conv_voigtnot_to_extended_not_compliences_s(
             self.__complience_s_tensor_voigt_notation_fitted_phase)
 
-    def set_parameters_of_the_INCLUSION_in_matrix_representation_multi_phase(self, params):
-        if self.symmetry_phase_2 == "isotope":
+    def set_parameters_of_the_FIXED_PHASE_in_matrix_representation_multi_phase(self, params, symmetry):
+        if symmetry == "isotope":
             self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
                     [params['c_11_p2'].value, params['c_12_p2'].value, params['c_12_p2'].value, 0, 0, 0],
@@ -835,7 +853,7 @@ class FitStrainWithTexture(object):
                     [0, 0, 0, 0, 2 * (params['c_11_p2'].value - params['c_12_p2'].value), 0],
                     [0, 0, 0, 0, 0, 2 * (params['c_11_p2'].value - params['c_12_p2'].value)]
                 ])
-        elif self.symmetry_phase_2 == "m-3m":  # cubic
+        elif symmetry == "m-3m":  # cubic
             # print "Symmetry:", self.symmetry_phase_2
             self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
@@ -846,7 +864,7 @@ class FitStrainWithTexture(object):
                     [0, 0, 0, 0, params['c_44_p2'].value, 0],
                     [0, 0, 0, 0, 0, params['c_44_p2'].value]
                 ])
-        elif self.symmetry_phase_2 == "hexagonal" or self.symmetry_phase_2 == "hexagonal":
+        elif symmetry == "hexagonal" or self.symmetry_phase_2 == "hexagonal":
             self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
                     [params['c_11_p2'].value, params['c_12_p2'].value, params['c_13_p2'].value, 0, 0, 0],
@@ -859,13 +877,14 @@ class FitStrainWithTexture(object):
 
         self.__constant_c_tensor_extended_notation_fixed_phase = self.__conv_voigtnot_to_extended_not_constants_c(
             self.__constant_c_tensor_voigt_notation_fixed_phase)
-        self.__complience_s_tensor_voigt_notation_fixed_phase = np.linalg.inv(self.__constant_c_tensor_voigt_notation_fixed_phase)
+        self.__complience_s_tensor_voigt_notation_fixed_phase = np.linalg.inv(
+            self.__constant_c_tensor_voigt_notation_fixed_phase)
         self.__complience_s_tensor_extended_notation_fixed_phase = self.__conv_voigtnot_to_extended_not_compliences_s(
             self.__complience_s_tensor_voigt_notation_fixed_phase)
 
-    def set_parameters_of_the_INCLUSION_in_matrix_representation_single_phase(self, params):
+    def set_parameters_of_the_FIXED_PHASE_in_matrix_representation_single_phase(self, params, symmetry):
         # params = self.__params
-        if self.symmetry_phase_1 == "isotope":
+        if symmetry == "isotope":
             self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
                     [params['c_11_p1'].value, params['c_12_p1'].value, params['c_12_p1'].value, 0, 0, 0],
@@ -875,7 +894,7 @@ class FitStrainWithTexture(object):
                     [0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value), 0],
                     [0, 0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value)]
                 ])
-        elif self.symmetry_phase_1 == "m-3m":  # cubic
+        elif symmetry == "m-3m":  # cubic
             # print "Symmetry:", self.symmetry_phase_2
             self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
@@ -886,7 +905,7 @@ class FitStrainWithTexture(object):
                     [0, 0, 0, 0, params['c_44_p1'].value, 0],
                     [0, 0, 0, 0, 0, params['c_44_p1'].value]
                 ])
-        elif self.symmetry_phase_1 == "hexagonal" or self.symmetry_phase_2 == "hexagonal":
+        elif symmetry == "hexagonal" or self.symmetry_phase_2 == "hexagonal":
             self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
                     [params['c_11_p1'].value, params['c_12_p1'].value, params['c_13_p1'].value, 0, 0, 0],
@@ -899,11 +918,12 @@ class FitStrainWithTexture(object):
 
         self.__constant_c_tensor_extended_notation_fixed_phase = self.__conv_voigtnot_to_extended_not_constants_c(
             self.__constant_c_tensor_voigt_notation_fixed_phase)
-        self.__complience_s_tensor_voigt_notation_fixed_phase = np.linalg.inv(self.__constant_c_tensor_voigt_notation_fixed_phase)
+        self.__complience_s_tensor_voigt_notation_fixed_phase = np.linalg.inv(
+            self.__constant_c_tensor_voigt_notation_fixed_phase)
         self.__complience_s_tensor_extended_notation_fixed_phase = self.__conv_voigtnot_to_extended_not_compliences_s(
             self.__complience_s_tensor_voigt_notation_fixed_phase)
 
-    def __residuum_with_texture(self, params, xvals, data_matrix=None, data_inclusion=None, fitted_phase=1,
+    def __residuum_with_texture(self, params, xvals, data_phase_1=None, data_phase_2=None, fitted_phase=1,
                                 method=None):
         """
         fit the params of the matrix and keep the one of the inclusion fixed.
@@ -915,13 +935,24 @@ class FitStrainWithTexture(object):
         """
         self.__counter += 1
         self.counter2 = 0
+        symmetry_fixed_phase = 0
+        symmetry_fitted_phase = 0
         print "Iteration #", self.__counter
-        self.set_parameters_of_the_MATRIX_in_matrix_representation(params)
+        if fitted_phase == 1:
+            symmetry_fitted_phase = self.symmetry_phase_1
+            if self.phase_flag:
+                symmetry_fixed_phase = self.symmetry_phase_2
+
+        elif fitted_phase == 2:
+            symmetry_fitted_phase = self.symmetry_phase_2
+            symmetry_fixed_phase = self.symmetry_phase_1
+
+        self.set_parameters_of_the_FITTED_PHASE_in_matrix_representation(params, symmetry_fitted_phase)
         print "phaseflag ", self.phase_flag
         if self.phase_flag:
-            self.set_parameters_of_the_INCLUSION_in_matrix_representation_multi_phase(params)
+            self.set_parameters_of_the_FIXED_PHASE_in_matrix_representation_multi_phase(params, symmetry_fixed_phase)
         else:
-            self.set_parameters_of_the_INCLUSION_in_matrix_representation_single_phase(params)
+            self.set_parameters_of_the_FIXED_PHASE_in_matrix_representation_single_phase(params, symmetry_fitted_phase)
 
         print "parameter vals:"
         print "C_11_p1: ", params["c_11_p1"].value
@@ -946,111 +977,93 @@ class FitStrainWithTexture(object):
         # print "tensor diference:\n", np.tensordot(self.__constant_c_tensor_extended_notation_fitted_phase,
         #                                           self.__complience_s_tensor_extended_notation_fitted_phase) - \
         #                              self.fourth_rank_identity()
-        strain_epsilon_2 = []
-        strain_epsilon = 0.
+        # strain_epsilon_2 = []
+        # strain_epsilon = 0.
         t1 = tm.clock()
         co = 0
         if method == "voigt" or method == "hill":
             euler = (0, 0, 0)
-            self.a_voigt = self.__A_voigt(euler, 0, 0, 0, 0)
+            self.a_voigt = self.__A_voigt(euler, 0, 0, 0, 0, fitted_phase=fitted_phase)
 
-        xvals_matrix = []
-        xvals_inclusion = []
-        strain_stress_data_matrix = []
-        strain_stress_data_inclusion = []
+        xvals_fitted = []
+        xvals_fixed = []
+        strain_stress_data_fitted = []
+        strain_stress_data_fixed = []
 
-        print data_matrix
-        applied_forces = data_matrix.keys()
+        print data_phase_1
+        applied_forces = data_phase_1.keys()
 
         for n in xrange(len(applied_forces)):  # Loop over all forces
             force = applied_forces[n]
             # list of the xvalues [[phi, psi, h, k, l], [phi, psi, h, k, l], ...
-            xvals_matrix_, strain_stre_data_matrix = data_matrix[force]
-            strain_stress_data_matrix.append(
-                strain_stre_data_matrix)  # list containing the data for the different applied forces
-            xvals_matrix.append(xvals_matrix_)
+            xvals_fitted_, strain_stre_data_fitted_ = 0, 0
+            if fitted_phase == 1:
+                xvals_fitted_, strain_stre_data_fitted_ = data_phase_1[force]
+            if fitted_phase == 2:
+                xvals_fitted_, strain_stre_data_fitted_ = data_phase_2[force]
+            strain_stress_data_fitted.append(strain_stre_data_fitted_)  # list containing the data for
+            #  the different applied forces
+            xvals_fitted.append(xvals_fitted_)
+
             if self.phase_flag:
-                xvals_inclusion_, strain_stre_data_inclusion = data_inclusion[force]
-                strain_stress_data_inclusion.append(strain_stre_data_inclusion)
-                xvals_inclusion.append(xvals_inclusion_)
-        data_inc = []
-        data_mat = []
-        data_mat_err = []
-        data_inc_err = []
-        theory_mat = []
-        theory_inc = []
+                xvals_fixed_, strain_stre_data_fixed = 0, 0
+                if fitted_phase == 1:
+                    xvals_fixed_, strain_stre_data_fixed = data_phase_2[force]
+                if fitted_phase == 2:
+                    xvals_fixed_, strain_stre_data_fixed = data_phase_1[force]
+
+                strain_stress_data_fixed.append(strain_stre_data_fixed)
+                xvals_fixed.append(xvals_fixed_)
+
+        data_fix = []
+        data_fit = []
+        data_fit_err = []
+        data_fix_err = []
+        theory_fit = []
+        theory_fix = []
 
         for n in xrange(len(applied_forces)):  # Loop over all forces
-            xvals_mat = xvals_matrix[n]
+            xvals_fit = xvals_fitted[n]
             # print xvals_mat
             # print "applied_force: ", applied_forces
             # xvals_inc = xvals_inclusion[n]
             # print len(xvals_mat)
-            for m in xrange(len(xvals_mat)):
-                phi, psi, h, k, l = xvals_mat[m]
+            for m in xrange(len(xvals_fit)):
+                phi, psi, h, k, l = xvals_fit[m]
                 # print "phi: ", phi
-                strain_mat, strain_mat_err, stress_mat, stress_mat_err = strain_stress_data_matrix[n][m]
-                data_mat.append(strain_mat / stress_mat)
+                strain_fit, strain_fit_err, stress_fit, stress_fit_err = strain_stress_data_fitted[n][m]
+                data_fit.append(strain_fit / stress_fit)
                 # data_mat.append(strain_mat)
-                data_mat_err.append(abs(strain_mat / stress_mat) * (abs(strain_mat_err / strain_mat) +
-                                                                    abs(stress_mat_err / stress_mat)))
+                data_fit_err.append(abs(strain_fit / stress_fit) * (abs(strain_fit_err / strain_fit) +
+                                                                    abs(stress_fit_err / stress_fit)))
                 # data_mat_err.append(strain_mat_err)
 
                 theory_val = 0.
                 for i in xrange(3):
                     for j in xrange(3):
                         if self.phase_flag:
-                            theory_val += self.F(phi, psi, h, k, l, i, j, method)  # * self.force_factor(i, j)
-                        else:
-                            break
-                            # if i == j:
-                            #     theory_val += self.F(phi, psi, h, k, l, i, j, method)  # * self.force_factor(i, j)
-                theory_val += self.F(phi, psi, h, k, l, 2, 2, method)
-                # print theory_val
-                theory_mat.append(theory_val)
-                cli_progress_test(co, len(xvals_matrix[n]))
-                co += 1
+                            theory_val += self.F(phi, psi, h, k, l, i, j, method) * self.force_factor(i, j)
 
-        # try:
-        #     # just on data point (can be neglected)
-        #     phi, psi, h, k, l = xvals
-        #     for i in xrange(3):
-        #         for j in xrange(3):
-        #             if abs(self.stress_sigma(i, j)) < 1e-13:
-        #                 pass
-        #             else:
-        #                 strain_epsilon += self.F(phi, psi, h, k, l, i, j, method) * self.stress_sigma(i, j)
-        # except ValueError:
-        #     # multiple data points
-        #     for m in xvals_matrix:
-        #         phi, psi, h, k, l = m
-        #         # psi = np.pi - psi
-        #         strain_epsilon_1 = 0.
-        #         for i in xrange(3):
-        #             for j in xrange(3):
-        #                 if abs(self.stress_sigma(i, j)) < 1e-13:
-        #                     pass
-        #                 else:
-        #                     strain_epsilon_1 += self.F(phi, psi, h, k, l, i, j,
-        #                                                method) * self.stress_sigma(i, j)
-        #
-        #         strain_epsilon_2.append(strain_epsilon_1)
-        #         cli_progress_test(co, len(xvals))
-        #         co += 1
-        #     strain_epsilon = strain_epsilon_2
+                if not self.phase_flag:
+                    theory_val += self.F(phi, psi, h, k, l, 2, 2, method)
+
+                theory_fit.append(theory_val)
+                cli_progress_test(co, len(xvals_fitted[n]))
+                co += 1
 
         t2 = tm.clock()
         dt = t2 - t1
-        print "\nresult: ", (np.array(theory_mat) - np.array(data_mat)) / (np.array(data_mat_err))
-        print "theory: ", theory_mat
-        print "data: ", data_mat
-        print "err: ", data_mat_err
-        print "shape: ", np.shape((np.array(theory_mat) - np.array(data_mat)) / (np.array(data_mat_err)))
+        print "\nresult: ", (np.array(theory_fit) - np.array(data_fit)) / (np.array(data_fit_err))
+        print "theory: ", theory_fit
+        print "data: ", data_fit
+        print "err: ", data_fit_err
+        print "shape: ", np.shape((np.array(theory_fit) - np.array(data_fit)) / (np.array(data_fit_err)))
         print "time for iteration #%i: %i min %i sec" % (self.__counter, int(dt / 60), int(dt % 60))
 
-        return (np.array(theory_mat) - np.array(data_mat)) / (np.array(data_mat_err))
+        return (np.array(theory_fit) - np.array(data_fit)) / (np.array(data_fit_err))
 
-    def __residuum_without_texture(self, params, xvals, data=None, weight=None, method=None):
+    def __residuum_without_texture_single_phase(self, params, xvals, data_phase_1=None, data_phase_2=None,
+                                                fitted_phase=1, method=None):
         """
         :param params: lm.Parameter Object
         :param xvals: list of the xvalues [[phi, psi, h, k, l], [phi, psi, h, k, l], ...
@@ -1060,58 +1073,115 @@ class FitStrainWithTexture(object):
         """
         self.__counter += 1
         self.counter2 = 0
+        symmetry_fixed_phase = 0
+        symmetry_fitted_phase = 0
         print "Iteration #", self.__counter
 
+        if fitted_phase == 1:
+            symmetry_fitted_phase = self.symmetry_phase_1
+            if self.phase_flag:
+                symmetry_fixed_phase = self.symmetry_phase_2
+
+        elif fitted_phase == 2:
+            symmetry_fitted_phase = self.symmetry_phase_2
+            symmetry_fixed_phase = self.symmetry_phase_1
+
+        self.set_parameters_of_the_FITTED_PHASE_in_matrix_representation(params, symmetry_fitted_phase)
+        print "phaseflag ", self.phase_flag
+        if self.phase_flag:
+            self.set_parameters_of_the_FIXED_PHASE_in_matrix_representation_multi_phase(params, symmetry_fixed_phase)
+        else:
+            self.set_parameters_of_the_FIXED_PHASE_in_matrix_representation_single_phase(params, symmetry_fitted_phase)
+
         print "parameter vals:"
-        print "C_11_p1: ", params["c_11_p1"].value
-        print "C_12_p1: ", params["c_12_p1"].value
-        print "C_44_p1: ", params["c_44_p1"].value
+        self.print_params()
 
-        strain_epsilon = []
+        xvals_fitted = []
+        xvals_fixed = []
+        strain_stress_data_fitted = []
+        strain_stress_data_fixed = []
+
+        print data_phase_1
+        applied_forces = data_phase_1.keys()
+
+        for n in xrange(len(applied_forces)):  # Loop over all forces
+            force = applied_forces[n]
+            # list of the xvalues [[phi, psi, h, k, l], [phi, psi, h, k, l], ...
+            xvals_fitted_, strain_stre_data_fitted_ = 0, 0
+            if fitted_phase == 1:
+                xvals_fitted_, strain_stre_data_fitted_ = data_phase_1[force]
+            if fitted_phase == 2:
+                xvals_fitted_, strain_stre_data_fitted_ = data_phase_2[force]
+            strain_stress_data_fitted.append(strain_stre_data_fitted_)  # list containing the data for
+            #  the different applied forces
+            xvals_fitted.append(xvals_fitted_)
+            if self.phase_flag:
+                xvals_fixed_, strain_stre_data_fixed = 0, 0
+                if fitted_phase == 1:
+                    xvals_fixed_, strain_stre_data_fixed = data_phase_2[force]
+                if fitted_phase == 2:
+                    xvals_fixed_, strain_stre_data_fixed = data_phase_1[force]
+
+                strain_stress_data_fixed.append(strain_stre_data_fixed)
+                xvals_fixed.append(xvals_fixed_)
+        data_fix = []
+        data_fit = []
+        data_fit_err = []
+        data_fix_err = []
+        theory_fix = []
+
+        theory_fit = []
         t1 = tm.clock()
-        sigma_11 = params["sigma_11"].value
-        sigma_22 = params["sigma_22"].value
-        sigma_33 = params["sigma_33"].value
-        sigma_12 = params["sigma_12"].value
-        sigma_13 = params["sigma_13"].value
-        sigma_23 = params["sigma_23"].value
 
-        for m in xvals:
-            phi, psi, h, k, l = m
-            if method == "hill":
-                s1, s2 = RV(Gamma=Gama(h, k, l), c_11=params["c_11"].value, c_12=params["c_12"].value,
-                            c_44=params["c_44"].value)
-            if method == "voigt":
-                s1, s2 = Voigt__(Gamma=Gama(h, k, l), c_11=params["c_11"].value, c_12=params["c_12"].value,
-                                 c_44=params["c_44"].value)
-            if method == "eshelby":
-                s1, s2 = BHM_dW(Gamma=Gama(h, k, l), c_11=params["c_11"].value, c_12=params["c_12"].value,
-                                c_44=params["c_44"].value)
-            if method == "reus":
-                s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=params["c_11"].value, c_12=params["c_12"].value,
-                              c_44=params["c_44"].value)
 
-            eps = s1 * (sigma_11 + sigma_22 + sigma_33) \
-                  + s2 * (sigma_11 * np.cos(phi) ** 2 * np.sin(psi) ** 2 +
-                          sigma_22 * np.sin(phi) ** 2 * np.sin(psi) ** 2 +
-                          sigma_33 * np.cos(psi) ** 2) \
-                  + s2 * (sigma_12 * np.sin(2 * phi) * np.sin(psi) ** 2 +
-                          sigma_13 * np.cos(phi) * np.sin(2 * psi) +
-                          sigma_23 * np.sin(phi) * np.sin(2 * psi))
+        for n in xrange(len(applied_forces)):  # Loop over all forces
+            xvals_fit = xvals_fitted[n]
+            for m in xrange(len(xvals_fit)):
+                phi, psi, h, k, l = xvals_fit[m]
+                strain_fit, strain_fit_err, stress_fit, stress_fit_err = strain_stress_data_fitted[n][m]
+                data_fit.append(strain_fit)
+                data_fit_err.append(strain_fit_err)
+                sigma_11 = params["sigma_11"].value * stress_fit
+                sigma_22 = params["sigma_22"].value * stress_fit
+                sigma_33 = params["sigma_33"].value * stress_fit
+                sigma_12 = params["sigma_12"].value * stress_fit
+                sigma_13 = params["sigma_13"].value * stress_fit
+                sigma_23 = params["sigma_23"].value * stress_fit
 
-            strain_epsilon.append(eps)
+                if method == "hill":
+                    s1, s2 = RV(Gamma=Gama(h, k, l), c_11=params["c_11_p1"].value, c_12=params["c_12_p1"].value,
+                                c_44=params["c_44_p1"].value)
+                if method == "voigt":
+                    s1, s2 = Voigt__(Gamma=Gama(h, k, l), c_11=params["c_11_p1"].value, c_12=params["c_12_p1"].value,
+                                     c_44=params["c_44_p1"].value)
+                if method == "eshelby":
+                    s1, s2 = BHM_dW(Gamma=Gama(h, k, l), c_11=params["c_11_p1"].value, c_12=params["c_12_p1"].value,
+                                    c_44=params["c_44_p1"].value)
+                if method == "reus":
+                    s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=params["c_11_p1"].value, c_12=params["c_12_p1"].value,
+                                  c_44=params["c_44_p1"].value)
+
+                eps = s1 * (sigma_11 + sigma_22 + sigma_33) \
+                      + s2 * (sigma_11 * np.cos(phi) ** 2 * np.sin(psi) ** 2 +
+                              sigma_22 * np.sin(phi) ** 2 * np.sin(psi) ** 2 +
+                              sigma_33 * np.cos(psi) ** 2) \
+                      + s2 * (sigma_12 * np.sin(2 * phi) * np.sin(psi) ** 2 +
+                              sigma_13 * np.cos(phi) * np.sin(2 * psi) +
+                              sigma_23 * np.sin(phi) * np.sin(2 * psi))
+
+                theory_fit.append(eps)
 
         t2 = tm.clock()
         dt = t2 - t1
         # print "time for iteration #%i: %i min %i sec" % (self.__counter, int(dt / 60), int(dt % 60))
 
-        if data is None and weight is None:
-            return strain_epsilon
+        # if data is None and weight is None:
+        #     return theory_fit
+        #
+        # if weight is None:
+        #     return np.array(data) - np.array(theory_fit)
 
-        if weight is None:
-            return np.array(data) - np.array(strain_epsilon)
-
-        return (np.array(data) - np.array(strain_epsilon)) / (np.array(weight))
+        return (np.array(data_fit) - np.array(theory_fit)) / (np.array(data_fit_err))
 
     def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture=False, phase=1,
                        phase_name=""):
@@ -1138,18 +1208,20 @@ class FitStrainWithTexture(object):
         data_phase_2 = self.data_object.fitted_data.get_force_dict_phase_2()
         print "Texture: ", texture
         if texture:
-            # result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
-            #                      kws={'data': data, 'weight': weight, 'method': "eshelby"})
-            # params = result.params
-            # print "Params withot texture: "
-            # print lm.fit_report(result.params)
+            result = lm.minimize(self.__residuum_without_texture_single_phase, params, method=fit_method, args=(xvals,),
+                                 kws={'data_phase_1': data_phase_1, 'data_phase_2': data_phase_2, 'method': method,
+                                      'fitted_phase': phase})
+            params = result.params
+            print "Params withot texture: "
+            print lm.fit_report(result.params)
             self.__counter = 0
             result = lm.minimize(self.__residuum_with_texture, params, method=fit_method, args=(xvals,),
-                                 kws={'data_matrix': data_phase_1, 'data_inclusion': data_phase_2, 'method': method,
+                                 kws={'data_phase_1': data_phase_1, 'data_phase_2': data_phase_2, 'method': method,
                                       'fitted_phase': phase})
         else:
-            result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
-                                 kws={'data': data, 'weight': weight, 'method': method})
+            result = lm.minimize(self.__residuum_without_texture_single_phase, params, method=fit_method, args=(xvals,),
+                                 kws={'data_phase_1': data_phase_1, 'data_phase_2': data_phase_2, 'method': method,
+                                      'fitted_phase': phase})
         t2 = tm.clock()
         dt = t2 - t1
         print "time for fit: ", dt
@@ -1159,21 +1231,24 @@ class FitStrainWithTexture(object):
         filename = self.__save_data(filename, material, phase_name, nice_result)
         return result, filename
 
-    def do_the_fitting_self_consistent_sigma_and_el_const(self, filename, material, method="eshelby",
-                                                          path=".\\results\\", texture=False):
+    def do_the_fitting_self_consistent_sigma_and_el_const(self, filename, material, method="reus", path=".\\results\\",
+                                                          texture=False, phase=1, phase_name=""):
         self.__counter = 0
         params = self.__params
         data = self.__strains_data
         weight = self.__weights
         xvals = self.xvals
+        data_phase_1 = self.data_object.fitted_data.get_force_dict_phase_1()
+        data_phase_2 = self.data_object.fitted_data.get_force_dict_phase_2()
         t1 = tm.clock()
         date = tm.localtime()
         fit_method = 'leastsq'  # the optons are:
         # leastsq, nelder, lbfgsb, powell, cg, newton, cobyla, tnc, dogleg, slsqp,
         # differential_evolution
         # calc elastic constants with given sigma as a start value
-        result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
-                             kws={'data': data, 'weight': weight, 'method': "eshelby"})
+        result = lm.minimize(self.__residuum_without_texture_single_phase, params, method=fit_method, args=(xvals,),
+                             kws={'data_phase_1': data_phase_1, 'data_phase_2': data_phase_2, 'method': method,
+                                  'fitted_phase': phase})
         params_new = result.params
         # if this token is true, fit sigma else fit the elastic constants
         sigma_constant_token = False
@@ -1191,7 +1266,8 @@ class FitStrainWithTexture(object):
                 params["sigma_13"].vary = True
                 params["sigma_23"].vary = True
                 sigma_constant_token = False
-                result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
+                result = lm.minimize(self.__residuum_without_texture_single_phase, params, method=fit_method,
+                                     args=(xvals,),
                                      kws={'data': data, 'weight': weight, 'method': "eshelby"})
             else:
                 params["c_11"].vary = True
@@ -1204,7 +1280,8 @@ class FitStrainWithTexture(object):
                 params["sigma_13"].vary = False
                 params["sigma_23"].vary = False
                 sigma_constant_token = True
-                result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
+                result = lm.minimize(self.__residuum_without_texture_single_phase, params, method=fit_method,
+                                     args=(xvals,),
                                      kws={'data': data, 'weight': weight, 'method': "eshelby"})
             params_new = result.params
             # now compare the old and the new result:
@@ -1237,7 +1314,7 @@ class FitStrainWithTexture(object):
         params["sigma_12"].vary = False
         params["sigma_13"].vary = False
         params["sigma_23"].vary = False
-        result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
+        result = lm.minimize(self.__residuum_without_texture_single_phase, params, method=fit_method, args=(xvals,),
                              kws={'data': data, 'weight': weight, 'method': "eshelby"})
         # if texture:
         #     result = lm.minimize(self.__residuum_without_texture, params, method=fit_method, args=(xvals,),
@@ -1260,7 +1337,12 @@ class FitStrainWithTexture(object):
         return result
 
     def __print_result_nicely(self, res, **kwargs):
-
+        """
+        returns a string with the results and some other information about the fit.
+        :param res:
+        :param kwargs:
+        :return:
+        """
         fit_time = kwargs["fitting_time"]
         h = int(fit_time / 3600)
         m = int((fit_time % 3600) / 60)
@@ -1290,10 +1372,8 @@ class FitStrainWithTexture(object):
            \n# of datapoint: %i\
            \nnfev:           %i\
            \nParameters:\n%s " \
-            % (
-                kwargs["method"], sym_matrix, da, time, comment, res.message, str(res.covar), res.success, res.chisqr,
-                res.redchi,
-                res.nfree, res.ndata, res.nfev, pars)
+            % (kwargs["method"], sym_matrix, da, time, comment, res.message, str(res.covar), res.success, res.chisqr,
+               res.redchi, res.nfree, res.ndata, res.nfev, pars)
         return out
 
     def __test_if_file_exists(self, filename):
@@ -1356,7 +1436,7 @@ class FitStrainWithTexture(object):
     def get_compliance_tensor_voigt_not(self):
         return self.__constant_c_tensor_voigt_notation_fitted_phase
 
-    def kronneker_delta(self, i, j):
+    def kronneker_deltha(self, i, j):
         if i == j:
             return 1
         else:
@@ -1368,12 +1448,13 @@ class FitStrainWithTexture(object):
             for j in xrange(3):
                 for k in xrange(3):
                     for l in xrange(3):
-                        res[i, j, k, l] = 0.5 * (self.kronneker_delta(i, k) * self.kronneker_delta(j, l) + \
-                                                 self.kronneker_delta(i, l) * self.kronneker_delta(j, k))
+                        res[i, j, k, l] = 0.5 * (self.kronneker_deltha(i, k) * self.kronneker_deltha(j, l) + \
+                                                 self.kronneker_deltha(i, l) * self.kronneker_deltha(j, k))
         return res
 
-    def F(self, phi, psi, h, k, l, i, j, method, use_in_fit=True):
+    def F(self, phi, psi, h, k, l, i, j, method, fitted_phase=1, use_in_fit=True):
         """
+        calculates the force factors (dt: Spannungsfaktoren) for the selected phase using the model defined in method
         :param method:
         :param phi:
         :param psi:
@@ -1384,36 +1465,40 @@ class FitStrainWithTexture(object):
         :param j:
         :rtype: object
         """
+        ODF = 0
+        if fitted_phase == 1:
+            ODF = self.__odf_phase_1
+        elif fitted_phase == 2:
+            ODF = self.__odf_phase_2
         if not use_in_fit:
-            self.set_parameters_of_the_MATRIX_in_matrix_representation(self.__params)
+            self.set_parameters_of_the_FITTED_PHASE_in_matrix_representation(self.__params, ODF.crystal_symmetry)
+
         self.counter2 += 1
         res = 0
         if method == "reus":
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.__odf_phase_1.integrate(self.A_reus, phi, psi, h, k, l, u, w, i, j) / \
-                           self.__odf_phase_1.integrate_(phi, psi, h, k, l)
+                    res += ODF.integrate(self.A_reus, phi, psi, h, k, l, u, w, i, j) / \
+                           ODF.integrate_(phi, psi, h, k, l)
 
         elif method == "voigt":
-            # euler = (0, 0, 0)
-            # a_voigt = self.A_voigt(euler, 0,0,0,0)
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.__odf_phase_1.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j) / \
-                           self.__odf_phase_1.integrate_(phi, psi, h, k, l)
+                    res += ODF.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j) / \
+                           ODF.integrate_(phi, psi, h, k, l)
 
         elif method == "hill":
             for u in xrange(3):
                 for w in xrange(3):
-                    res += ((self.__odf_phase_1.integrate(self.A_reus, phi, psi, h, k, l, u, w, i, j) +
-                             self.__odf_phase_1.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j)) / 2) / \
-                           self.__odf_phase_1.integrate_(phi, psi, h, k, l)
+                    res += ((ODF.integrate(self.A_reus, phi, psi, h, k, l, u, w, i, j) +
+                             ODF.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j)) / 2) / \
+                           ODF.integrate_(phi, psi, h, k, l)
 
         elif method == "eshelby":
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.__odf_phase_1.integrate(self.A_eshelby, phi, psi, h, k, l, u, w, i, j) / \
-                           self.__odf_phase_1.integrate_(phi, psi, h, k, l)
+                    res += ODF.integrate(self.A_eshelby, phi, psi, h, k, l, u, w, i, j) / \
+                           ODF.integrate_(phi, psi, h, k, l)
         # print "Func. calls: ", self.counter2, "Spannungsfaktor: ", res, " phi: ", rad_to_deg(phi), " psi: ", \
         #     rad_to_deg(psi), "hkl: ", h, k, l
         return res
@@ -1506,7 +1591,8 @@ class FitStrainWithTexture(object):
 
     def __voigt_inner_sum(self, phi1, phi, phi2, a, b, i, j):
         res = 0
-        g = self.__odf_phase_1.g(phi1, phi, phi2).transpose()
+        g = self.__odf_phase_1.g(phi1, phi, phi2).transpose()  # this is just the transformation tensor it is identical
+        # for both phases
         g = g.tolist()
         c_Matrix_tensor = self.__constant_c_tensor_extended_notation_fitted_phase.tolist()
         for m in xrange(3):
@@ -1529,8 +1615,9 @@ class FitStrainWithTexture(object):
                                                 d_list["a"], d_list["b"], d_list["f"], d_list["d"])
         return res
 
-    def __A_voigt(self, g2, u, w, i, j):
+    def __A_voigt(self, g2, u, w, i, j, fitted_phase):
         """
+        Model of voigt
         A(g) = <c(g)>^-1
         :param g2:
         :param u:
@@ -1544,16 +1631,23 @@ class FitStrainWithTexture(object):
         c = np.zeros((3, 3, 3, 3))  # compliance tensor g independent
         c = c.tolist()
         cout = 0
+        integral = 0
         for a in xrange(3):
             for b in xrange(3):
                 for f in xrange(3):
                     for d in xrange(3):
                         cli_progress_test_voigt(cout, 81, (a, b, f, d))
-                        c[a][b][f][d] = self.__odf_phase_1.integrate_a_over_all_orientations_g(self.__voigt_inner_sum,
-                                                                                               a, b, f, d)
+                        if fitted_phase == 1:
+                            c[a][b][f][d] = self.__odf_phase_1.integrate_a_over_all_orientations_g(
+                                self.__voigt_inner_sum, a, b, f, d)
+                            integral = self.odf_integral_over_all_angles_phase_1
+                        elif fitted_phase == 2:
+                            c[a][b][f][d] = self.__odf_phase_2.integrate_a_over_all_orientations_g(
+                                self.__voigt_inner_sum, a, b, f, d)
+                            integral = self.odf_integral_over_all_angles_phase_2
                         cout += 1
         c = np.array(c)
-        c /= self.odf_integral_over_all_angles_phase_1
+        c /= integral  # self.odf_integral_over_all_angles_phase_1
         s = self.invert_four_rank_c_tensor(c)
         # s = self.invert_tensor(c)
         return s  # [u, w, i, j]
@@ -1601,7 +1695,8 @@ class FitStrainWithTexture(object):
                                 for o in xrange(3):
                                     for p in xrange(3):
                                         c[u, w, i, j] += g[u, m] * g[w, n] * g[i, o] * g[j, p] * \
-                                                         self.__constant_c_inclusion_tensor_extended[m, n, o, p]
+                                                         self.__constant_c_tensor_extended_notation_fitted_phase[
+                                                             m, n, o, p]
         return c
 
     @staticmethod
