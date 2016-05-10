@@ -35,13 +35,15 @@ import lmfit
 
 
 class insert_const_widget(QWidget):
-    def __init__(self, name, params, sym, *args):
+    def __init__(self, name, sym, *args):
         QWidget.__init__(self)
         QWidget.resize(self, 500, 400)
         QWidget.setWindowTitle(self, name)
         self.name = name
         self.layout = QGridLayout()
-        self.params = params
+
+        self.params = lmfit.Parameters()
+        self.add_params(self.params, sym)
         self.sym = sym
         self.create_text_output(self, self.sym + ":", 20, 20, 100, 30)
         self.array = self.create_arry()
@@ -56,6 +58,22 @@ class insert_const_widget(QWidget):
         self.confirm_button.move(140, 20)
         self.confirm_button.clicked.connect(self.set_params)
         self.show()
+
+    @staticmethod
+    def add_params(params, sym):
+        if sym == "isotope":
+            params.add('c_11', value=220 * np.power(10., 9), min=0 * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+        elif sym == "m-3m":
+            params.add('c_11', value=240 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_44', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+        elif sym == "hexagonal":
+            params.add('c_11', value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_13', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_33', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_44', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
 
     def create_arry(self):
         x, y = 50, 30
@@ -95,7 +113,7 @@ class insert_const_widget(QWidget):
             self.array[5][5].setText(str(c_44))
             self.array[6][6].setText(str(c_44))
 
-        elif self.sym == "cubic":
+        elif self.sym == "m-3m":
             try:
                 self.params['c_11'].value = float(self.array[1][1].toPlainText()) * np.power(10., 9.)
                 self.params['c_12'].value = float(self.array[1][2].toPlainText()) * np.power(10., 9.)
@@ -139,7 +157,6 @@ class insert_const_widget(QWidget):
             self.array[2][3].setText(str(c_13))
             self.array[5][5].setText(str(c_44))
             self.array[6][6].setText(str(c_66))
-
         self.exit()
 
     def set_preprepare_array(self):
@@ -151,7 +168,7 @@ class insert_const_widget(QWidget):
                     else:
                         self.array[i][j].setTextBackgroundColor(QColor(255, 200, 0))
                         self.array[i][j].setText(str(0))
-        elif self.sym == "cubic":
+        elif self.sym == "m-3m":
             for i in xrange(1, 7):
                 for j in xrange(1, 7):
                     if i == j == 1 or (i == 1 and j == 2) or i == j == 4:
@@ -459,6 +476,9 @@ class CentralWidget(QWidget):
         self.modi.currentIndexChanged.connect(self.change_outputfile_name)
         self.connect(self, SIGNAL("data"), self.central_plot.add_data)
 
+        self.insert_startvals_button = QPushButton("ins params")
+        self.insert_startvals_button.clicked.connect(self.set_const_vals)
+
         self.layout_handling()
 
     def change_name_of_phase_qlineedit(self):
@@ -543,6 +563,10 @@ class CentralWidget(QWidget):
             self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region, plot=False)
             self.do_the_fit_button.setEnabled(True)
             # self.Data_Iron.fit_all_peaks()
+        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
+        self.connect(self, SIGNAL('1'), self.fit_object.set_params_phase_1)
+        self.connect(self, SIGNAL('2'), self.fit_object.set_params_phase_2)
+        self.fit_object.print_params()
 
     def select_hkl_SPODI_Data(self):
         x_data, y_data = self.data_object.get_sum_data()
@@ -580,9 +604,9 @@ class CentralWidget(QWidget):
               "Fitting phase: ", self.fit_phase_combbox, "\n",
               "----------------------------")
 
-        fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
+        # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
 
-        result = fit_object.do_the_fitting(filename=str(self.output_filename.text()),
+        result = self.fit_object.do_the_fitting(filename=str(self.output_filename.text()),
                                            material="iron",
                                            method=str(self.modi.currentText()),
                                            phase=int(str(self.fit_phase_combbox.currentText())),
@@ -591,7 +615,7 @@ class CentralWidget(QWidget):
                                            texture=Bool)
 
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
-        print (text)
+        print(text)
         mbox = QMessageBox()
         mbox.standardButtons()
         mbox.setIcon(QMessageBox.Information)
@@ -650,6 +674,7 @@ class CentralWidget(QWidget):
         layout_fitting.addWidget(self.fit_phase_combbox)
         layout_fitting.addWidget(self.label("phase name:"))
         layout_fitting.addWidget(self.name_of_phase)
+        # layout_fitting.addWidget(self.insert_startvals_button)
         layout_fitting.addWidget(self.modi_text)
         layout_fitting.addWidget(self.modi)
         layout_fitting.addWidget(self.ODF_text)
@@ -661,6 +686,7 @@ class CentralWidget(QWidget):
         layout_fitting.addWidget(self.do_the_fit_button)
 
         layout.addLayout(layout_fitting)
+        layout.addWidget(self.insert_startvals_button)
         layout.addLayout(layout_ok_and_cancel_button)
 
         self.setLayout(layout)
@@ -729,6 +755,17 @@ class CentralWidget(QWidget):
         horizontal_line.setFrameStyle(QFrame.HLine)
         horizontal_line.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
         return horizontal_line
+
+    def set_const_vals(self):
+
+        if int(str(self.fit_phase_combbox.currentText())) == 1:
+            sym = self.data_object.odf_phase_1.crystal_symmetry
+        else:
+            sym = self.data_object.odf_phase_2.crystal_symmetry
+        print (str(self.fit_phase_combbox.currentText()))
+        self.ins_params = insert_const_widget(name=str(self.fit_phase_combbox.currentText()),
+                            sym=sym)
+        self.fit_object.print_params()
 
 
 class LOAD_SPODI_DATA(QWidget):

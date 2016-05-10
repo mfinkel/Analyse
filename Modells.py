@@ -503,23 +503,24 @@ class FitStrainWithTexture(object):
         # self.diameter = diameter
         # self.__strains_data = strains_data
         # self.__weights = weights
-        self.__odf_Matrix = self.data_object.odf_phase_1
-        self.__odf_Inclusion = self.data_object.odf_phase_2
+        self.__odf_phase_1 = self.data_object.odf_phase_1
+        self.__odf_phase_2 = self.data_object.odf_phase_2
         self.counter2 = 0
-        self.symmetry_Matrix = self.__odf_Matrix.crystal_symmetry
+        self.symmetry_phase_1 = self.__odf_phase_1.crystal_symmetry
         try:
-            self.symmetry_Inclusion = self.__odf_Inclusion.crystal_symmetry
+            self.symmetry_phase_2 = self.__odf_phase_2.crystal_symmetry
             self.phase_flag = True  # multi phase material
         except:
             self.phase_flag = False  # single phase material
 
-        self.odf_integral_over_all_angles = self.__odf_Matrix.integral_over_all_orientations_g
-
-        self.__params = lm.Parameters()  # Parameters of the Matrix
-        self.__params_Inclusion = lm.Parameters()  # Parameters of the Inclusion
-        self.add_params(params=self.__params, sym=self.symmetry_Matrix)
+        self.odf_integral_over_all_angles_phase_1 = self.__odf_phase_1.integral_over_all_orientations_g
         if self.phase_flag:
-            self.add_params_inc(params=self.__params, sym=self.symmetry_Inclusion)
+            self.odf_integral_over_all_angles_phase_2 = self.__odf_phase_2.integral_over_all_orientations_g
+
+        self.__params = lm.Parameters()  # Parameters of the of both phases
+        self.add_params(params=self.__params, sym=self.symmetry_phase_1)  # add params of phase 1
+        if self.phase_flag:
+            self.add_params_phase_2(params=self.__params, sym=self.symmetry_phase_2)  # add params of phase 2
 
         self.__params.add("sigma_11", value=self.stress_sigma(0, 0), vary=False)
         self.__params.add("sigma_22", value=self.stress_sigma(1, 1), vary=False)
@@ -541,54 +542,89 @@ class FitStrainWithTexture(object):
         #     "isotope"         : np.zeros( 2)   # 2  independent components
         #     }
 
-        self.__constant_c_Matrix_tensor_voigt = np.zeros((6, 6))
-        self.__constant_c_Matrix_tensor_extended = np.zeros((3, 3, 3, 3))
-        self.__complience_s_Matrix_tensor_voigt = np.zeros((6, 6))
-        self.__complience_s_Matrix_tensor_extended = np.zeros((3, 3, 3, 3))
+        self.__constant_c_tensor_voigt_notation_fitted_phase = np.zeros((6, 6))
+        self.__constant_c_tensor_extended_notation_fitted_phase = np.zeros((3, 3, 3, 3))
+        self.__complience_s_tensor_voigt_notation_fitted_phase = np.zeros((6, 6))
+        self.__complience_s_tensor_extended_notation_fitted_phase = np.zeros((3, 3, 3, 3))
 
-        self.__constant_c_Inclusion_tensor_voigt = np.zeros(
+        self.__constant_c_tensor_voigt_notation_fixed_phase = np.zeros(
             (6, 6))  # in this case, this are the tensors fore the inclousion of the same type as the Matrix
-        self.__constant_c_Inclusion_tensor_extended = np.zeros((3, 3, 3, 3))
-        self.__complience_s_Inclusion_tensor_voigt = np.zeros((6, 6))
-        self.__complience_s_Inclusion_tensor_extended = np.zeros((3, 3, 3, 3))
+        self.__constant_c_tensor_extended_notation_fixed_phase = np.zeros((3, 3, 3, 3))
+        self.__complience_s_tensor_voigt_notation_fixed_phase = np.zeros((6, 6))
+        self.__complience_s_tensor_extended_notation_fixed_phase = np.zeros((3, 3, 3, 3))
 
     def set_odf_matrix(self, odf_path):
         new_odf = ODF()
         new_odf.read_data(odf_path)
-        self.symmetry_Matrix = new_odf.crystal_symmetry
-        self.__odf_Matrix = new_odf
+        self.symmetry_phase_1 = new_odf.crystal_symmetry
+        self.__odf_phase_1 = new_odf
 
     @staticmethod
     def add_params(params, sym):
         if sym == "isotope":
-            params.add('c_11_m', value=220 * np.power(10., 9), min=0 * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_12_m', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_11_p1', value=220 * np.power(10., 9), min=0 * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12_p1', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
         elif sym == "m-3m":
-            params.add('c_11_m', value=240 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_12_m', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_44_m', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_11_p1', value=240 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12_p1', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_44_p1', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
         elif sym == "hexagonal":
-            params.add('c_11_m', value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_12_m', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_13_m', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_33_m', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_44_m', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_11_p1', value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12_p1', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_13_p1', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_33_p1', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_44_p1', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
 
     @staticmethod
-    def add_params_inc(params, sym):
+    def add_params_phase_2(params, sym):
         if sym == "isotope":
-            params.add('c_11_s', value=220 * np.power(10., 9), min=0 * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_12_s', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_11_p2', value=220 * np.power(10., 9), min=0 * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12_p2', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
         elif sym == "m-3m":
-            params.add('c_11_s', value=230 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_12_s', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_44_s', value=115 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_11_p2', value=230 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12_p2', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_44_p2', value=115 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
         elif sym == "hexagonal":
-            params.add('c_11_s', value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_12_s', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_13_s', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_33_s', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_44_s', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_11_p2', value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12_p2', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_13_p2', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_33_p2', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_44_p2', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
+
+    def set_params_phase_1(self, params):
+        if self.symmetry_phase_1 == 'isotope':
+            self.__params['c_11_p1'].value = params['c_11'].value
+            self.__params['c_12_p1'].value = params['c_12'].value
+        if self.symmetry_phase_1 == 'm-3m':
+            self.__params['c_11_p1'].value = params['c_11'].value
+            self.__params['c_12_p1'].value = params['c_12'].value
+            self.__params['c_44_p1'].value = params['c_44'].value
+        if self.symmetry_phase_1 == 'hexagonal':
+            self.__params['c_11_p1'].value = params['c_11'].value
+            self.__params['c_12_p1'].value = params['c_12'].value
+            self.__params['c_13_p1'].value = params['c_13'].value
+            self.__params['c_33_p1'].value = params['c_33'].value
+            self.__params['c_44_p1'].value = params['c_44'].value
+        self.print_params()
+
+    def set_params_phase_2(self, params):
+        if self.symmetry_phase_1 == 'isotope':
+            self.__params['c_11_p2'].value = params['c_11'].value
+            self.__params['c_12_p2'].value = params['c_12'].value
+        if self.symmetry_phase_1 == 'm-3m':
+            self.__params['c_11_p2'].value = params['c_11'].value
+            self.__params['c_12_p2'].value = params['c_12'].value
+            self.__params['c_44_p2'].value = params['c_44'].value
+        if self.symmetry_phase_1 == 'hexagonal':
+            self.__params['c_11_p2'].value = params['c_11'].value
+            self.__params['c_12_p2'].value = params['c_12'].value
+            self.__params['c_13_p2'].value = params['c_13'].value
+            self.__params['c_33_p2'].value = params['c_33'].value
+            self.__params['c_44_p2'].value = params['c_44'].value
+        self.print_params()
+
+    def print_params(self):
+        self.__params.pretty_print()
 
     @staticmethod
     def __voigt_notation(i, j):
@@ -616,25 +652,25 @@ class FitStrainWithTexture(object):
                         n = self.__voigt_notation(k + 1, l + 1)
 
                         if m <= 3 and n <= 3:
-                            self.__constant_c_Matrix_tensor_extended[i, j, k, l] = \
-                                self.__constant_c_Matrix_tensor_voigt[
+                            self.__constant_c_tensor_extended_notation_fitted_phase[i, j, k, l] = \
+                                self.__constant_c_tensor_voigt_notation_fitted_phase[
                                     m - 1, n - 1]
-                            self.__complience_s_Matrix_tensor_extended[i, j, k, l] = \
-                                self.__complience_s_Matrix_tensor_voigt[
+                            self.__complience_s_tensor_extended_notation_fitted_phase[i, j, k, l] = \
+                                self.__complience_s_tensor_voigt_notation_fitted_phase[
                                     m - 1, n - 1]
                         elif m <= 3 < n:
-                            self.__constant_c_Matrix_tensor_extended[i, j, k, l] = \
-                                self.__constant_c_Matrix_tensor_voigt[
+                            self.__constant_c_tensor_extended_notation_fitted_phase[i, j, k, l] = \
+                                self.__constant_c_tensor_voigt_notation_fitted_phase[
                                     m - 1, n - 1]
-                            self.__complience_s_Matrix_tensor_extended[i, j, k, l] = \
-                                self.__complience_s_Matrix_tensor_voigt[
+                            self.__complience_s_tensor_extended_notation_fitted_phase[i, j, k, l] = \
+                                self.__complience_s_tensor_voigt_notation_fitted_phase[
                                     m - 1, n - 1] / 2.
                         elif m > 3 and n > 3:
-                            self.__constant_c_Matrix_tensor_extended[i, j, k, l] = \
-                                self.__constant_c_Matrix_tensor_voigt[
+                            self.__constant_c_tensor_extended_notation_fitted_phase[i, j, k, l] = \
+                                self.__constant_c_tensor_voigt_notation_fitted_phase[
                                     m - 1, n - 1]
-                            self.__complience_s_Matrix_tensor_extended[i, j, k, l] = \
-                                self.__complience_s_Matrix_tensor_voigt[
+                            self.__complience_s_tensor_extended_notation_fitted_phase[i, j, k, l] = \
+                                self.__complience_s_tensor_voigt_notation_fitted_phase[
                                     m - 1, n - 1] / 4.
 
     def __conv_all_extended_not_to_voigt_not(self):
@@ -646,26 +682,26 @@ class FitStrainWithTexture(object):
                         n = self.__voigt_notation(k + 1, l + 1)
 
                         if m <= 3 and n <= 3:
-                            self.__constant_c_Matrix_tensor_voigt[m - 1, n - 1] = \
-                                self.__constant_c_Matrix_tensor_extended[
+                            self.__constant_c_tensor_voigt_notation_fitted_phase[m - 1, n - 1] = \
+                                self.__constant_c_tensor_extended_notation_fitted_phase[
                                     i, j, k, l]
-                            self.__complience_s_Matrix_tensor_voigt[m - 1, n - 1] = \
-                                self.__complience_s_Matrix_tensor_extended[
+                            self.__complience_s_tensor_voigt_notation_fitted_phase[m - 1, n - 1] = \
+                                self.__complience_s_tensor_extended_notation_fitted_phase[
                                     i, j, k, l]
                         elif m <= 3 < n:
-                            self.__constant_c_Matrix_tensor_voigt[m - 1, n - 1] = \
-                                self.__constant_c_Matrix_tensor_extended[
+                            self.__constant_c_tensor_voigt_notation_fitted_phase[m - 1, n - 1] = \
+                                self.__constant_c_tensor_extended_notation_fitted_phase[
                                     i, j, k, l]
-                            self.__complience_s_Matrix_tensor_voigt[m - 1, n - 1] = 2 * \
-                                                                                    self.__complience_s_Matrix_tensor_extended[
-                                                                                        i, j, k, l]
+                            self.__complience_s_tensor_voigt_notation_fitted_phase[m - 1, n - 1] = 2 * \
+                                                                                                   self.__complience_s_tensor_extended_notation_fitted_phase[
+                                                                                                  i, j, k, l]
                         elif m > 3 and n > 3:
-                            self.__constant_c_Matrix_tensor_voigt[m - 1, n - 1] = \
-                                self.__constant_c_Matrix_tensor_extended[
+                            self.__constant_c_tensor_voigt_notation_fitted_phase[m - 1, n - 1] = \
+                                self.__constant_c_tensor_extended_notation_fitted_phase[
                                     i, j, k, l]
-                            self.__complience_s_Matrix_tensor_voigt[m - 1, n - 1] = 4 * \
-                                                                                    self.__complience_s_Matrix_tensor_extended[
-                                                                                        i, j, k, l]
+                            self.__complience_s_tensor_voigt_notation_fitted_phase[m - 1, n - 1] = 4 * \
+                                                                                                   self.__complience_s_tensor_extended_notation_fitted_phase[
+                                                                                                  i, j, k, l]
 
     def __conv_voigtnot_to_extended_not_compliences_s(self, tensor_in_voigt_not):
         """
@@ -748,123 +784,124 @@ class FitStrainWithTexture(object):
 
     def set_parameters_of_the_MATRIX_in_matrix_representation(self, params):
         # params = self.__params
-        if self.symmetry_Matrix == "isotope":
-            self.__constant_c_Matrix_tensor_voigt = \
+        if self.symmetry_phase_1 == "isotope":
+            self.__constant_c_tensor_voigt_notation_fitted_phase = \
                 np.array([
-                    [params['c_11_m'].value, params['c_12_m'].value, params['c_12_m'].value, 0, 0, 0],
-                    [params['c_12_m'].value, params['c_11_m'].value, params['c_12_m'].value, 0, 0, 0],
-                    [params['c_12_m'].value, params['c_12_m'].value, params['c_11_m'].value, 0, 0, 0],
-                    [0, 0, 0, 2 * (params['c_11_m'].value - params['c_12_m'].value), 0, 0],
-                    [0, 0, 0, 0, 2 * (params['c_11_m'].value - params['c_12_m'].value), 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11_m'].value - params['c_12_m'].value)]
+                    [params['c_11_p1'].value, params['c_12_p1'].value, params['c_12_p1'].value, 0, 0, 0],
+                    [params['c_12_p1'].value, params['c_11_p1'].value, params['c_12_p1'].value, 0, 0, 0],
+                    [params['c_12_p1'].value, params['c_12_p1'].value, params['c_11_p1'].value, 0, 0, 0],
+                    [0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value), 0, 0],
+                    [0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value), 0],
+                    [0, 0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value)]
                 ])
-        elif self.symmetry_Matrix == "m-3m":  # cubic
-            # print "Symmetry:", self.symmetry_Matrix
-            self.__constant_c_Matrix_tensor_voigt = \
+        elif self.symmetry_phase_1 == "m-3m":  # cubic
+            # print "Symmetry:", self.symmetry_phase_1
+            self.__constant_c_tensor_voigt_notation_fitted_phase = \
                 np.array([
-                    [params['c_11_m'].value, params['c_12_m'].value, params['c_12_m'].value, 0, 0, 0],
-                    [params['c_12_m'].value, params['c_11_m'].value, params['c_12_m'].value, 0, 0, 0],
-                    [params['c_12_m'].value, params['c_12_m'].value, params['c_11_m'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44_m'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44_m'].value, 0],
-                    [0, 0, 0, 0, 0, params['c_44_m'].value]
+                    [params['c_11_p1'].value, params['c_12_p1'].value, params['c_12_p1'].value, 0, 0, 0],
+                    [params['c_12_p1'].value, params['c_11_p1'].value, params['c_12_p1'].value, 0, 0, 0],
+                    [params['c_12_p1'].value, params['c_12_p1'].value, params['c_11_p1'].value, 0, 0, 0],
+                    [0, 0, 0, params['c_44_p1'].value, 0, 0],
+                    [0, 0, 0, 0, params['c_44_p1'].value, 0],
+                    [0, 0, 0, 0, 0, params['c_44_p1'].value]
                 ])
-        elif self.symmetry_Matrix == "hexagonal" or self.symmetry_Matrix == "hexagonal":
-            self.__constant_c_Matrix_tensor_voigt = \
+        elif self.symmetry_phase_1 == "hexagonal" or self.symmetry_phase_1 == "hexagonal":
+            self.__constant_c_tensor_voigt_notation_fitted_phase = \
                 np.array([
-                    [params['c_11_m'].value, params['c_12_m'].value, params['c_13_m'].value, 0, 0, 0],
-                    [params['c_12_m'].value, params['c_11_m'].value, params['c_13_m'].value, 0, 0, 0],
-                    [params['c_13_m'].value, params['c_13_m'].value, params['c33_m'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44_m'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44_m'].value, 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11_m'].value - params['c_12_m'].value)]
+                    [params['c_11_p1'].value, params['c_12_p1'].value, params['c_13_p1'].value, 0, 0, 0],
+                    [params['c_12_p1'].value, params['c_11_p1'].value, params['c_13_p1'].value, 0, 0, 0],
+                    [params['c_13_p1'].value, params['c_13_p1'].value, params['c33_p1'].value, 0, 0, 0],
+                    [0, 0, 0, params['c_44_p1'].value, 0, 0],
+                    [0, 0, 0, 0, params['c_44_p1'].value, 0],
+                    [0, 0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value)]
                 ])
 
-        self.__constant_c_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_constants_c(
-            self.__constant_c_Matrix_tensor_voigt)
-        self.__complience_s_Matrix_tensor_voigt = np.linalg.inv(self.__constant_c_Matrix_tensor_voigt)
+        self.__constant_c_tensor_extended_notation_fitted_phase = self.__conv_voigtnot_to_extended_not_constants_c(
+            self.__constant_c_tensor_voigt_notation_fitted_phase)
+        self.__complience_s_tensor_voigt_notation_fitted_phase = np.linalg.inv(
+            self.__constant_c_tensor_voigt_notation_fitted_phase)
         # self.__conv_all_voigtnot_to_extended_not()
-        self.__complience_s_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_compliences_s(
-            self.__complience_s_Matrix_tensor_voigt)
+        self.__complience_s_tensor_extended_notation_fitted_phase = self.__conv_voigtnot_to_extended_not_compliences_s(
+            self.__complience_s_tensor_voigt_notation_fitted_phase)
 
     def set_parameters_of_the_INCLUSION_in_matrix_representation_multi_phase(self, params):
-        if self.symmetry_Inclusion == "isotope":
-            self.__constant_c_Inclusion_tensor_voigt = \
+        if self.symmetry_phase_2 == "isotope":
+            self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
-                    [params['c_11_i'].value, params['c_12_i'].value, params['c_12_i'].value, 0, 0, 0],
-                    [params['c_12_i'].value, params['c_11_i'].value, params['c_12_i'].value, 0, 0, 0],
-                    [params['c_12_i'].value, params['c_12_i'].value, params['c_11_i'].value, 0, 0, 0],
-                    [0, 0, 0, 2 * (params['c_11_i'].value - params['c_12_i'].value), 0, 0],
-                    [0, 0, 0, 0, 2 * (params['c_11_i'].value - params['c_12_i'].value), 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11_i'].value - params['c_12_i'].value)]
+                    [params['c_11_p2'].value, params['c_12_p2'].value, params['c_12_p2'].value, 0, 0, 0],
+                    [params['c_12_p2'].value, params['c_11_p2'].value, params['c_12_p2'].value, 0, 0, 0],
+                    [params['c_12_p2'].value, params['c_12_p2'].value, params['c_11_p2'].value, 0, 0, 0],
+                    [0, 0, 0, 2 * (params['c_11_p2'].value - params['c_12_p2'].value), 0, 0],
+                    [0, 0, 0, 0, 2 * (params['c_11_p2'].value - params['c_12_p2'].value), 0],
+                    [0, 0, 0, 0, 0, 2 * (params['c_11_p2'].value - params['c_12_p2'].value)]
                 ])
-        elif self.symmetry_Inclusion == "m-3m":  # cubic
-            # print "Symmetry:", self.symmetry_Inclusion
-            self.__constant_c_Inclusion_tensor_voigt = \
+        elif self.symmetry_phase_2 == "m-3m":  # cubic
+            # print "Symmetry:", self.symmetry_phase_2
+            self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
-                    [params['c_11_i'].value, params['c_12_i'].value, params['c_12_i'].value, 0, 0, 0],
-                    [params['c_12_i'].value, params['c_11_i'].value, params['c_12_i'].value, 0, 0, 0],
-                    [params['c_12_i'].value, params['c_12_i'].value, params['c_11_i'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44_i'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44_i'].value, 0],
-                    [0, 0, 0, 0, 0, params['c_44_i'].value]
+                    [params['c_11_p2'].value, params['c_12_p2'].value, params['c_12_p2'].value, 0, 0, 0],
+                    [params['c_12_p2'].value, params['c_11_p2'].value, params['c_12_p2'].value, 0, 0, 0],
+                    [params['c_12_p2'].value, params['c_12_p2'].value, params['c_11_p2'].value, 0, 0, 0],
+                    [0, 0, 0, params['c_44_p2'].value, 0, 0],
+                    [0, 0, 0, 0, params['c_44_p2'].value, 0],
+                    [0, 0, 0, 0, 0, params['c_44_p2'].value]
                 ])
-        elif self.symmetry_Inclusion == "hexagonal" or self.symmetry_Inclusion == "hexagonal":
-            self.__constant_c_Inclusion_tensor_voigt = \
+        elif self.symmetry_phase_2 == "hexagonal" or self.symmetry_phase_2 == "hexagonal":
+            self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
-                    [params['c_11_i'].value, params['c_12_i'].value, params['c_13_i'].value, 0, 0, 0],
-                    [params['c_12_i'].value, params['c_11_i'].value, params['c_13_i'].value, 0, 0, 0],
-                    [params['c_13_i'].value, params['c_13_i'].value, params['c33_i'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44_i'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44_i'].value, 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11_i'].value - params['c_12_i'].value)]
+                    [params['c_11_p2'].value, params['c_12_p2'].value, params['c_13_p2'].value, 0, 0, 0],
+                    [params['c_12_p2'].value, params['c_11_p2'].value, params['c_13_p2'].value, 0, 0, 0],
+                    [params['c_13_p2'].value, params['c_13_p2'].value, params['c33_p2'].value, 0, 0, 0],
+                    [0, 0, 0, params['c_44_p2'].value, 0, 0],
+                    [0, 0, 0, 0, params['c_44_p2'].value, 0],
+                    [0, 0, 0, 0, 0, 2 * (params['c_11_p2'].value - params['c_12_p2'].value)]
                 ])
 
-        self.__constant_c_Inclusion_tensor_extended = self.__conv_voigtnot_to_extended_not_constants_c(
-            self.__constant_c_Inclusion_tensor_voigt)
-        self.__complience_s_Inclusion_tensor_voigt = np.linalg.inv(self.__constant_c_Inclusion_tensor_voigt)
-        self.__complience_s_Inclusion_tensor_extended = self.__conv_voigtnot_to_extended_not_compliences_s(
-            self.__complience_s_Inclusion_tensor_voigt)
+        self.__constant_c_tensor_extended_notation_fixed_phase = self.__conv_voigtnot_to_extended_not_constants_c(
+            self.__constant_c_tensor_voigt_notation_fixed_phase)
+        self.__complience_s_tensor_voigt_notation_fixed_phase = np.linalg.inv(self.__constant_c_tensor_voigt_notation_fixed_phase)
+        self.__complience_s_tensor_extended_notation_fixed_phase = self.__conv_voigtnot_to_extended_not_compliences_s(
+            self.__complience_s_tensor_voigt_notation_fixed_phase)
 
     def set_parameters_of_the_INCLUSION_in_matrix_representation_single_phase(self, params):
         # params = self.__params
-        if self.symmetry_Matrix == "isotope":
-            self.__constant_c_Inclusion_tensor_voigt = \
+        if self.symmetry_phase_1 == "isotope":
+            self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
-                    [params['c_11_m'].value, params['c_12_m'].value, params['c_12_m'].value, 0, 0, 0],
-                    [params['c_12_m'].value, params['c_11_m'].value, params['c_12_m'].value, 0, 0, 0],
-                    [params['c_12_m'].value, params['c_12_m'].value, params['c_11_m'].value, 0, 0, 0],
-                    [0, 0, 0, 2 * (params['c_11_m'].value - params['c_12_m'].value), 0, 0],
-                    [0, 0, 0, 0, 2 * (params['c_11_m'].value - params['c_12_m'].value), 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11_m'].value - params['c_12_m'].value)]
+                    [params['c_11_p1'].value, params['c_12_p1'].value, params['c_12_p1'].value, 0, 0, 0],
+                    [params['c_12_p1'].value, params['c_11_p1'].value, params['c_12_p1'].value, 0, 0, 0],
+                    [params['c_12_p1'].value, params['c_12_p1'].value, params['c_11_p1'].value, 0, 0, 0],
+                    [0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value), 0, 0],
+                    [0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value), 0],
+                    [0, 0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value)]
                 ])
-        elif self.symmetry_Matrix == "m-3m":  # cubic
-            # print "Symmetry:", self.symmetry_Inclusion
-            self.__constant_c_Inclusion_tensor_voigt = \
+        elif self.symmetry_phase_1 == "m-3m":  # cubic
+            # print "Symmetry:", self.symmetry_phase_2
+            self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
-                    [params['c_11_m'].value, params['c_12_m'].value, params['c_12_m'].value, 0, 0, 0],
-                    [params['c_12_m'].value, params['c_11_m'].value, params['c_12_m'].value, 0, 0, 0],
-                    [params['c_12_m'].value, params['c_12_m'].value, params['c_11_m'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44_m'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44_m'].value, 0],
-                    [0, 0, 0, 0, 0, params['c_44_m'].value]
+                    [params['c_11_p1'].value, params['c_12_p1'].value, params['c_12_p1'].value, 0, 0, 0],
+                    [params['c_12_p1'].value, params['c_11_p1'].value, params['c_12_p1'].value, 0, 0, 0],
+                    [params['c_12_p1'].value, params['c_12_p1'].value, params['c_11_p1'].value, 0, 0, 0],
+                    [0, 0, 0, params['c_44_p1'].value, 0, 0],
+                    [0, 0, 0, 0, params['c_44_p1'].value, 0],
+                    [0, 0, 0, 0, 0, params['c_44_p1'].value]
                 ])
-        elif self.symmetry_Matrix == "hexagonal" or self.symmetry_Inclusion == "hexagonal":
-            self.__constant_c_Inclusion_tensor_voigt = \
+        elif self.symmetry_phase_1 == "hexagonal" or self.symmetry_phase_2 == "hexagonal":
+            self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
-                    [params['c_11_m'].value, params['c_12_m'].value, params['c_13_m'].value, 0, 0, 0],
-                    [params['c_12_m'].value, params['c_11_m'].value, params['c_13_m'].value, 0, 0, 0],
-                    [params['c_13_m'].value, params['c_13_m'].value, params['c33_m'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44_m'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44_m'].value, 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11_m'].value - params['c_12_m'].value)]
+                    [params['c_11_p1'].value, params['c_12_p1'].value, params['c_13_p1'].value, 0, 0, 0],
+                    [params['c_12_p1'].value, params['c_11_p1'].value, params['c_13_p1'].value, 0, 0, 0],
+                    [params['c_13_p1'].value, params['c_13_p1'].value, params['c33_p1'].value, 0, 0, 0],
+                    [0, 0, 0, params['c_44_p1'].value, 0, 0],
+                    [0, 0, 0, 0, params['c_44_p1'].value, 0],
+                    [0, 0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value)]
                 ])
 
-        self.__constant_c_Inclusion_tensor_extended = self.__conv_voigtnot_to_extended_not_constants_c(
-            self.__constant_c_Inclusion_tensor_voigt)
-        self.__complience_s_Inclusion_tensor_voigt = np.linalg.inv(self.__constant_c_Inclusion_tensor_voigt)
-        self.__complience_s_Inclusion_tensor_extended = self.__conv_voigtnot_to_extended_not_compliences_s(
-            self.__complience_s_Inclusion_tensor_voigt)
+        self.__constant_c_tensor_extended_notation_fixed_phase = self.__conv_voigtnot_to_extended_not_constants_c(
+            self.__constant_c_tensor_voigt_notation_fixed_phase)
+        self.__complience_s_tensor_voigt_notation_fixed_phase = np.linalg.inv(self.__constant_c_tensor_voigt_notation_fixed_phase)
+        self.__complience_s_tensor_extended_notation_fixed_phase = self.__conv_voigtnot_to_extended_not_compliences_s(
+            self.__complience_s_tensor_voigt_notation_fixed_phase)
 
     def __residuum_with_texture(self, params, xvals, data_matrix=None, data_inclusion=None, fitted_phase=1,
                                 method=None):
@@ -887,27 +924,27 @@ class FitStrainWithTexture(object):
             self.set_parameters_of_the_INCLUSION_in_matrix_representation_single_phase(params)
 
         print "parameter vals:"
-        print "C_11_m: ", params["c_11_m"].value
-        print "C_12_m: ", params["c_12_m"].value
-        print "C_44_m: ", params["c_44_m"].value
+        print "C_11_p1: ", params["c_11_p1"].value
+        print "C_12_p1: ", params["c_12_p1"].value
+        print "C_44_p1: ", params["c_44_p1"].value
         if self.phase_flag:
-            print "C_11_i: ", params["c_11_i"].value
-            print "C_12_i: ", params["c_12_i"].value
-            print "C_44_i: ", params["c_44_i"].value
+            print "C_11_p2: ", params["c_11_p2"].value
+            print "C_12_p2: ", params["c_12_p2"].value
+            print "C_44_p2: ", params["c_44_p2"].value
 
-        # self.__constant_c_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_constants_c(
-        #     self.__constant_c_Matrix_tensor_voigt)
-        # self.__complience_s_Matrix_tensor_voigt = np.linalg.inv(self.__constant_c_Matrix_tensor_voigt)
+        # self.__constant_c_tensor_extended_notation_fitted_phase = self.__conv_voigtnot_to_extended_not_constants_c(
+        #     self.__constant_c_tensor_voigt_notation_fitted_phase)
+        # self.__complience_s_tensor_voigt_notation_fitted_phase = np.linalg.inv(self.__constant_c_tensor_voigt_notation_fitted_phase)
         # # self.__conv_all_voigtnot_to_extended_not()
-        # self.__complience_s_Matrix_tensor_extended = self.__conv_voigtnot_to_extended_not_compliences_s(
-        #     self.__complience_s_Matrix_tensor_voigt)
+        # self.__complience_s_tensor_extended_notation_fitted_phase = self.__conv_voigtnot_to_extended_not_compliences_s(
+        #     self.__complience_s_tensor_voigt_notation_fitted_phase)
 
         # self.__complience_s_tensor_extended = np.linalg.inv(self.__constant_c_tensor_extended)
 
         # print "tensor identity calc:\n",np.tensordot(self.__constant_c_tensor_extended, self.__complience_s_tensor_extended)
         # print "tensor identity teo:\n",self.fourth_rank_identity()
-        # print "tensor diference:\n", np.tensordot(self.__constant_c_Matrix_tensor_extended,
-        #                                           self.__complience_s_Matrix_tensor_extended) - \
+        # print "tensor diference:\n", np.tensordot(self.__constant_c_tensor_extended_notation_fitted_phase,
+        #                                           self.__complience_s_tensor_extended_notation_fitted_phase) - \
         #                              self.fourth_rank_identity()
         strain_epsilon_2 = []
         strain_epsilon = 0.
@@ -1026,9 +1063,9 @@ class FitStrainWithTexture(object):
         print "Iteration #", self.__counter
 
         print "parameter vals:"
-        print "C_11: ", params["c_11"].value
-        print "C_12: ", params["c_12"].value
-        print "C_44: ", params["c_44"].value
+        print "C_11_p1: ", params["c_11_p1"].value
+        print "C_12_p1: ", params["c_12_p1"].value
+        print "C_44_p1: ", params["c_44_p1"].value
 
         strain_epsilon = []
         t1 = tm.clock()
@@ -1234,10 +1271,10 @@ class FitStrainWithTexture(object):
         date = kwargs["date_of_fit"]
         da = tm.strftime("%d.%m.%Y, %H:%M", date)
         pars = lm.fit_report(res.params)
-        sym_matrix = self.symmetry_Matrix + " " + self.__odf_Matrix.crystal_symmetry
+        sym_matrix = self.symmetry_phase_1 + " " + self.__odf_phase_1.crystal_symmetry
         sym_inclusion = "None"
         if self.phase_flag:
-            sym_inclusion = self.symmetry_Inclusion + " " + self.__odf_Inclusion.crystal_symmetry
+            sym_inclusion = self.symmetry_phase_2 + " " + self.__odf_phase_2.crystal_symmetry
         out = \
             "Method:         %s\
            \nSymmetry:       %s\
@@ -1317,7 +1354,7 @@ class FitStrainWithTexture(object):
 
     @property
     def get_compliance_tensor_voigt_not(self):
-        return self.__constant_c_Matrix_tensor_voigt
+        return self.__constant_c_tensor_voigt_notation_fitted_phase
 
     def kronneker_delta(self, i, j):
         if i == j:
@@ -1354,29 +1391,29 @@ class FitStrainWithTexture(object):
         if method == "reus":
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.__odf_Matrix.integrate(self.A_reus, phi, psi, h, k, l, u, w, i, j) / \
-                           self.__odf_Matrix.integrate_(phi, psi, h, k, l)
+                    res += self.__odf_phase_1.integrate(self.A_reus, phi, psi, h, k, l, u, w, i, j) / \
+                           self.__odf_phase_1.integrate_(phi, psi, h, k, l)
 
         elif method == "voigt":
             # euler = (0, 0, 0)
             # a_voigt = self.A_voigt(euler, 0,0,0,0)
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.__odf_Matrix.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j) / \
-                           self.__odf_Matrix.integrate_(phi, psi, h, k, l)
+                    res += self.__odf_phase_1.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j) / \
+                           self.__odf_phase_1.integrate_(phi, psi, h, k, l)
 
         elif method == "hill":
             for u in xrange(3):
                 for w in xrange(3):
-                    res += ((self.__odf_Matrix.integrate(self.A_reus, phi, psi, h, k, l, u, w, i, j) +
-                             self.__odf_Matrix.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j)) / 2) / \
-                           self.__odf_Matrix.integrate_(phi, psi, h, k, l)
+                    res += ((self.__odf_phase_1.integrate(self.A_reus, phi, psi, h, k, l, u, w, i, j) +
+                             self.__odf_phase_1.integrate(self.__A_voigt_call, phi, psi, h, k, l, u, w, i, j)) / 2) / \
+                           self.__odf_phase_1.integrate_(phi, psi, h, k, l)
 
         elif method == "eshelby":
             for u in xrange(3):
                 for w in xrange(3):
-                    res += self.__odf_Matrix.integrate(self.A_eshelby, phi, psi, h, k, l, u, w, i, j) / \
-                           self.__odf_Matrix.integrate_(phi, psi, h, k, l)
+                    res += self.__odf_phase_1.integrate(self.A_eshelby, phi, psi, h, k, l, u, w, i, j) / \
+                           self.__odf_phase_1.integrate_(phi, psi, h, k, l)
         # print "Func. calls: ", self.counter2, "Spannungsfaktor: ", res, " phi: ", rad_to_deg(phi), " psi: ", \
         #     rad_to_deg(psi), "hkl: ", h, k, l
         return res
@@ -1421,7 +1458,7 @@ class FitStrainWithTexture(object):
         sig = np.zeros((3, 3))
         # sig[0,0]=np.sin(psi)**2 * np.sin(phi2)**2
         # sig[2, 2] = sigma3
-        g = self.__odf_Matrix.g1(phi, psi, phi2)
+        g = self.__odf_phase_1.g1(phi, psi, phi2)
         for i in xrange(3):
             for j in xrange(3):
                 sig[i, j] = g[i, 2] * g[j, 2] * 1
@@ -1447,7 +1484,7 @@ class FitStrainWithTexture(object):
                 for o in xrange(3):
                     for p in xrange(3):
                         res += g2[i, m] * g2[j, n] * g2[u, o] * g2[w, p] * \
-                               self.__complience_s_Matrix_tensor_extended[m, n, o, p]
+                               self.__complience_s_tensor_extended_notation_fitted_phase[m, n, o, p]
 
         # res = np.zeros((3, 3, 3, 3))
         # for a in xrange(3):
@@ -1459,19 +1496,19 @@ class FitStrainWithTexture(object):
         #                         for o in xrange(3):
         #                             for p in xrange(3):
         #                                 res[a, b, c, d] += g[a, m] * g[b, n] * g[c, o] * g[d, p] * \
-        #                                                    self.__constant_c_Matrix_tensor_extended[m, n, o, p]
+        #                                                    self.__constant_c_tensor_extended_notation_fitted_phase[m, n, o, p]
         # print res
-        # print self.__constant_c_Matrix_tensor_extended
-        # print self.__constant_c_Matrix_tensor_voigt
+        # print self.__constant_c_tensor_extended_notation_fitted_phase
+        # print self.__constant_c_tensor_voigt_notation_fitted_phase
 
         # res = self.invert_four_rank_c_tensor(res)
         return res  # [2, 2, u, w]  # [u, w, i, j]
 
     def __voigt_inner_sum(self, phi1, phi, phi2, a, b, i, j):
         res = 0
-        g = self.__odf_Matrix.g(phi1, phi, phi2).transpose()
+        g = self.__odf_phase_1.g(phi1, phi, phi2).transpose()
         g = g.tolist()
-        c_Matrix_tensor = self.__constant_c_Matrix_tensor_extended.tolist()
+        c_Matrix_tensor = self.__constant_c_tensor_extended_notation_fitted_phase.tolist()
         for m in xrange(3):
             for n in xrange(3):
                 for o in xrange(3):
@@ -1487,7 +1524,7 @@ class FitStrainWithTexture(object):
         res = np.zeros((3, 3, 3, 3))
 
         # print "a: ", d_list["a"], "b: ", d_list["b"], "f: ", d_list["f"], "d: ", d_list["d"]
-        res[d_list["a"], d_list["b"], d_list["f"], d_list["d"]] = self.__odf_Matrix. \
+        res[d_list["a"], d_list["b"], d_list["f"], d_list["d"]] = self.__odf_phase_1. \
             integrate_a_over_all_orientations_g(self.__voigt_inner_sum,
                                                 d_list["a"], d_list["b"], d_list["f"], d_list["d"])
         return res
@@ -1512,11 +1549,11 @@ class FitStrainWithTexture(object):
                 for f in xrange(3):
                     for d in xrange(3):
                         cli_progress_test_voigt(cout, 81, (a, b, f, d))
-                        c[a][b][f][d] = self.__odf_Matrix.integrate_a_over_all_orientations_g(self.__voigt_inner_sum,
-                                                                                              a, b, f, d)
+                        c[a][b][f][d] = self.__odf_phase_1.integrate_a_over_all_orientations_g(self.__voigt_inner_sum,
+                                                                                               a, b, f, d)
                         cout += 1
         c = np.array(c)
-        c /= self.odf_integral_over_all_angles
+        c /= self.odf_integral_over_all_angles_phase_1
         s = self.invert_four_rank_c_tensor(c)
         # s = self.invert_tensor(c)
         return s  # [u, w, i, j]
@@ -1630,7 +1667,7 @@ class FitStrainWithTexture(object):
 
     def __u(self, phi1, phi, phi2, C):
         E = self.__calc_E(C)
-        g = self.__odf_Matrix.g(phi1, phi, phi2).transpose()
+        g = self.__odf_phase_1.g(phi1, phi, phi2).transpose()
         c = self.c(g)  # constant tensor of the inclusion depending on the orientation g
         E_inv = self.invert_four_rank_c_tensor(E)
         h = self.invert_four_rank_c_tensor(c + C + E_inv)
@@ -1646,7 +1683,7 @@ class FitStrainWithTexture(object):
         return res - self.fourth_rank_identity()
 
     def __integrand_int_u(self, phi1, phi, phi2, C):
-        return self.__u(phi1, phi, phi2, C) * self.__odf_Matrix.f(phi1, phi, phi2) * np.sin(phi)
+        return self.__u(phi1, phi, phi2, C) * self.__odf_phase_1.f(phi1, phi, phi2) * np.sin(phi)
 
     def __int_u(self, C):
         res = np.zeros((3, 3, 3, 3))
@@ -1672,9 +1709,9 @@ class FitStrainWithTexture(object):
         """
 
         phi1, phi, phi2 = euler
-        g = self.__odf_Matrix.g(phi1, phi, phi2).transpose()
+        g = self.__odf_phase_1.g(phi1, phi, phi2).transpose()
         S = np.zeros((3, 3, 3, 3))  # averaged constant tensor of the matrix
-        S = self.__complience_s_Matrix_tensor_extended  # use as a start value
+        S = self.__complience_s_tensor_extended_notation_fitted_phase  # use as a start value
         C = self.invert_four_rank_s_tensor(S)  # averaged compliance tensor of the matrix
         c = self.c(g)  # constant tensor of the inclusion depending on the orientation g
 
@@ -1738,11 +1775,11 @@ class Fit_strain_with_texture_two_phase_material(FitStrainWithTexture):
                                       strains_data=strains_Matrix_data, xvals=xvals_Matrix,
                                       weights=weights_Matrix)
 
-        self.__odf_Inclusion = odf_Inclusion
+        self.__odf_phase_2 = odf_Inclusion
         self.__strains_data_Inclusion = strains_Inclusion_data
         self.__weights_Inclusion = weights_Inclusion
         self.xvals_Inclusion = xvals_Inclusion
-        self.__sym_Inclusion = self.__odf_Inclusion.crystal_symmetry
+        self.__sym_Inclusion = self.__odf_phase_2.crystal_symmetry
         self.__params_Inclusion = lm.Parameters()
         self.add_params(self.__params_Inclusion, self.__sym_Inclusion)
 
