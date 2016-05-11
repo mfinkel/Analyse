@@ -9,6 +9,9 @@ import numpy as np
 # from numpy.linalg import inv
 import re
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import matplotlib as mpl
+from matplotlib.figure import Figure
 from scipy.optimize import fsolve
 import scipy
 # import scipy.optimize
@@ -2443,12 +2446,14 @@ class ODF(object):
         :return: None
         """
         # self.interpolate_whole_odf()
-        step = 5
-        PHI = np.array(xrange(0, 360, step))
-        PSI = np.array(xrange(0, 90, step))
+        step = deg_to_rad(20)
+        PHI = np.arange(0, 2 * np.pi + step, step)
+        PSI = np.arange(0, np.pi / 2 + step, step)
         VAL = np.zeros((PHI.size, PSI.size))
-        endval = 360 * 90 / step
+        endval = len(PHI) * len(PSI)
         i = 0
+        t1 = tm.clock()
+        print self.calc_al_symetrical_identical_hkl(h, k, l)
         for m in range(len(PHI)):
             for n in range(len(PSI)):
                 phi = PHI[m]
@@ -2456,12 +2461,37 @@ class ODF(object):
                 val = self.integrate_(phi, psi, h, k, l)
                 VAL[m, n] = val
                 cli_progress_test(i=i, end_val=endval)
-                i += step
+                i += 1
+        t2 = tm.clock()
 
+        dt = t2 - t1
+        print "time: h: {}, m: {}, s: {}".format(int(dt/3600), int((dt%3600)/60), (dt%3600)%60)
+        # r, theta = np.meshgrid(PSI, PHI)
+        # print r, PSI
+        # print theta, PHI
+
+        # ----------
+        # the plot
+        # ----------
         r, theta = np.meshgrid(PSI, PHI)
-        fig, ax = plt.subplots(subplot_kw=dict(projection='polar'))
+        plt.figure("pole figure {}{}{}\n".format(h, k, l))
+        fig = Figure()
+        axs = fig.add_subplot(111, projection='polar')  # 1, 1, figsize=(12,5),subplot_kw=dict(projection='polar'))
+        # pp = plt.axes(polar=True)
+        axs.set_title("pole figure {}{}{}".format(h, k, l))
+        # pp.gird(linestyle='-.')
+        # pp.pcolormesh(VAL, cmap = cm.gist_rainbow)  # theta, r,
+        pl = axs.contourf(theta, np.degrees(r), VAL)
+        CB = plt.colorbar(pl, ax=axs)
+        # plt.colorbar(pl, ax=pp)
+        # plt.colorbar(pp)
+        # pp.scatter(theta, r, s=27, c=VAL, marker='o')  # this is working
 
-        ax.contourf(theta, r, VAL)
+        # plt.colorbar(mappable=VAL, cax=pp)
+        # fig.set_title("pole figure {}{}{}".format(h, k, l))
+
+        # ax.contourf(theta, r, VAL)
+        # fig.colorbar(ax)
         plt.show()
 
     def integrate(self, A, phi, psi, h, k, l, *args):
@@ -2514,17 +2544,49 @@ class ODF(object):
         self.__params["psi"] = psi
         step = 5
         res = 0
-        for i in range(0, 360, step):
-            r = deg_to_rad(i)
-            phi1, phi, phi2 = self.calc_eulerangles(r % (2 * np.pi), h, k, l)
-            euler = (rad_to_deg(phi1), rad_to_deg(phi), rad_to_deg(phi2))
-            phi1, phi, phi2 = euler
-            # dphi1, dphi, dphi2 = self.calc_delta_vals(h, k, l, rad_to_deg(psi), rad_to_deg(phi), i, step)  # [0]
+        hkls = self.calc_al_symetrical_identical_hkl(h, k, l)
+        for h, k, l in hkls:
+            for i in range(0, 360, step):
+                r = deg_to_rad(i)
+                phi1, phi, phi2 = self.calc_eulerangles(r % (2 * np.pi), h, k, l)
+                euler = (rad_to_deg(phi1), rad_to_deg(phi), rad_to_deg(phi2))
+                phi1, phi, phi2 = euler
+                # dphi1, dphi, dphi2 = self.calc_delta_vals(h, k, l, rad_to_deg(psi), rad_to_deg(phi), i, step)  # [0]
 
-            res += self.f(phi1, phi, phi2) * deg_to_rad(step)
-            # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2
+                res += self.f(phi1, phi, phi2) * deg_to_rad(step)
+                # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2
 
         return res / (2 * np.pi)
+
+    def calc_al_symetrical_identical_hkl(self, h, k, l):
+        """
+        calc all symmetrical equivalent hkl plains
+        :param h:
+        :param k:
+        :param l:
+        :return:
+        """
+        res = []
+        if self.crystal_symmetry == "m-3m":
+            for i in IT.permutations([h, k, l]):
+                res.append(list(i))
+                res.append((-np.array(i)).tolist())
+            for i in IT.permutations([-h, k, l]):
+                res.append(list(i))
+                res.append((-np.array(i)).tolist())
+            for i in IT.permutations([h, -k, l]):
+                res.append(list(i))
+                res.append((-np.array(i)).tolist())
+            for i in IT.permutations([h, k, -l]):
+                res.append(list(i))
+                res.append((-np.array(i)).tolist())
+
+        # remove redundand etries
+        result = []
+        for j in res:
+            if j not in result:
+                result.append(j)
+        return result
 
     def integrate_interpol(self, phi, psi, h, k, l, *args):
         """
