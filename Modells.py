@@ -1025,12 +1025,11 @@ class FitStrainWithTexture(object):
                 # data_mat_err.append(strain_mat_err)
 
                 theory_val = 0.
-                for i in xrange(3):
-                    for j in xrange(3):
-                        if self.phase_flag:
+                if method == "eshelby":
+                    for i in xrange(3):
+                        for j in xrange(3):
                             theory_val += self.F(phi, psi, h, k, l, i, j, method) * self.force_factor(i, j)
-
-                if not self.phase_flag:
+                else:
                     theory_val += self.F(phi, psi, h, k, l, 2, 2, method)
 
                 theory_fit.append(theory_val)
@@ -1072,11 +1071,7 @@ class FitStrainWithTexture(object):
             symmetry_fitted_phase = self.symmetry_phase_2
             symmetry_fixed_phase = self.symmetry_phase_1
 
-
-
         self.set_parameters_of_the_FITTED_PHASE_in_matrix_representation(params, symmetry_fitted_phase)
-
-
 
         if self.phase_flag:
             self.set_parameters_of_the_FIXED_PHASE_in_matrix_representation_multi_phase(params, symmetry_fixed_phase)
@@ -1179,11 +1174,11 @@ class FitStrainWithTexture(object):
         :return:
         """
         key_words = ["c_11", "c_12", "c_13", "c_14", "c_15", "c_16",
-                             "c_22", "c_23", "c_24", "c_25", "c_26",
-                                     "c_33", "c_34", "c_35", "c_36",
-                                             "c_44", "c_45", "c_46",
-                                                     "c_55", "c_56",
-                                                             "c_66"]
+                     "c_22", "c_23", "c_24", "c_25", "c_26",
+                     "c_33", "c_34", "c_35", "c_36",
+                     "c_44", "c_45", "c_46",
+                     "c_55", "c_56",
+                     "c_66"]
         pars = lm.Parameters()
         for key in params.keys():
             condition = params[key].vary
@@ -1253,6 +1248,9 @@ class FitStrainWithTexture(object):
 
         filename = path + filename
         filename = self.__save_data(filename, material, phase_name, nice_result)
+        print "over all compliance Matrix:"
+        print self.calc_the_over_all_constant_c_tensor(self.__constant_c_tensor_extended_notation_fitted_phase,
+                                                       fitted_phase=phase)
         return result, filename
 
     def do_the_fitting_self_consistent_sigma_and_el_const(self, filename, material, method="reus", path=".\\results\\",
@@ -1573,6 +1571,51 @@ class FitStrainWithTexture(object):
                 sig[i, j] = g[i, 2] * g[j, 2] * 1
         # print "sigma_33: ", sigma3, self.force, self.diameter
         return sig[i, j]
+
+    def __over_all_inner_sum(self, phi1, phi, phi2, a, b, i, j, c_Matrix_tensor):
+        res = 0
+        g = self.__odf_phase_1.g(phi1, phi, phi2).transpose()  # this is the transformation tensor it is identical
+        # for both phases
+        g = g.tolist()
+        c_Matrix_tensor = c_Matrix_tensor.tolist()
+        for m in xrange(3):
+            for n in xrange(3):
+                for o in xrange(3):
+                    for p in xrange(3):
+                        res += g[a][m] * g[b][n] * g[i][o] * g[j][p] \
+                               * c_Matrix_tensor[m][n][o][p]
+        return res
+
+    def calc_the_over_all_constant_c_tensor(self, compliance_tensor, fitted_phase):
+        """
+        calculate the over all constant tensor of the fitted phase
+        :param compliance_tensor:
+        :param fitted_phase:
+        :return:
+        """
+        over_all_tensor = np.zeros((3, 3, 3, 3))  # compliance tensor g independent
+        over_all_tensor = over_all_tensor.tolist()
+        cout = 0
+        integral = 0
+        for a in xrange(3):
+            for b in xrange(3):
+                for f in xrange(3):
+                    for d in xrange(3):
+                        cli_progress_test_voigt(cout, 81, (a, b, f, d))
+                        if fitted_phase == 1:
+                            over_all_tensor[a][b][f][d] = self.__odf_phase_1.integrate_a_over_all_orientations_g(
+                                self.__over_all_inner_sum, a, b, f, d, compliance_tensor)
+                            integral = self.odf_integral_over_all_angles_phase_1
+                        elif fitted_phase == 2:
+                            over_all_tensor[a][b][f][d] = self.__odf_phase_2.integrate_a_over_all_orientations_g(
+                                self.__over_all_inner_sum, a, b, f, d, compliance_tensor)
+                            integral = self.odf_integral_over_all_angles_phase_2
+                        cout += 1
+        over_all_tensor = np.array(over_all_tensor)
+        over_all_tensor /= integral
+        over_all_tensor = self.__conv_extended_not_to_voigt_not_constants_c(over_all_tensor)
+
+        return over_all_tensor
 
     def A_reus(self, g2, g1, u, w, i, j):
         """
@@ -2487,7 +2530,7 @@ class ODF(object):
         t2 = tm.clock()
 
         dt = t2 - t1
-        print "time: h: {}, m: {}, s: {}".format(int(dt/3600), int((dt%3600)/60), (dt%3600)%60)
+        print "time: h: {}, m: {}, s: {}".format(int(dt / 3600), int((dt % 3600) / 60), (dt % 3600) % 60)
         # r, theta = np.meshgrid(PSI, PHI)
         # print r, PSI
         # print theta, PHI
@@ -2684,12 +2727,12 @@ class ODF(object):
     def integrate_a_over_all_orientations_g(self, inner_sum, *args):
         sum_total = 0
         # t1 = tm.clock()
-        for k in xrange(0, self.__phi2_max + self.__stepwidth, self.__stepwidth):  # sum over all phi2 vals
-            for j in xrange(0, self.__Phi_max + self.__stepwidth, self.__stepwidth):  # sum over all Phi vals
+        for phi2 in xrange(0, self.__phi2_max + self.__stepwidth, self.__stepwidth):  # sum over all phi2 vals
+            for phi in xrange(0, self.__Phi_max + self.__stepwidth, self.__stepwidth):  # sum over all Phi vals
                 sum_1 = 0
-                for i in xrange(0, self.__phi1_max + self.__stepwidth, self.__stepwidth):  # sum over all phi1 vals
-                    sum_1 += inner_sum(i, j, k, *args) * self.f(i, j, k)
-                sum_total += np.sin(deg_to_rad(j)) * sum_1
+                for phi1 in xrange(0, self.__phi1_max + self.__stepwidth, self.__stepwidth):  # sum over all phi1 vals
+                    sum_1 += inner_sum(phi1, phi, phi2, *args) * self.f(phi1, phi, phi2)
+                sum_total += np.sin(deg_to_rad(phi)) * sum_1
         sum_total = sum_total * deg_to_rad(self.__stepwidth) ** 3 / (8 * np.pi ** 2)
         # t2 = tm.clock()
         # dt = t2 - t1
