@@ -1,10 +1,4 @@
 from __future__ import print_function
-import sys
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
-from PyQt4.QtGui import *
-import lmfit
-
 import functools
 import sys
 import os
@@ -27,22 +21,22 @@ if use_pyside:
 else:
     from PyQt4.QtCore import *
     from PyQt4.QtGui import *
-import methods
+
 from functools import partial
 import handle_data
 import Modells
-import lmfit
 
 
 class insert_const_widget(QWidget):
-    def __init__(self, name, sym, *args):
+    def __init__(self, *args):
         QWidget.__init__(self)
         QWidget.resize(self, 500, 400)
-        QWidget.setWindowTitle(self, name)
-        self.name = name
+        QWidget.setWindowTitle(self, "default")
+        self.name = "default"
+        sym = "default"
         self.layout = QGridLayout()
 
-        self.params = lmfit.Parameters()
+        self.params = lm.Parameters()
         self.add_params(self.params, sym)
         self.sym = sym
         self.create_text_output(self, self.sym + ":", 20, 20, 100, 30)
@@ -56,7 +50,17 @@ class insert_const_widget(QWidget):
 
         self.confirm_button = QPushButton("confirm", self)
         self.confirm_button.move(140, 20)
+        self.send_and_close_button = QPushButton("send and close", self)
+        self.send_and_close_button.move(240, 20)
+        self.send_and_close_button.clicked.connect(self.send_and_close)
         self.confirm_button.clicked.connect(self.set_params)
+
+        # self.close()
+
+    def show_of(self, name, sym):
+        self.name = name
+        self.sym = sym
+        self.set_preprepare_array()
         self.show()
 
     @staticmethod
@@ -168,6 +172,7 @@ class insert_const_widget(QWidget):
                     else:
                         self.array[i][j].setTextBackgroundColor(QColor(255, 200, 0))
                         self.array[i][j].setText(str(0))
+
         elif self.sym == "m-3m":
             for i in xrange(1, 7):
                 for j in xrange(1, 7):
@@ -197,6 +202,10 @@ class insert_const_widget(QWidget):
         text_obj.move(posx, posy)
         text_obj.setText(text)
         return text_obj
+
+    def send_and_close(self):
+        self.exit()
+        self.close()
 
     def exit(self):
         self.emit(SIGNAL(self.name), self.params)
@@ -426,6 +435,7 @@ class CentralWidget(QWidget):
         self.ok_button = QPushButton("OK")
         self.cancel_button = QPushButton("Cancel")
         self.region = phase_region_class()
+
         try:
             self.phase_peak_region = self.region.load()
             self.loaded_peak_region = True
@@ -476,16 +486,23 @@ class CentralWidget(QWidget):
         self.modi.currentIndexChanged.connect(self.change_outputfile_name)
         self.connect(self, SIGNAL("data"), self.central_plot.add_data)
 
-        self.insert_startvals_button = QPushButton("ins params")
+        self.insert_startvals_button = QPushButton("insert params")
+        self.insert_startvals_button.setEnabled(False)
         self.insert_startvals_button.clicked.connect(self.set_const_vals)
 
         self.plot_polefig_button = QPushButton("plot pole figure")
+        self.plot_polefig_button.setEnabled(False)
         self.miller_h = QLineEdit("h")
         self.miller_k = QLineEdit("k")
         self.miller_l = QLineEdit("l")
         self.plot_polefig_button.clicked.connect(self.plot_pole_figure)
-
         self.layout_handling()
+
+    def set_params_phase_1(self, params):
+        self.fit_object.set_params_phase_1(params)
+
+    def set_params_phase_2(self, params):
+        self.fit_object.set_params_phase_2(params)
 
     def plot_pole_figure(self):
         h = int(str(self.miller_h.text()))
@@ -494,7 +511,7 @@ class CentralWidget(QWidget):
         if str(self.fit_phase_combbox.currentText()) == "1":
             self.data_object.odf_phase_1.plot_polfigure(h, k, l)
         if str(self.fit_phase_combbox.currentText()) == "2":
-            self.data_object.odf_phase_1.plot_polfigure(h, k, l)
+            self.data_object.odf_phase_2.plot_polfigure(h, k, l)
 
     def change_name_of_phase_qlineedit(self):
         self.name_of_phase.setText(self.name_of_phase_dic[int(str(self.fit_phase_combbox.currentText()))])
@@ -577,10 +594,12 @@ class CentralWidget(QWidget):
         else:
             self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region, plot=False)
             self.do_the_fit_button.setEnabled(True)
+            self.insert_startvals_button.setEnabled(True)
+            self.plot_polefig_button.setEnabled(True)
             # self.Data_Iron.fit_all_peaks()
         self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
-        self.connect(self, SIGNAL('1'), self.fit_object.set_params_phase_1)
-        self.connect(self, SIGNAL('2'), self.fit_object.set_params_phase_2)
+        # self.connect(self, SIGNAL('1'), self.fit_object.set_params_phase_1)
+        # self.connect(self, SIGNAL('2'), self.fit_object.set_params_phase_2)
         self.fit_object.print_params()
 
     def select_hkl_SPODI_Data(self):
@@ -603,6 +622,8 @@ class CentralWidget(QWidget):
         # self.Data_Iron.fit_all_peaks()
 
         self.do_the_fit_button.setEnabled(True)
+        self.insert_startvals_button.setEnabled(True)
+        self.plot_polefig_button.setEnabled(True)
         print("coming from other class:", "\n", self.phase_peak_region)
 
     def fit_the_data(self):
@@ -650,6 +671,7 @@ class CentralWidget(QWidget):
         layout = QVBoxLayout()
         layout_ok_and_cancel_button = QHBoxLayout()
         layout_fitting = QHBoxLayout()
+        layout_fitting_2 = QHBoxLayout()
 
         # layout.addWidget(self.toolbar)
         # layout.addWidget(self.canvas)
@@ -701,12 +723,14 @@ class CentralWidget(QWidget):
         layout_fitting.addWidget(self.output_filename)
         layout_fitting.addWidget(self.do_the_fit_button)
 
+        layout_fitting_2.addWidget(self.miller_h)
+        layout_fitting_2.addWidget(self.miller_k)
+        layout_fitting_2.addWidget(self.miller_l)
+        layout_fitting_2.addWidget(self.plot_polefig_button)
+        layout_fitting_2.addWidget(self.insert_startvals_button)
+
         layout.addLayout(layout_fitting)
-        layout.addWidget(self.miller_h)
-        layout.addWidget(self.miller_k)
-        layout.addWidget(self.miller_l)
-        layout.addWidget(self.plot_polefig_button)
-        layout.addWidget(self.insert_startvals_button)
+        layout.addLayout(layout_fitting_2)
         layout.addLayout(layout_ok_and_cancel_button)
 
         self.setLayout(layout)
@@ -783,8 +807,14 @@ class CentralWidget(QWidget):
         else:
             sym = self.data_object.odf_phase_2.crystal_symmetry
         print(str(self.fit_phase_combbox.currentText()))
-        self.ins_params = insert_const_widget(name=str(self.fit_phase_combbox.currentText()),
-                                              sym=sym)
+        self.insert_params = insert_const_widget()
+
+        self.insert_params.show_of(name=str(self.fit_phase_combbox.currentText()),
+                                   sym=sym)
+        # self.connect(self, SIGNAL('1'), self.fit_object.set_params_phase_1)
+        # self.connect(self, SIGNAL('2'), self.fit_object.set_params_phase_2)
+        self.connect(self.insert_params, SIGNAL("1"), self.set_params_phase_1)
+        self.connect(self.insert_params, SIGNAL("2"), self.set_params_phase_2)
         self.fit_object.print_params()
 
 
@@ -802,7 +832,7 @@ class LOAD_SPODI_DATA(QWidget):
         self.unstraind_button = QPushButton("select unstraind")
 
         self.odf_phase_1_path = QLineEdit(
-            "..\\Daten-bearbeitet\\Stahl ST37\\" + "ST37_MTODF.txt")  # "AL_textur_complet.txt"
+            "H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Stahl ST37\\ST37_textur_complet_recalc.txt")
         self.odf_phase_2_path = QLineEdit("None")  # "AL_textur_complet.txt"
         self.path_of_unstraind_data = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans ohne Last\\")
 

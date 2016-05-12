@@ -595,36 +595,18 @@ class FitStrainWithTexture(object):
             params.add('c_44_p2', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
 
     def set_params_phase_1(self, params):
-        if self.symmetry_phase_1 == 'isotope':
-            self.__params['c_11_p1'].value = params['c_11'].value
-            self.__params['c_12_p1'].value = params['c_12'].value
-        if self.symmetry_phase_1 == 'm-3m':
-            self.__params['c_11_p1'].value = params['c_11'].value
-            self.__params['c_12_p1'].value = params['c_12'].value
-            self.__params['c_44_p1'].value = params['c_44'].value
-        if self.symmetry_phase_1 == 'hexagonal':
-            self.__params['c_11_p1'].value = params['c_11'].value
-            self.__params['c_12_p1'].value = params['c_12'].value
-            self.__params['c_13_p1'].value = params['c_13'].value
-            self.__params['c_33_p1'].value = params['c_33'].value
-            self.__params['c_44_p1'].value = params['c_44'].value
-        self.print_params()
+        keys = params.keys()
+        for key in keys:
+            for k in self.__params.keys():
+                if ("p1" in k) and (key in k):
+                    self.__params[k].value = params[key].value
 
     def set_params_phase_2(self, params):
-        if self.symmetry_phase_1 == 'isotope':
-            self.__params['c_11_p2'].value = params['c_11'].value
-            self.__params['c_12_p2'].value = params['c_12'].value
-        if self.symmetry_phase_1 == 'm-3m':
-            self.__params['c_11_p2'].value = params['c_11'].value
-            self.__params['c_12_p2'].value = params['c_12'].value
-            self.__params['c_44_p2'].value = params['c_44'].value
-        if self.symmetry_phase_1 == 'hexagonal':
-            self.__params['c_11_p2'].value = params['c_11'].value
-            self.__params['c_12_p2'].value = params['c_12'].value
-            self.__params['c_13_p2'].value = params['c_13'].value
-            self.__params['c_33_p2'].value = params['c_33'].value
-            self.__params['c_44_p2'].value = params['c_44'].value
-        self.print_params()
+        keys = params.keys()
+        for key in keys:
+            for k in self.__params.keys():
+                if ("p2" in k) and (key in k):
+                    self.__params[k].value = params[key].value
 
     def print_params(self):
         self.__params.pretty_print()
@@ -802,39 +784,39 @@ class FitStrainWithTexture(object):
         return tennsor_in_voigt_notation
 
     def set_parameters_of_the_FITTED_PHASE_in_matrix_representation(self, params, symmetry):
-        # params = self.__params
+        pars = self.__return_free_or_fixed_parameters(params=params, free=True)
         if symmetry == "isotope":
             self.__constant_c_tensor_voigt_notation_fitted_phase = \
                 np.array([
-                    [params['c_11_p1'].value, params['c_12_p1'].value, params['c_12_p1'].value, 0, 0, 0],
-                    [params['c_12_p1'].value, params['c_11_p1'].value, params['c_12_p1'].value, 0, 0, 0],
-                    [params['c_12_p1'].value, params['c_12_p1'].value, params['c_11_p1'].value, 0, 0, 0],
-                    [0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value), 0, 0],
-                    [0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value), 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value)]
+                    [pars['c_11'].value, pars['c_12'].value, pars['c_11'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_11'].value, pars['c_12'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_12'].value, pars['c_11'].value, 0, 0, 0],
+                    [0, 0, 0, 2 * (pars['c_11'].value - pars['c_12'].value), 0, 0],
+                    [0, 0, 0, 0, 2 * (pars['c_11'].value - pars['c_12'].value), 0],
+                    [0, 0, 0, 0, 0, 2 * (pars['c_11'].value - pars['c_12'].value)]
                 ])
 
         elif symmetry == "m-3m":  # cubic
             # print "Symmetry:", self.symmetry_phase_1
             self.__constant_c_tensor_voigt_notation_fitted_phase = \
                 np.array([
-                    [params['c_11_p1'].value, params['c_12_p1'].value, params['c_12_p1'].value, 0, 0, 0],
-                    [params['c_12_p1'].value, params['c_11_p1'].value, params['c_12_p1'].value, 0, 0, 0],
-                    [params['c_12_p1'].value, params['c_12_p1'].value, params['c_11_p1'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44_p1'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44_p1'].value, 0],
-                    [0, 0, 0, 0, 0, params['c_44_p1'].value]
+                    [pars['c_11'].value, pars['c_12'].value, pars['c_12'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_11'].value, pars['c_12'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_12'].value, pars['c_11'].value, 0, 0, 0],
+                    [0, 0, 0, pars['c_44'].value, 0, 0],
+                    [0, 0, 0, 0, pars['c_44'].value, 0],
+                    [0, 0, 0, 0, 0, pars['c_44'].value]
                 ])
 
         elif symmetry == "hexagonal" or symmetry == "hexagonal":
             self.__constant_c_tensor_voigt_notation_fitted_phase = \
                 np.array([
-                    [params['c_11_p1'].value, params['c_12_p1'].value, params['c_13_p1'].value, 0, 0, 0],
-                    [params['c_12_p1'].value, params['c_11_p1'].value, params['c_13_p1'].value, 0, 0, 0],
-                    [params['c_13_p1'].value, params['c_13_p1'].value, params['c33_p1'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44_p1'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44_p1'].value, 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value)]
+                    [pars['c_11'].value, pars['c_12'].value, pars['c_13'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_11'].value, pars['c_13'].value, 0, 0, 0],
+                    [pars['c_13'].value, pars['c_13'].value, pars['c33'].value, 0, 0, 0],
+                    [0, 0, 0, pars['c_44'].value, 0, 0],
+                    [0, 0, 0, 0, pars['c_44'].value, 0],
+                    [0, 0, 0, 0, 0, 2 * (pars['c_11'].value - pars['c_12'].value)]
                 ])
 
         self.__constant_c_tensor_extended_notation_fitted_phase = self.__conv_voigtnot_to_extended_not_constants_c(
@@ -846,36 +828,37 @@ class FitStrainWithTexture(object):
             self.__complience_s_tensor_voigt_notation_fitted_phase)
 
     def set_parameters_of_the_FIXED_PHASE_in_matrix_representation_multi_phase(self, params, symmetry):
+        pars = self.__return_free_or_fixed_parameters(params=params, free=False)
         if symmetry == "isotope":
             self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
-                    [params['c_11_p2'].value, params['c_12_p2'].value, params['c_12_p2'].value, 0, 0, 0],
-                    [params['c_12_p2'].value, params['c_11_p2'].value, params['c_12_p2'].value, 0, 0, 0],
-                    [params['c_12_p2'].value, params['c_12_p2'].value, params['c_11_p2'].value, 0, 0, 0],
-                    [0, 0, 0, 2 * (params['c_11_p2'].value - params['c_12_p2'].value), 0, 0],
-                    [0, 0, 0, 0, 2 * (params['c_11_p2'].value - params['c_12_p2'].value), 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11_p2'].value - params['c_12_p2'].value)]
+                    [pars['c_11'].value, pars['c_12'].value, pars['c_11'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_11'].value, pars['c_12'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_12'].value, pars['c_11'].value, 0, 0, 0],
+                    [0, 0, 0, 2 * (pars['c_11'].value - pars['c_12'].value), 0, 0],
+                    [0, 0, 0, 0, 2 * (pars['c_11'].value - pars['c_12'].value), 0],
+                    [0, 0, 0, 0, 0, 2 * (pars['c_11'].value - pars['c_12'].value)]
                 ])
         elif symmetry == "m-3m":  # cubic
             # print "Symmetry:", self.symmetry_phase_2
             self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
-                    [params['c_11_p2'].value, params['c_12_p2'].value, params['c_12_p2'].value, 0, 0, 0],
-                    [params['c_12_p2'].value, params['c_11_p2'].value, params['c_12_p2'].value, 0, 0, 0],
-                    [params['c_12_p2'].value, params['c_12_p2'].value, params['c_11_p2'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44_p2'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44_p2'].value, 0],
-                    [0, 0, 0, 0, 0, params['c_44_p2'].value]
+                    [pars['c_11'].value, pars['c_12'].value, pars['c_12'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_11'].value, pars['c_12'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_12'].value, pars['c_11'].value, 0, 0, 0],
+                    [0, 0, 0, pars['c_44'].value, 0, 0],
+                    [0, 0, 0, 0, pars['c_44'].value, 0],
+                    [0, 0, 0, 0, 0, pars['c_44'].value]
                 ])
         elif symmetry == "hexagonal" or self.symmetry_phase_2 == "hexagonal":
             self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
-                    [params['c_11_p2'].value, params['c_12_p2'].value, params['c_13_p2'].value, 0, 0, 0],
-                    [params['c_12_p2'].value, params['c_11_p2'].value, params['c_13_p2'].value, 0, 0, 0],
-                    [params['c_13_p2'].value, params['c_13_p2'].value, params['c33_p2'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44_p2'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44_p2'].value, 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11_p2'].value - params['c_12_p2'].value)]
+                    [pars['c_11'].value, pars['c_12'].value, pars['c_13'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_11'].value, pars['c_13'].value, 0, 0, 0],
+                    [pars['c_13'].value, pars['c_13'].value, pars['c33'].value, 0, 0, 0],
+                    [0, 0, 0, pars['c_44'].value, 0, 0],
+                    [0, 0, 0, 0, pars['c_44'].value, 0],
+                    [0, 0, 0, 0, 0, 2 * (pars['c_11'].value - pars['c_12'].value)]
                 ])
 
         self.__constant_c_tensor_extended_notation_fixed_phase = self.__conv_voigtnot_to_extended_not_constants_c(
@@ -886,37 +869,37 @@ class FitStrainWithTexture(object):
             self.__complience_s_tensor_voigt_notation_fixed_phase)
 
     def set_parameters_of_the_FIXED_PHASE_in_matrix_representation_single_phase(self, params, symmetry):
-        # params = self.__params
+        pars = self.__return_free_or_fixed_parameters(params=params, free=True)
         if symmetry == "isotope":
             self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
-                    [params['c_11_p1'].value, params['c_12_p1'].value, params['c_12_p1'].value, 0, 0, 0],
-                    [params['c_12_p1'].value, params['c_11_p1'].value, params['c_12_p1'].value, 0, 0, 0],
-                    [params['c_12_p1'].value, params['c_12_p1'].value, params['c_11_p1'].value, 0, 0, 0],
-                    [0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value), 0, 0],
-                    [0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value), 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value)]
+                    [pars['c_11'].value, pars['c_12'].value, pars['c_11'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_11'].value, pars['c_12'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_12'].value, pars['c_11'].value, 0, 0, 0],
+                    [0, 0, 0, 2 * (pars['c_11'].value - pars['c_12'].value), 0, 0],
+                    [0, 0, 0, 0, 2 * (pars['c_11'].value - pars['c_12'].value), 0],
+                    [0, 0, 0, 0, 0, 2 * (pars['c_11'].value - pars['c_12'].value)]
                 ])
         elif symmetry == "m-3m":  # cubic
             # print "Symmetry:", self.symmetry_phase_2
             self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
-                    [params['c_11_p1'].value, params['c_12_p1'].value, params['c_12_p1'].value, 0, 0, 0],
-                    [params['c_12_p1'].value, params['c_11_p1'].value, params['c_12_p1'].value, 0, 0, 0],
-                    [params['c_12_p1'].value, params['c_12_p1'].value, params['c_11_p1'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44_p1'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44_p1'].value, 0],
-                    [0, 0, 0, 0, 0, params['c_44_p1'].value]
+                    [pars['c_11'].value, pars['c_12'].value, pars['c_12'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_11'].value, pars['c_12'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_12'].value, pars['c_11'].value, 0, 0, 0],
+                    [0, 0, 0, pars['c_44'].value, 0, 0],
+                    [0, 0, 0, 0, pars['c_44'].value, 0],
+                    [0, 0, 0, 0, 0, pars['c_44'].value]
                 ])
         elif symmetry == "hexagonal" or self.symmetry_phase_2 == "hexagonal":
             self.__constant_c_tensor_voigt_notation_fixed_phase = \
                 np.array([
-                    [params['c_11_p1'].value, params['c_12_p1'].value, params['c_13_p1'].value, 0, 0, 0],
-                    [params['c_12_p1'].value, params['c_11_p1'].value, params['c_13_p1'].value, 0, 0, 0],
-                    [params['c_13_p1'].value, params['c_13_p1'].value, params['c33_p1'].value, 0, 0, 0],
-                    [0, 0, 0, params['c_44_p1'].value, 0, 0],
-                    [0, 0, 0, 0, params['c_44_p1'].value, 0],
-                    [0, 0, 0, 0, 0, 2 * (params['c_11_p1'].value - params['c_12_p1'].value)]
+                    [pars['c_11'].value, pars['c_12'].value, pars['c_13'].value, 0, 0, 0],
+                    [pars['c_12'].value, pars['c_11'].value, pars['c_13'].value, 0, 0, 0],
+                    [pars['c_13'].value, pars['c_13'].value, pars['c33'].value, 0, 0, 0],
+                    [0, 0, 0, pars['c_44'].value, 0, 0],
+                    [0, 0, 0, 0, pars['c_44'].value, 0],
+                    [0, 0, 0, 0, 0, 2 * (pars['c_11'].value - pars['c_12'].value)]
                 ])
 
         self.__constant_c_tensor_extended_notation_fixed_phase = self.__conv_voigtnot_to_extended_not_constants_c(
@@ -1089,22 +1072,25 @@ class FitStrainWithTexture(object):
             symmetry_fitted_phase = self.symmetry_phase_2
             symmetry_fixed_phase = self.symmetry_phase_1
 
+
+
         self.set_parameters_of_the_FITTED_PHASE_in_matrix_representation(params, symmetry_fitted_phase)
-        print "phaseflag ", self.phase_flag
+
+
+
         if self.phase_flag:
             self.set_parameters_of_the_FIXED_PHASE_in_matrix_representation_multi_phase(params, symmetry_fixed_phase)
         else:
             self.set_parameters_of_the_FIXED_PHASE_in_matrix_representation_single_phase(params, symmetry_fitted_phase)
 
         print "parameter vals:"
-        self.print_params()
+        params.pretty_print()
 
         xvals_fitted = []
         xvals_fixed = []
         strain_stress_data_fitted = []
         strain_stress_data_fixed = []
 
-        print data_phase_1
         applied_forces = data_phase_1.keys()
 
         for n in xrange(len(applied_forces)):  # Loop over all forces
@@ -1135,7 +1121,7 @@ class FitStrainWithTexture(object):
 
         theory_fit = []
         t1 = tm.clock()
-
+        pars = self.__return_free_or_fixed_parameters(params=params, free=True)
         for n in xrange(len(applied_forces)):  # Loop over all forces
             xvals_fit = xvals_fitted[n]
             for m in xrange(len(xvals_fit)):
@@ -1151,17 +1137,17 @@ class FitStrainWithTexture(object):
                 sigma_23 = params["sigma_23"].value * stress_fit
 
                 if method == "hill":
-                    s1, s2 = RV(Gamma=Gama(h, k, l), c_11=params["c_11_p1"].value, c_12=params["c_12_p1"].value,
-                                c_44=params["c_44_p1"].value)
+                    s1, s2 = RV(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                                c_44=pars["c_44"].value)
                 if method == "voigt":
-                    s1, s2 = Voigt__(Gamma=Gama(h, k, l), c_11=params["c_11_p1"].value, c_12=params["c_12_p1"].value,
-                                     c_44=params["c_44_p1"].value)
+                    s1, s2 = Voigt__(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                                     c_44=pars["c_44"].value)
                 if method == "eshelby":
-                    s1, s2 = BHM_dW(Gamma=Gama(h, k, l), c_11=params["c_11_p1"].value, c_12=params["c_12_p1"].value,
-                                    c_44=params["c_44_p1"].value)
+                    s1, s2 = BHM_dW(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                                    c_44=pars["c_44"].value)
                 if method == "reus":
-                    s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=params["c_11_p1"].value, c_12=params["c_12_p1"].value,
-                                  c_44=params["c_44_p1"].value)
+                    s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                                  c_44=pars["c_44"].value)
 
                 eps = s1 * (sigma_11 + sigma_22 + sigma_33) \
                       + s2 * (sigma_11 * np.cos(phi) ** 2 * np.sin(psi) ** 2 +
@@ -1184,6 +1170,30 @@ class FitStrainWithTexture(object):
         #     return np.array(data) - np.array(theory_fit)
 
         return (np.array(data_fit) - np.array(theory_fit)) / (np.array(data_fit_err))
+
+    @staticmethod
+    def __return_free_or_fixed_parameters(params, free=True):
+        """
+        just returning a lm.Parameters() object containing all free/fixed parameters
+        :param params:
+        :return:
+        """
+        key_words = ["c_11", "c_12", "c_13", "c_14", "c_15", "c_16",
+                             "c_22", "c_23", "c_24", "c_25", "c_26",
+                                     "c_33", "c_34", "c_35", "c_36",
+                                             "c_44", "c_45", "c_46",
+                                                     "c_55", "c_56",
+                                                             "c_66"]
+        pars = lm.Parameters()
+        for key in params.keys():
+            condition = params[key].vary
+            if not free:
+                condition = not params[key].vary
+            if condition:
+                for k in key_words:
+                    if k in key:
+                        pars.add(k, params[key].value)
+        return pars
 
     def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture=False, phase=1,
                        phase_name=""):
@@ -1209,6 +1219,18 @@ class FitStrainWithTexture(object):
         data_phase_1 = self.data_object.fitted_data.get_force_dict_phase_1()
         data_phase_2 = self.data_object.fitted_data.get_force_dict_phase_2()
         print "Texture: ", texture
+        params_keys = params.keys()
+        for key in params_keys:
+            if phase == 1:
+                if "p1" in key:
+                    params[key].vary = True
+                if "p2" in key:
+                    params[key].vary = False
+            if phase == 2:
+                if "p1" in key:
+                    params[key].vary = False
+                if "p2" in key:
+                    params[key].vary = True
         if texture:
             result = lm.minimize(self.__residuum_without_texture_single_phase, params, method=fit_method, args=(xvals,),
                                  kws={'data_phase_1': data_phase_1, 'data_phase_2': data_phase_2, 'method': method,
@@ -1360,7 +1382,7 @@ class FitStrainWithTexture(object):
         if self.phase_flag:
             sym_inclusion = self.symmetry_phase_2 + " " + self.__odf_phase_2.crystal_symmetry
         out = \
-            "Method:         %s\
+            "\nMethod:         %s\
            \nSymmetry:       %s\
            \nDate:           %s\
            \nFitting time    %s\
@@ -1413,7 +1435,7 @@ class FitStrainWithTexture(object):
         # filename = self.__test_if_file_exists(filename)
         filename = self.__uniquify(filename)
         result = open(filename, "w")
-        string_to_write = "Material: %s\nPhase: %s" % (material, phase) + data
+        string_to_write = "Material: %s\nFitted phase: %s\n" % (material, phase) + data
         result.write(string_to_write)
         result.close()
         return filename
@@ -2446,7 +2468,7 @@ class ODF(object):
         :return: None
         """
         # self.interpolate_whole_odf()
-        step = deg_to_rad(20)
+        step = deg_to_rad(5)
         PHI = np.arange(0, 2 * np.pi + step, step)
         PSI = np.arange(0, np.pi / 2 + step, step)
         VAL = np.zeros((PHI.size, PSI.size))
@@ -2474,15 +2496,20 @@ class ODF(object):
         # the plot
         # ----------
         r, theta = np.meshgrid(PSI, PHI)
-        plt.figure("pole figure {}{}{}\n".format(h, k, l))
-        fig = Figure()
-        axs = fig.add_subplot(111, projection='polar')  # 1, 1, figsize=(12,5),subplot_kw=dict(projection='polar'))
+        # plt.figure("pole figure {}{}{}\n".format(h, k, l))
+        # fig = Figure()
+        # axs = fig.add_subplot(111, projection='polar')  # 1, 1, figsize=(12,5),subplot_kw=dict(projection='polar'))
         # pp = plt.axes(polar=True)
-        axs.set_title("pole figure {}{}{}".format(h, k, l))
+        # axs.set_title("pole figure {}{}{}".format(h, k, l))
         # pp.gird(linestyle='-.')
         # pp.pcolormesh(VAL, cmap = cm.gist_rainbow)  # theta, r,
-        pl = axs.contourf(theta, np.degrees(r), VAL)
-        CB = plt.colorbar(pl, ax=axs)
+        fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
+        p1 = axs.contourf(theta, np.degrees(r), VAL, 100)
+        # p2 = axs[1].contourf(theta, r, values2, 100)
+        cbar = plt.colorbar(p1, ax=axs)
+        axs.set_title("pole figure {}{}{}\n".format(h, k, l))
+        # pl = axs[0].contourf(theta, np.degrees(r), VAL)
+        # CB = plt.colorbar(pl, ax=axs)
         # plt.colorbar(pl, ax=pp)
         # plt.colorbar(pp)
         # pp.scatter(theta, r, s=27, c=VAL, marker='o')  # this is working
@@ -2542,19 +2569,22 @@ class ODF(object):
         # performe the integration around q//h
         self.__params["phi"] = phi
         self.__params["psi"] = psi
+
+        self.__params['phi_b'] = self.calc_phi_b(h, k, l)
+        self.__params['betha_b'] = self.calc_betha_b(h, k, l)
         step = 5
         res = 0
-        hkls = self.calc_al_symetrical_identical_hkl(h, k, l)
-        for h, k, l in hkls:
-            for i in range(0, 360, step):
-                r = deg_to_rad(i)
-                phi1, phi, phi2 = self.calc_eulerangles(r % (2 * np.pi), h, k, l)
-                euler = (rad_to_deg(phi1), rad_to_deg(phi), rad_to_deg(phi2))
-                phi1, phi, phi2 = euler
-                # dphi1, dphi, dphi2 = self.calc_delta_vals(h, k, l, rad_to_deg(psi), rad_to_deg(phi), i, step)  # [0]
+        # hkls = self.calc_al_symetrical_identical_hkl(h, k, l)
+        # for h, k, l in hkls:
+        for i in range(0, 360, step):
+            r = deg_to_rad(i)
+            phi1, phi, phi2 = self.calc_eulerangles(r % (2 * np.pi), h, k, l)
+            euler = (rad_to_deg(phi1), rad_to_deg(phi), rad_to_deg(phi2))
+            phi1, phi, phi2 = euler
+            # dphi1, dphi, dphi2 = self.calc_delta_vals(h, k, l, rad_to_deg(psi), rad_to_deg(phi), i, step)  # [0]
 
-                res += self.f(phi1, phi, phi2) * deg_to_rad(step)
-                # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2
+            res += self.f(phi1, phi, phi2) * deg_to_rad(step)
+            # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2
 
         return res / (2 * np.pi)
 
