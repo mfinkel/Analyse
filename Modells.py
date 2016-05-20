@@ -2171,6 +2171,7 @@ class ODF(object):
         :return: rotation matrix
         """
         phi += np.pi / 2
+
         res = np.array([[-np.cos(psi) * np.cos(phi) * np.sin(phi2) - np.sin(phi) * np.cos(phi2),
                          -np.cos(psi) * np.sin(phi) * np.sin(phi2) + np.cos(phi) * np.cos(phi2),
                          np.sin(psi) * np.sin(phi2)],
@@ -2280,7 +2281,7 @@ class ODF(object):
         betha_b = self.__params['betha_b']
         # print "::::::::phi2_: ", rad_to_deg(phi2_), " phi_2: ", rad_to_deg(phi_2)
         # rotation = self.xi(phi2_, phi_b, betha_b)#xi(phi2_, phi_b, betha_b)
-        g_ = np.dot(self.g2(phi2_, phi_b, betha_b), self.g1(phi_, psi, phi_2))  # rotation, self.omega(phi_, psi, phi_2)
+        # g_ = np.dot(self.g2(phi2_, phi_b, betha_b), self.g1(phi_, psi, phi_2))  # rotation, self.omega(phi_, psi, phi_2)
         # g_ = np.dot(rotation.transpose(),  self.omega(phi_, psi, phi_2))#rotation, self.omega(phi_, psi, phi_2)
         # g_ = g_.transpose()
         g_ = np.dot(self.g1(phi_, psi, phi_2).transpose(), self.g2(phi2_, phi_b, betha_b).transpose())
