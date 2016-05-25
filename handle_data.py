@@ -477,7 +477,6 @@ class AllData(Data):
         data.close()
 
 
-
 class DataContainer(object):
     def __init__(self):
         self.data_dict = {}  # dictionary of the data. Key is the phase. val is the force dictionary. This has the force
