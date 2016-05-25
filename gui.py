@@ -458,7 +458,7 @@ class CentralWidget(QWidget):
         self.open_data_folders.clicked.connect(self.set_data_path_func)
 
         # select the experimental setup (SPODI, POLDI, ....)
-        self.load_data_button.clicked.connect(self.read_scattering_data_SPODI_case)
+        # self.load_data_button.clicked.connect(self.read_scattering_data_SPODI_case)
         self.choose_experiment_comb_box.currentIndexChanged.connect(self.connect_read_scattering_data)
 
         # add the central plot to display the data
@@ -549,7 +549,37 @@ class CentralWidget(QWidget):
             self.connect(self.widget_set_data_path, SIGNAL("data_dir_list"), self.receve_the_pathes_SPODI_case)
 
         elif self.choose_experiment_comb_box.currentText() == "POLDI":
-            print('is still to implement')
+            self.widget_set_data_path = LOAD_STANDARD_DATA("set data path", number_of_phases=n_o_p)
+            self.connect(self.widget_set_data_path, SIGNAL("data_dir_list"),
+                         self.recive_the_pathes_of_standard_data_format)
+
+    def recive_the_pathes_of_standard_data_format(self, *args):
+        print(args)
+        odf1, odf2, data_file = args[0]
+        odf1 = str(odf1)
+        odf2 = str(odf2)
+        data_file = str(data_file)
+        print(odf1)
+        if odf2 == "None":
+            odf2 = None
+        self.path_of_odf_phase1 = odf1
+        self.path_of_odf_phase2 = odf2
+        self.path_of_standad_datafile = data_file
+        self.load_data_button.setEnabled(True)
+        self.load_data_button.clicked.connect(self.read_scattering_data_standard_case)
+
+    def read_scattering_data_standard_case(self):
+
+        self.data_object = handle_data.AllData(odf_phase_1_file=self.path_of_odf_phase1,
+                                               odf_phase_2_file=self.path_of_odf_phase2)
+        self.data_object.read_data(self.path_of_standad_datafile)
+
+        self.do_the_fit_button.setEnabled(True)
+        self.insert_startvals_button.setEnabled(True)
+        self.plot_polefig_button.setEnabled(True)
+
+        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
+        self.fit_object.print_params()
 
     def receve_the_pathes_SPODI_case(self, *args):
         """
@@ -574,6 +604,7 @@ class CentralWidget(QWidget):
         self.path_of_unstraind_data = unstraind
         self.path_of_data_under_strain = data_dir_list
         self.load_data_button.setEnabled(True)
+        self.load_data_button.clicked.connect(self.read_scattering_data_SPODI_case)
 
     def read_scattering_data_SPODI_case(self):
         Bool = False
@@ -965,6 +996,111 @@ class LOAD_SPODI_DATA(QWidget):
         for i in xrange(len(self.straind_data)):
             data_dir_list.append(self.straind_data[i].text())
         self.emit(SIGNAL("data_dir_list"), (odf1, odf2, unstraind, data_dir_list))
+        self.close()
+
+
+class LOAD_STANDARD_DATA(QWidget):
+    def __init__(self, name, number_of_phases=1):
+        super(LOAD_STANDARD_DATA, self).__init__()
+        self.setWindowTitle(name)
+
+        self.ok_button = QPushButton("OK")
+        # self.cancel_button = QPushButton("Cancel")
+        self.hkl_setting = []
+
+        self.odf_phase_1_button = QPushButton("select ODF of phase 1")
+        self.odf_phase_2_button = QPushButton("select ODF of phase 2")
+        self.data_file_button = QPushButton("select data file")
+
+        self.odf_phase_1_path = QLineEdit(
+            "H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Stahl ST37\\ST37_textur_complet_recalc.txt")
+        self.odf_phase_2_path = QLineEdit("None")  # "AL_textur_complet.txt"
+        self.path_of_data_file = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans ohne Last\\")
+
+        self.select_odf_phase_1 = QLabel("select odf phase 1:   ")
+        self.select_odf_phase_2 = QLabel("select odf phase 2:   ")
+        self.select_data_file = QLabel("select data file:")
+
+        self.odf_phase_1_button.clicked.connect(self.select_odf_phase_1_func)
+        self.odf_phase_2_button.clicked.connect(self.select_odf_phase_2_func)
+        self.data_file_button.clicked.connect(self.select_data_file_func)
+
+        if number_of_phases == 1:
+            self.odf_phase_2_button.setDisabled(True)
+            self.odf_phase_2_path.setReadOnly(True)
+        if number_of_phases == 2:
+            self.odf_phase_2_button.setDisabled(False)
+            self.odf_phase_2_path.setReadOnly(False)
+
+        self.ok_button.clicked.connect(self.emit_and_quit)
+
+        self.layout_handling()
+        self.show()
+
+    def layout_handling(self):
+        # Layout handling
+        self.resize(800, 800)
+        layout = QVBoxLayout()
+        layout1 = QHBoxLayout()
+        layout_odf_phase_1_input = QHBoxLayout()
+        layout_odf_phase_2_input = QHBoxLayout()
+        layout_data_file_data = QHBoxLayout()
+
+        layout1.addStretch(1)
+        layout1.addWidget(self.ok_button)
+        # layout1.addWidget(self.cancel_button)
+
+        # insert odf phase 1 path
+        layout_odf_phase_1_input.addWidget(self.select_odf_phase_1)
+        layout_odf_phase_1_input.addWidget(self.odf_phase_1_path)
+        layout_odf_phase_1_input.addWidget(self.odf_phase_1_button)
+
+        # insert odf phase 2 path
+        layout_odf_phase_2_input.addWidget(self.select_odf_phase_2)
+        layout_odf_phase_2_input.addWidget(self.odf_phase_2_path)
+        layout_odf_phase_2_input.addWidget(self.odf_phase_2_button)
+
+        # insert data file
+        layout_data_file_data.addWidget(self.select_data_file)
+        layout_data_file_data.addWidget(self.path_of_data_file)
+        layout_data_file_data.addWidget(self.data_file_button)
+
+        layout.addLayout(layout_odf_phase_1_input)
+        layout.addLayout(layout_odf_phase_2_input)
+        layout.addLayout(layout_data_file_data)
+
+        layout.addLayout(layout1)
+
+        self.setLayout(layout)
+
+    def select_odf_phase_1_func(self):
+        filename = QFileDialog.getOpenFileName(self, 'Open ODF of phase 1 File', '/')  # (self, 'Open ODF File', '/')
+        filename = os.path.normpath(str(filename))
+        self.odf_phase_1_path.setText(filename)
+        print(self.odf_phase_1_path.text())
+
+    def select_odf_phase_2_func(self):
+        filename = QFileDialog.getOpenFileName(self, 'Open ODF of phase 2 File', '/')  # (self, 'Open ODF File', '/')
+        filename = os.path.normpath(str(filename))
+        self.odf_phase_2_path.setText(filename)
+        print(self.odf_phase_2_path.text())
+
+    def select_data_file_func(self):
+        filename = QFileDialog.getOpenFileName(self, 'Open data file ', '/')  # (self, 'Open ODF File', '/')
+        filename = os.path.normpath(str(filename))
+        self.path_of_data_file.setText(filename + "\\")
+        print(self.path_of_data_file.text())
+
+    def emit_and_quit(self):
+        """
+        emit the selected path's
+        :return:
+        """
+        odf1 = self.odf_phase_1_path.text()
+        odf2 = self.odf_phase_2_path.text()
+        data_file = self.path_of_data_file.text()
+
+        self.emit(SIGNAL("data_dir_list"), (odf1, odf2, data_file))
         self.close()
 
 

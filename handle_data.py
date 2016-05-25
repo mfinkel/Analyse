@@ -458,7 +458,7 @@ class AllData(Data):
         and the intensity and the error in the list [TTheta, Intens, err]
         :param filename:
         '''
-        data = open(filename, "r")
+        data = open(filename, 'r')
         lines = data.readlines()
         dict = {}
         for i in xrange(1, len(lines)):  #
