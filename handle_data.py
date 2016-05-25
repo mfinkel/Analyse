@@ -445,7 +445,7 @@ class SPODIData(Data):
 
 
 class AllData(Data):
-    def __init__(self, sample_diameter, odf_phase_1_file=None, odf_phase_2_file=None):
+    def __init__(self, odf_phase_1_file=None, odf_phase_2_file=None):
         super(AllData, self).__init__(odf_phase_1_file, odf_phase_2_file)
         self.data_dic_raw = {}  # a dictionary containing the raw data, the key is the applied force, the values
         # are lists of all measured orientation angles with the measured two_theta, intens, error data
@@ -460,21 +460,30 @@ class AllData(Data):
         '''
         data = open(filename, "r")
         lines = data.readlines()
-
+        dict = {}
         for i in xrange(1, len(lines)):  #
             line = lines[i].strip()  # removes with spaces at the frond and the end
             if "#" not in line:
                 l = re.split(r'\s*', line)
                 force, phase, h, k, l, phi, psi, strain, strainerr, stress, stresserr = l
-                if phase not in self.fitted_data.data_dict.keys():
-                    self.fitted_data.data_dict[phase] = {}
+                if phase not in dict.keys():
+                    dict[phase] = {}
                 else:
-                    if force not in self.fitted_data.data_dict[phase].keys():
-                        self.fitted_data.data_dict[phase][force] = [[], []]
+                    if force not in dict[phase].keys():
+                        dict[phase][force] = [[], []]
                     else:
-                        self.fitted_data.data_dict[phase][force][0].append([phi, psi, h, k, l])
-                        self.fitted_data.data_dict[phase][force][1].append([strain, strainerr, stress, stresserr])
+                        dict[phase][force][0].append([phi, psi, h, k, l])
+                        dict[phase][force][1].append([strain, strainerr, stress, stresserr])
         data.close()
+        phase_keys = dict.keys()
+        for i, phase in enumerate(phase_keys):
+            self.fitted_data.data_dict[i+1]={}
+            force_keys = dict.keys()
+            for j, force in enumerate(sorted(force_keys)):
+                self.fitted_data[i+1][force] = dict[phase][force]
+
+
+
 
 
 class DataContainer(object):
