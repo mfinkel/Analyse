@@ -1088,7 +1088,7 @@ class LOAD_STANDARD_DATA(QWidget):
     def select_data_file_func(self):
         filename = QFileDialog.getOpenFileName(self, 'Open data file ', '/')  # (self, 'Open ODF File', '/')
         filename = os.path.normpath(str(filename))
-        self.path_of_data_file.setText(filename + "\\")
+        self.path_of_data_file.setText(filename )
         print(self.path_of_data_file.text())
 
     def emit_and_quit(self):
