@@ -19,7 +19,7 @@ from glob import glob
 
 
 class Data(object):
-    def __init__(self, sample_diameter, odf_phase_1_file=None, odf_phase_2_file=None):
+    def __init__(self, sample_diameter=6, odf_phase_1_file=None, odf_phase_2_file=None):
         self.fitted_data = DataContainer()  # contains the phi_psi_hkl and the strain_stress list for all phases and
         # applied forces
         self.odf_phase_1 = self.get_odf(odf_phase_1_file)
@@ -38,6 +38,7 @@ class Data(object):
 
         self.n_o_p = 2  # number of phases
         odf = Modells.ODF()
+        print odf_file
         odf.read_data(filename=odf_file)
         return odf
 
@@ -446,13 +447,13 @@ class SPODIData(Data):
 
 class AllData(Data):
     def __init__(self, odf_phase_1_file=None, odf_phase_2_file=None):
-        super(AllData, self).__init__(odf_phase_1_file, odf_phase_2_file)
+        super(AllData, self).__init__(odf_phase_1_file=odf_phase_1_file, odf_phase_2_file=odf_phase_2_file)
         self.data_dic_raw = {}  # a dictionary containing the raw data, the key is the applied force, the values
         # are lists of all measured orientation angles with the measured two_theta, intens, error data
         self.data_dic_phases = {}  # dictionary containing dictionaries of all peaks of the different phases
         # data_dic_phases key=phase, val=dic containing all reflexes (key = force)
 
-    def read_data(self, filename):
+    def read_data(self, filename, phase_name_dict):
         '''
         This Function reads the data stord in filename and returns the 2Thetavalue
         and the intensity and the error in the list [TTheta, Intens, err]
@@ -460,30 +461,69 @@ class AllData(Data):
         '''
         data = open(filename, 'r')
         lines = data.readlines()
-        dict = {}
+        dic = {}
         for i in xrange(1, len(lines)):  #
             line = lines[i].strip()  # removes with spaces at the frond and the end
             if "#" not in line:
                 l = re.split(r'\s*', line)
                 force, phase, h, k, l, phi, psi, strain, strainerr, stress, stresserr = l
-                if phase not in dict.keys():
-                    dict[phase] = {}
+                # print "phase: ", phase
+                if phase not in dic.keys():
+                    # print "phase not in key: ", phase
+                    dic[phase] = {}
                 else:
-                    if force not in dict[phase].keys():
-                        dict[phase][force] = [[], []]
+                    if force not in dic[phase].keys():
+                        dic[phase][force] = [[], []]
                     else:
-                        dict[phase][force][0].append([phi, psi, h, k, l])
-                        dict[phase][force][1].append([strain, strainerr, stress, stresserr])
+                        dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
+                        dic[phase][force][1].append([float(strain), float(strainerr), float(stress), float(stresserr)])
         data.close()
-        phase_keys = dict.keys()
-        for i, phase in enumerate(phase_keys):
-            self.fitted_data.data_dict[i+1]={}
-            force_keys = dict.keys()
+        phase_keys = dic.keys()
+
+        print phase_keys
+        for i in phase_name_dict.keys():
+            phase = phase_name_dict[i]
+            self.fitted_data.data_dict[i] = {}
+            force_keys = dic[phase].keys()
+            print i, phase, force_keys
             for j, force in enumerate(sorted(force_keys)):
-                self.fitted_data[i+1][force] = dict[phase][force]
+                self.fitted_data.data_dict[i][force] = dic[phase][force]
 
+    def just_read_data(self, filename):
+        '''
+        This Function reads the data stord in filename and returns the 2Thetavalue
+        and the intensity and the error in the list [TTheta, Intens, err]
+        :param filename:
+        '''
+        data = open(filename, 'r')
+        lines = data.readlines()
+        dic = {}
+        for i in xrange(1, len(lines)):  #
+            line = lines[i].strip()  # removes with spaces at the frond and the end
+            if "#" not in line:
+                l = re.split(r'\s*', line)
+                force, phase, h, k, l, phi, psi, strain, strainerr, stress, stresserr = l
+                # print "phase: ", phase
+                if phase not in dic.keys():
+                    # print "phase not in key: ", phase
+                    dic[phase] = {}
+                else:
+                    if force not in dic[phase].keys():
+                        dic[phase][force] = [[], []]
+                    else:
+                        dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
+                        dic[phase][force][1].append([float(strain), float(strainerr), float(stress), float(stresserr)])
+        data.close()
+        phase_keys = dic.keys()
+        return phase_keys
 
-
+        # print phase_keys
+        # for i, phase in enumerate(phase_keys):
+        #     self.fitted_data.data_dict[i + 1] = {}
+        #     force_keys = dic[phase].keys()
+        #     print i, force_keys
+        #     for j, force in enumerate(sorted(force_keys)):
+        #         self.fitted_data.data_dict[i + 1][force] = dic[phase][force]
 
 
 class DataContainer(object):

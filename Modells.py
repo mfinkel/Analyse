@@ -510,10 +510,11 @@ class FitStrainWithTexture(object):
         self.__odf_phase_2 = self.data_object.odf_phase_2
         self.counter2 = 0
         self.symmetry_phase_1 = self.__odf_phase_1.crystal_symmetry
+        self.symmetry_phase_2 = self.__odf_phase_2.crystal_symmetry
         try:
             self.symmetry_phase_2 = self.__odf_phase_2.crystal_symmetry
             self.phase_flag = True  # multi phase material
-        except:
+        except AttributeError:
             self.phase_flag = False  # single phase material
 
         self.odf_integral_over_all_angles_phase_1 = self.__odf_phase_1.integral_over_all_orientations_g
@@ -1248,9 +1249,9 @@ class FitStrainWithTexture(object):
 
         filename = path + filename
         filename = self.__save_data(filename, material, phase_name, nice_result)
-        print "over all compliance Matrix:"
-        print self.calc_the_over_all_constant_c_tensor(self.__constant_c_tensor_extended_notation_fitted_phase,
-                                                       fitted_phase=phase)
+        # print "over all compliance Matrix:"
+        # print self.calc_the_over_all_constant_c_tensor(self.__constant_c_tensor_extended_notation_fitted_phase,
+        #                                                fitted_phase=phase)
         return result, filename
 
     def do_the_fitting_self_consistent_sigma_and_el_const(self, filename, material, method="reus", path=".\\results\\",
