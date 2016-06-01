@@ -25,6 +25,7 @@ else:
 from functools import partial
 import handle_data
 import Modells
+import thread
 
 
 class insert_const_widget(QWidget):
@@ -525,14 +526,42 @@ class CentralWidget(QWidget):
     def set_params_phase_2(self, params):
         self.fit_object.set_params_phase_2(params)
 
-    def plot_pole_figure(self):
+    def plot_pole_figure_thread(self):
+        self.do_the_fit_button.setEnabled(False)
         h = int(str(self.miller_h.text()))
         k = int(str(self.miller_k.text()))
         l = int(str(self.miller_l.text()))
         if str(self.fit_phase_combbox.currentText()) == "1":
-            self.data_object.odf_phase_1.plot_polfigure(h, k, l)
+            theta, r, VAL = self.data_object.odf_phase_1.plot_polfigure(h, k, l)
         if str(self.fit_phase_combbox.currentText()) == "2":
-            self.data_object.odf_phase_2.plot_polfigure(h, k, l)
+            theta, r, VAL = self.data_object.odf_phase_2.plot_polfigure(h, k, l)
+        self.emit(SIGNAL('polefigurevals'), (h, k, l, theta, r, VAL))
+
+        # fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
+        # p1 = axs.contourf(theta, r, VAL, 100)
+        #
+        # cbar = plt.colorbar(p1, ax=axs)
+        # axs.set_title("pole figure {}{}{}\n".format(h, k, l))
+        #
+        # plt.show()
+        thread.exit()
+
+    def show_pole_figure(self, *args):
+        print (args)
+        h, k, l, theta, r, VAL = args[0]
+        self.do_the_fit_button.setEnabled(True)
+        fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
+        p1 = axs.contourf(theta, r, VAL, 100)
+
+        cbar = plt.colorbar(p1, ax=axs)
+        axs.set_title("pole figure {}{}{}\n".format(h, k, l))
+
+
+        plt.show()
+
+    def plot_pole_figure(self):
+        self.connect(self, SIGNAL('polefigurevals'), self.show_pole_figure)
+        thread.start_new_thread(self.plot_pole_figure_thread, ())
 
     def change_name_of_phase_qlineedit(self):
         self.name_of_phase.setText(self.name_of_phase_dic[int(str(self.fit_phase_combbox.currentText()))])
@@ -693,7 +722,8 @@ class CentralWidget(QWidget):
         self.plot_data_button.setEnabled(True)
         print("coming from other class:", "\n", self.phase_peak_region)
 
-    def fit_the_data(self):
+    def do_the_fit(self):
+        self.plot_polefig_button.setEnabled(False)
         Bool = False
         if self.text_jn.currentText() == "Yes":
             Bool = True
@@ -716,8 +746,8 @@ class CentralWidget(QWidget):
                                                 phase_name=self.name_of_phase_dic[
                                                     int(str(self.fit_phase_combbox.currentText()))],
                                                 texture=Bool)
-
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
+        self.plot_polefig_button.setEnabled(True)
         print(text)
         mbox = QMessageBox()
         mbox.standardButtons()
@@ -725,6 +755,43 @@ class CentralWidget(QWidget):
         mbox.setText(text)
         mbox.setDetailedText(lm.fit_report(result[0].params))
         mbox.exec_()
+        thread.exit()
+
+    def fit_the_data(self):
+        # Bool = False
+        # if self.text_jn.currentText() == "Yes":
+        #     Bool = True
+        # print(self.modi.currentText(), "\n",
+        #       Bool)
+        # print("----------------------------\n",
+        #       "Fit the data using model: " +
+        #       self.modi.currentText() +
+        #       "\n",
+        #       "With texture: ", self.text_jn.currentText(), "\n",
+        #       "Fitting phase: ", self.fit_phase_combbox, "\n",
+        #       "----------------------------")
+        #
+        # # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
+        #
+        # result = self.fit_object.do_the_fitting(filename=str(self.output_filename.text()),
+        #                                         material="iron",
+        #                                         method=str(self.modi.currentText()),
+        #                                         phase=int(str(self.fit_phase_combbox.currentText())),
+        #                                         phase_name=self.name_of_phase_dic[
+        #                                             int(str(self.fit_phase_combbox.currentText()))],
+        #                                         texture=Bool)
+        result = thread.start_new_thread(self.do_the_fit, ())
+
+        print("finished the fit\n",
+              "the typ of the result is: ", type(result))
+        # text = "Finnished calculation\nresults are stored under {}".format(result[1])
+        # print(text)
+        # mbox = QMessageBox()
+        # mbox.standardButtons()
+        # mbox.setIcon(QMessageBox.Information)
+        # mbox.setText(text)
+        # mbox.setDetailedText(lm.fit_report(result[0].params))
+        # mbox.exec_()
 
         # try:
         #     self.Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=str(self.modi.currentText()),
@@ -1229,7 +1296,8 @@ class phase_region_class(object):
         return self.region
 
 
-def main():
+def main(Thread_queue):
+    Thread_queue = Thread_queue
     app = QApplication(sys.argv)
     form = Main()
     form.show()

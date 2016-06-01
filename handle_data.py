@@ -470,15 +470,16 @@ class AllData(Data):
                 # print "phase: ", phase
                 phi = deg_to_rad(float(phi))
                 psi = deg_to_rad(float(psi))
+                force = float(force)
                 if phase not in dic.keys():
-                    # print "phase not in key: ", phase
                     dic[phase] = {}
 
                 if force not in dic[phase].keys():
                     dic[phase][force] = [[], []]
                     print "###############\n" \
                           "force: ", force
-
+                if h == '2' and k == '2' and l == '2':
+                    print force, h, k, l, phi, psi, strain
                 dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
                 dic[phase][force][1].append([float(strain), float(strainerr), float(stress), float(stresserr)])
         data.close()
@@ -493,6 +494,11 @@ class AllData(Data):
                 print i, phase, force_keys
                 for j, force in enumerate(sorted(force_keys)):
                     self.fitted_data.data_dict[i][force] = dic[phase][force]
+                    for m in xrange(len(dic[phase][force][0])):
+                        phi, psi, h, k, l = dic[phase][force][0][m]
+                        strain, strainerr, stress, stresserr = dic[phase][force][1][m]
+                        if h == 2 and k == 2 and l == 2:
+                            print phase, force, phi, psi, h, k, l, strain
             except KeyError:
                 pass
         print self.fitted_data.data_dict
@@ -568,6 +574,7 @@ calculate the phi, psi for specific omega and chi
 if __name__ == "__main__":
     import Plot_coordsys as cplot
     import matplotlib.pyplot as plt
+
     data = SPODIData(6)
     theta = -45
     omega = theta

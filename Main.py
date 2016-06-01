@@ -29,9 +29,10 @@ import methods
 #import lgs
 import Fittingtools
 import gui
-
+import Queue
 if __name__=="__main__":
-    gui.main()
+    Thread_queue = Queue.Queue()
+    gui.main(Thread_queue)
 
 quit()
 def linfunk(x, m, b):

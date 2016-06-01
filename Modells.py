@@ -1907,7 +1907,7 @@ class FitStrainWithTexture(object):
         res = 1
         return res
 
-    def plot_data(self, h, k, l, phase, with_fit=False, method='hill'):
+    def plot_data(self, h, k, l, phase, with_fit=False, method='hill', texture=False):
         data = []
         if phase == 1:
             data = self.data_object.fitted_data.get_force_dict_phase_1()
@@ -1930,21 +1930,24 @@ class FitStrainWithTexture(object):
             if h == hh and k == kk and l == ll:
                 print psi
                 Psi.append(np.sin(psi) ** 2)
-                epsilon.append((eps2 - eps))  #/ (strain2 - strain))  #
+                epsilon.append((eps2 - eps) / (strain2 - strain))  #
 
 
-        for j in xrange(len(dat[0])):
+        for j in xrange(len(dat2[0])):
             phi, psi, hh, kk, ll = dat[0][j]
             eps, epserr, strain, strainerr = 0, 0, 0, 0  # dat[1][j]
             eps2, epserr2, strain2, strainerr2 = dat2[1][j]
             if h == hh and k == kk and l == ll:
                 print psi
                 Psi2.append(np.sin(psi) ** 2)
-                epsilon2.append((eps2 - eps))  # / (strain2 - strain))  #
+                epsilon2.append((eps2 - eps) / (strain2 - strain))  #
 
         if with_fit:
-            x, y = self.func_untext(h, k, l, self.__params, phase, method=method)
-        plt.figure("hkl: {}{}{}".format(h, k, l))
+            if texture:
+                x, y = self.func_text(h, k, l, self.__params, phase, method=method)
+            else:
+                x, y = self.func_untext(h, k, l, self.__params, phase, method=method)
+        plt.figure("{}, hkl: {}{}{}".format(phase, h, k, l))
         plt.plot(Psi, epsilon, 'bo', label="Data {} kN".format(sorted(data.keys())[0]))
         plt.plot(Psi2, epsilon2, 'go', label="Data {} kN".format(sorted(data.keys())[1]))
         if with_fit:
@@ -1981,13 +1984,14 @@ class FitStrainWithTexture(object):
         if method == "reus":
             s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
                           c_44=pars["c_44"].value)
-        psi = np.arange(0, 1, 0.01)
+        psi = np.arange(0, np.pi / 2, 0.01)
         print "s1 ", s1, "s2 ", s2
-        eps = s1 + s2 * (np.cos(psi) ** 2)
+        eps = s1 + s2 - s2 * (np.sin(psi) ** 2)
         return np.sin(psi) ** 2, eps
 
     def func_text(self, h, k, l, params, phase, method='hill'):
         params_keys = params.keys()
+        psi = np.arange(0, np.pi / 2, 0.01)
         for key in params_keys:
             if phase == 1:
                 if "p1" in key:
@@ -2012,7 +2016,7 @@ class FitStrainWithTexture(object):
         if method == "reus":
             s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
                           c_44=pars["c_44"].value)
-        psi = np.arange(0, 1, 0.01)
+
         print "s1 ", s1, "s2 ", s2
         eps = s1 + s2 * (np.cos(psi) ** 2)
         return np.sin(psi) ** 2, eps
@@ -2667,30 +2671,15 @@ class ODF(object):
         # the plot
         # ----------
         r, theta = np.meshgrid(PSI, PHI)
-        # plt.figure("pole figure {}{}{}\n".format(h, k, l))
-        # fig = Figure()
-        # axs = fig.add_subplot(111, projection='polar')  # 1, 1, figsize=(12,5),subplot_kw=dict(projection='polar'))
-        # pp = plt.axes(polar=True)
-        # axs.set_title("pole figure {}{}{}".format(h, k, l))
-        # pp.gird(linestyle='-.')
-        # pp.pcolormesh(VAL, cmap = cm.gist_rainbow)  # theta, r,
-        fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
-        p1 = axs.contourf(theta, np.degrees(r), VAL, 100)
-        # p2 = axs[1].contourf(theta, r, values2, 100)
-        cbar = plt.colorbar(p1, ax=axs)
-        axs.set_title("pole figure {}{}{}\n".format(h, k, l))
-        # pl = axs[0].contourf(theta, np.degrees(r), VAL)
-        # CB = plt.colorbar(pl, ax=axs)
-        # plt.colorbar(pl, ax=pp)
-        # plt.colorbar(pp)
-        # pp.scatter(theta, r, s=27, c=VAL, marker='o')  # this is working
 
-        # plt.colorbar(mappable=VAL, cax=pp)
-        # fig.set_title("pole figure {}{}{}".format(h, k, l))
-
-        # ax.contourf(theta, r, VAL)
-        # fig.colorbar(ax)
-        plt.show()
+        # fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
+        # p1 = axs.contourf(theta, np.degrees(r), VAL, 100)
+        #
+        # cbar = plt.colorbar(p1, ax=axs)
+        # axs.set_title("pole figure {}{}{}\n".format(h, k, l))
+        #
+        # plt.show()
+        return theta, np.degrees(r), VAL
 
     def integrate(self, A, phi, psi, h, k, l, *args):
         # performe the integration around q//h
