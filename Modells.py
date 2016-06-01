@@ -1119,56 +1119,104 @@ class FitStrainWithTexture(object):
         theory_fit = []
         t1 = tm.clock()
         pars = self.__return_free_or_fixed_parameters(params=params, free=True)
-        for i, nn in enumerate(sorted(data_phase_1.keys())):  # Loop over all forces
-            if i == 0:
-                pass
-            else:
-                xvals_fit = xvals_fitted[1]
-                for m in xrange(len(xvals_fit)):
-                    phi, psi, h, k, l = xvals_fit[m]
-                    # force1 = int(sorted(data_phase_1.keys())[0])
-                    # force2 = int(sorted(data_phase_1.keys())[1])
-                    # print sorted(data_phase_1.keys())
-                    # print strain_stress_data_fitted[0]
-                    strain_fit1, strain_fit_err1, stress_fit1, stress_fit_err1 = strain_stress_data_fitted[0][m]
-                    strain_fit2, strain_fit_err2, stress_fit2, stress_fit_err2 = strain_stress_data_fitted[1][m]
-                    data_fit.append((strain_fit2-strain_fit1)/(stress_fit2 - stress_fit1))
-                    err =   abs(1 / (stress_fit2 - stress_fit1)) * strain_fit_err1 \
-                          + abs(1 / (stress_fit2 - stress_fit1)) * strain_fit_err2 \
-                          + abs((strain_fit2 - strain_fit1) / (stress_fit2 - stress_fit1)**2) * stress_fit_err1\
-                          + abs((strain_fit2 - strain_fit1) / (stress_fit2 - stress_fit1)**2) * stress_fit_err1
-                    data_fit_err.append(err)
-                    # sigma_11 = params["sigma_11"].value * stress_fit
-                    # sigma_22 = params["sigma_22"].value * stress_fit
-                    # sigma_33 = params["sigma_33"].value * stress_fit
-                    # sigma_12 = params["sigma_12"].value * stress_fit
-                    # sigma_13 = params["sigma_13"].value * stress_fit
-                    # sigma_23 = params["sigma_23"].value * stress_fit
 
-                    if method == "hill":
-                        s1, s2 = RV(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+        for n in xrange(len(applied_forces)):  # Loop over all forces
+            xvals_fit = xvals_fitted[n]
+            # print xvals_mat
+            # print "applied_force: ", applied_forces
+            # xvals_inc = xvals_inclusion[n]
+            # print len(xvals_mat)
+            for m in xrange(len(xvals_fit)):
+                phi, psi, h, k, l = xvals_fit[m]
+                # print "phi: ", phi
+                strain_fit, strain_fit_err, stress_fit, stress_fit_err = strain_stress_data_fitted[n][m]
+                data_fit.append(strain_fit / stress_fit)
+                # data_mat.append(strain_mat)
+                data_fit_err.append(abs(strain_fit / stress_fit) * (abs(strain_fit_err / strain_fit) +
+                                                                    abs(stress_fit_err / stress_fit)))
+                # data_mat_err.append(strain_mat_err)
+
+                # theory_val = 0.
+                if method == "hill":
+                    s1, s2 = RV(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                                c_44=pars["c_44"].value)
+                if method == "voigt":
+                    s1, s2 = Voigt__(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                                     c_44=pars["c_44"].value)
+                if method == "eshelby":
+                    s1, s2 = BHM_dW(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
                                     c_44=pars["c_44"].value)
-                    if method == "voigt":
-                        s1, s2 = Voigt__(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
-                                         c_44=pars["c_44"].value)
-                    if method == "eshelby":
-                        s1, s2 = BHM_dW(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
-                                        c_44=pars["c_44"].value)
-                    if method == "reus":
-                        s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
-                                      c_44=pars["c_44"].value)
+                if method == "reus":
+                    s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                                  c_44=pars["c_44"].value)
 
-                    # eps = s1 * (sigma_11 + sigma_22 + sigma_33) \
-                    #       + s2 * (sigma_11 * np.cos(phi) ** 2 * np.sin(psi) ** 2 +
-                    #               sigma_22 * np.sin(phi) ** 2 * np.sin(psi) ** 2 +
-                    #               sigma_33 * np.cos(psi) ** 2) \
-                    #       + s2 * (sigma_12 * np.sin(2 * phi) * np.sin(psi) ** 2 +
-                    #               sigma_13 * np.cos(phi) * np.sin(2 * psi) +
-                    #               sigma_23 * np.sin(phi) * np.sin(2 * psi))
+                # eps = s1 * (sigma_11 + sigma_22 + sigma_33) \
+                #       + s2 * (sigma_11 * np.cos(phi) ** 2 * np.sin(psi) ** 2 +
+                #               sigma_22 * np.sin(phi) ** 2 * np.sin(psi) ** 2 +
+                #               sigma_33 * np.cos(psi) ** 2) \
+                #       + s2 * (sigma_12 * np.sin(2 * phi) * np.sin(psi) ** 2 +
+                #               sigma_13 * np.cos(phi) * np.sin(2 * psi) +
+                #               sigma_23 * np.sin(phi) * np.sin(2 * psi))
 
-                    eps = s1 + s2 * np.cos(psi) ** 2
+                eps = s1 + s2 * np.cos(psi) ** 2
 
-                    theory_fit.append(eps)
+                theory_fit.append(eps)
+
+
+        # for i, nn in enumerate(sorted(data_phase_1.keys())):  # Loop over all forces
+        #     if i == 0:
+        #         pass
+        #     else:
+        #         xvals_fit = xvals_fitted[1]
+        #         for m in xrange(len(xvals_fit)):
+        #             phi, psi, h, k, l = xvals_fit[m]
+        #             # force1 = int(sorted(data_phase_1.keys())[0])
+        #             # force2 = int(sorted(data_phase_1.keys())[1])
+        #             # print sorted(data_phase_1.keys())
+        #             # print strain_stress_data_fitted[0]
+        #
+        #
+        #             strain_fit1, strain_fit_err1, stress_fit1, stress_fit_err1 = strain_stress_data_fitted[0][m]
+        #             strain_fit2, strain_fit_err2, stress_fit2, stress_fit_err2 = strain_stress_data_fitted[1][m]
+        #             data_fit.append((strain_fit2-strain_fit1)/(stress_fit2 - stress_fit1))
+        #             err =   abs(1 / (stress_fit2 - stress_fit1)) * strain_fit_err1 \
+        #                   + abs(1 / (stress_fit2 - stress_fit1)) * strain_fit_err2 \
+        #                   + abs((strain_fit2 - strain_fit1) / (stress_fit2 - stress_fit1)**2) * stress_fit_err1\
+        #                   + abs((strain_fit2 - strain_fit1) / (stress_fit2 - stress_fit1)**2) * stress_fit_err1
+        #             data_fit_err.append(err)
+        #
+        #
+        #             # sigma_11 = params["sigma_11"].value * stress_fit
+        #             # sigma_22 = params["sigma_22"].value * stress_fit
+        #             # sigma_33 = params["sigma_33"].value * stress_fit
+        #             # sigma_12 = params["sigma_12"].value * stress_fit
+        #             # sigma_13 = params["sigma_13"].value * stress_fit
+        #             # sigma_23 = params["sigma_23"].value * stress_fit
+        #
+        #             if method == "hill":
+        #                 s1, s2 = RV(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+        #                             c_44=pars["c_44"].value)
+        #             if method == "voigt":
+        #                 s1, s2 = Voigt__(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+        #                                  c_44=pars["c_44"].value)
+        #             if method == "eshelby":
+        #                 s1, s2 = BHM_dW(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+        #                                 c_44=pars["c_44"].value)
+        #             if method == "reus":
+        #                 s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+        #                               c_44=pars["c_44"].value)
+        #
+        #             # eps = s1 * (sigma_11 + sigma_22 + sigma_33) \
+        #             #       + s2 * (sigma_11 * np.cos(phi) ** 2 * np.sin(psi) ** 2 +
+        #             #               sigma_22 * np.sin(phi) ** 2 * np.sin(psi) ** 2 +
+        #             #               sigma_33 * np.cos(psi) ** 2) \
+        #             #       + s2 * (sigma_12 * np.sin(2 * phi) * np.sin(psi) ** 2 +
+        #             #               sigma_13 * np.cos(phi) * np.sin(2 * psi) +
+        #             #               sigma_23 * np.sin(phi) * np.sin(2 * psi))
+        #
+        #             eps = s1 + s2 * np.cos(psi) ** 2
+        #
+        #             theory_fit.append(eps)
 
         t2 = tm.clock()
         dt = t2 - t1
@@ -1992,34 +2040,27 @@ class FitStrainWithTexture(object):
     def func_text(self, h, k, l, params, phase, method='hill'):
         params_keys = params.keys()
         psi = np.arange(0, np.pi / 2, 0.01)
-        for key in params_keys:
-            if phase == 1:
-                if "p1" in key:
-                    params[key].vary = True
-                if "p2" in key:
-                    params[key].vary = False
-            if phase == 2:
-                if "p1" in key:
-                    params[key].vary = False
-                if "p2" in key:
-                    params[key].vary = True
-        pars = self.__return_free_or_fixed_parameters(params=params, free=True)
-        if method == "hill":
-            s1, s2 = RV(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
-                        c_44=pars["c_44"].value)
-        if method == "voigt":
-            s1, s2 = Voigt__(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
-                             c_44=pars["c_44"].value)
-        if method == "eshelby":
-            s1, s2 = BHM_dW(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
-                            c_44=pars["c_44"].value)
-        if method == "reus":
-            s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
-                          c_44=pars["c_44"].value)
+        # for key in params_keys:
+        #     if phase == 1:
+        #         if "p1" in key:
+        #             params[key].vary = True
+        #         if "p2" in key:
+        #             params[key].vary = False
+        #     if phase == 2:
+        #         if "p1" in key:
+        #             params[key].vary = False
+        #         if "p2" in key:
+        #             params[key].vary = True
+        # pars = self.__return_free_or_fixed_parameters(params=params, free=True)
+        F_33_list = []
+        for b in xrange(len(psi)):
+            a = psi[b]
+            phi = np.pi
+            F_33_list.append(self.F(phi=phi, psi=a, h=h, k=k, l=l, i=2, j=2, method=method, use_in_fit=False))
 
-        print "s1 ", s1, "s2 ", s2
-        eps = s1 + s2 * (np.cos(psi) ** 2)
-        return np.sin(psi) ** 2, eps
+        # print "s1 ", s1, "s2 ", s2
+        # eps = s1 + s2 * (np.cos(psi) ** 2)
+        return np.sin(psi) ** 2, F_33_list
 
 
 def cli_progress_test_voigt(i, end_val, tuple, bar_length=20):

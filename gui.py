@@ -509,16 +509,17 @@ class CentralWidget(QWidget):
         l = int(str(self.miller_l.text()))
         method = str(self.modi.currentText())
         with_fit_t = str(self.with_fit_combbox.currentText())
-        with_fit = False
         if with_fit_t == "Yes":
             with_fit = True
         else:
             with_fit = False
+        if str(self.text_jn.currentText()) == "Yes":
+            texture = True
+        else:
+            texture = False
 
-        if str(self.fit_phase_combbox.currentText()) == "1":
-            self.fit_object.plot_data(h, k, l, phase=1, with_fit=with_fit, method=method)
-        if str(self.fit_phase_combbox.currentText()) == "2":
-            self.fit_object.plot_data(h, k, l, phase=2, with_fit=with_fit, method=method)
+        phase = int(str(self.fit_phase_combbox.currentText()))
+        self.fit_object.plot_data(h, k, l, phase=phase, with_fit=with_fit, method=method, texture=texture)
 
     def set_params_phase_1(self, params):
         self.fit_object.set_params_phase_1(params)
@@ -758,47 +759,8 @@ class CentralWidget(QWidget):
         thread.exit()
 
     def fit_the_data(self):
-        # Bool = False
-        # if self.text_jn.currentText() == "Yes":
-        #     Bool = True
-        # print(self.modi.currentText(), "\n",
-        #       Bool)
-        # print("----------------------------\n",
-        #       "Fit the data using model: " +
-        #       self.modi.currentText() +
-        #       "\n",
-        #       "With texture: ", self.text_jn.currentText(), "\n",
-        #       "Fitting phase: ", self.fit_phase_combbox, "\n",
-        #       "----------------------------")
-        #
-        # # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
-        #
-        # result = self.fit_object.do_the_fitting(filename=str(self.output_filename.text()),
-        #                                         material="iron",
-        #                                         method=str(self.modi.currentText()),
-        #                                         phase=int(str(self.fit_phase_combbox.currentText())),
-        #                                         phase_name=self.name_of_phase_dic[
-        #                                             int(str(self.fit_phase_combbox.currentText()))],
-        #                                         texture=Bool)
+
         result = thread.start_new_thread(self.do_the_fit, ())
-
-        print("finished the fit\n",
-              "the typ of the result is: ", type(result))
-        # text = "Finnished calculation\nresults are stored under {}".format(result[1])
-        # print(text)
-        # mbox = QMessageBox()
-        # mbox.standardButtons()
-        # mbox.setIcon(QMessageBox.Information)
-        # mbox.setText(text)
-        # mbox.setDetailedText(lm.fit_report(result[0].params))
-        # mbox.exec_()
-
-        # try:
-        #     self.Data_Iron.Fit_the_data_with_texture(filename="Result_iron_", method=str(self.modi.currentText()),
-        #                                              number_of_datapoints=None, texture=Bool)
-        # except AttributeError:
-        #     self.read_scattering_data_SPODI_case()
-        #     self.fit_the_data()
 
     def layout_handling(self):
         # Layout handling
