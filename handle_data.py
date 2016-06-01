@@ -468,26 +468,34 @@ class AllData(Data):
                 l = re.split(r'\s*', line)
                 force, phase, h, k, l, phi, psi, strain, strainerr, stress, stresserr = l
                 # print "phase: ", phase
+                phi = deg_to_rad(float(phi))
+                psi = deg_to_rad(float(psi))
                 if phase not in dic.keys():
                     # print "phase not in key: ", phase
                     dic[phase] = {}
-                else:
-                    if force not in dic[phase].keys():
-                        dic[phase][force] = [[], []]
-                    else:
-                        dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
-                        dic[phase][force][1].append([float(strain), float(strainerr), float(stress), float(stresserr)])
+
+                if force not in dic[phase].keys():
+                    dic[phase][force] = [[], []]
+                    print "###############\n" \
+                          "force: ", force
+
+                dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
+                dic[phase][force][1].append([float(strain), float(strainerr), float(stress), float(stresserr)])
         data.close()
         phase_keys = dic.keys()
 
         print phase_keys
         for i in phase_name_dict.keys():
-            phase = phase_name_dict[i]
-            self.fitted_data.data_dict[i] = {}
-            force_keys = dic[phase].keys()
-            print i, phase, force_keys
-            for j, force in enumerate(sorted(force_keys)):
-                self.fitted_data.data_dict[i][force] = dic[phase][force]
+            try:
+                phase = phase_name_dict[i]
+                self.fitted_data.data_dict[i] = {}
+                force_keys = dic[phase].keys()
+                print i, phase, force_keys
+                for j, force in enumerate(sorted(force_keys)):
+                    self.fitted_data.data_dict[i][force] = dic[phase][force]
+            except KeyError:
+                pass
+        print self.fitted_data.data_dict
 
     def just_read_data(self, filename):
         '''
@@ -503,6 +511,8 @@ class AllData(Data):
             if "#" not in line:
                 l = re.split(r'\s*', line)
                 force, phase, h, k, l, phi, psi, strain, strainerr, stress, stresserr = l
+                phi = deg_to_rad(float(phi))
+                psi = deg_to_rad(float(psi))
                 # print "phase: ", phase
                 if phase not in dic.keys():
                     # print "phase not in key: ", phase

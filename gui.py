@@ -492,11 +492,32 @@ class CentralWidget(QWidget):
 
         self.plot_polefig_button = QPushButton("plot pole figure")
         self.plot_polefig_button.setEnabled(False)
+        self.plot_data_button = QPushButton("plot data")
+        self.plot_data_button.setEnabled(False)
         self.miller_h = QLineEdit("h")
         self.miller_k = QLineEdit("k")
         self.miller_l = QLineEdit("l")
+        self.with_fit_combbox = self.create_jn_combbox()
         self.plot_polefig_button.clicked.connect(self.plot_pole_figure)
+        self.plot_data_button.clicked.connect(self.plot_data_fuc)
         self.layout_handling()
+
+    def plot_data_fuc(self):
+        h = int(str(self.miller_h.text()))
+        k = int(str(self.miller_k.text()))
+        l = int(str(self.miller_l.text()))
+        method = str(self.modi.currentText())
+        with_fit_t = str(self.with_fit_combbox.currentText())
+        with_fit = False
+        if with_fit_t == "Yes":
+            with_fit = True
+        else:
+            with_fit = False
+
+        if str(self.fit_phase_combbox.currentText()) == "1":
+            self.fit_object.plot_data(h, k, l, phase=1, with_fit=with_fit, method=method)
+        if str(self.fit_phase_combbox.currentText()) == "2":
+            self.fit_object.plot_data(h, k, l, phase=2, with_fit=with_fit, method=method)
 
     def set_params_phase_1(self, params):
         self.fit_object.set_params_phase_1(params)
@@ -559,7 +580,11 @@ class CentralWidget(QWidget):
         odf1 = str(odf1)
         odf2 = str(odf2)
         data_file = str(data_file)
-        self.name_of_phase_dic = phase_key_dict
+        self.name_of_phase_dic[1] = phase_key_dict[1]
+        try:
+            self.name_of_phase_dic[2] = phase_key_dict[2]
+        except KeyError:
+            pass
 
         if odf2 == "None":
             odf2 = None
@@ -585,6 +610,7 @@ class CentralWidget(QWidget):
         self.do_the_fit_button.setEnabled(True)
         self.insert_startvals_button.setEnabled(True)
         self.plot_polefig_button.setEnabled(True)
+        self.plot_data_button.setEnabled(True)
 
         self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
         self.fit_object.print_params()
@@ -635,6 +661,7 @@ class CentralWidget(QWidget):
             self.do_the_fit_button.setEnabled(True)
             self.insert_startvals_button.setEnabled(True)
             self.plot_polefig_button.setEnabled(True)
+            self.plot_data_button.setEnabled(True)
             # self.Data_Iron.fit_all_peaks()
         self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
         # self.connect(self, SIGNAL('1'), self.fit_object.set_params_phase_1)
@@ -663,6 +690,7 @@ class CentralWidget(QWidget):
         self.do_the_fit_button.setEnabled(True)
         self.insert_startvals_button.setEnabled(True)
         self.plot_polefig_button.setEnabled(True)
+        self.plot_data_button.setEnabled(True)
         print("coming from other class:", "\n", self.phase_peak_region)
 
     def fit_the_data(self):
@@ -762,10 +790,16 @@ class CentralWidget(QWidget):
         layout_fitting.addWidget(self.output_filename)
         layout_fitting.addWidget(self.do_the_fit_button)
 
+        layout_fitting_2.addWidget(self.label('h:'))
         layout_fitting_2.addWidget(self.miller_h)
+        layout_fitting_2.addWidget(self.label('k:'))
         layout_fitting_2.addWidget(self.miller_k)
+        layout_fitting_2.addWidget(self.label('l:'))
         layout_fitting_2.addWidget(self.miller_l)
         layout_fitting_2.addWidget(self.plot_polefig_button)
+        layout_fitting_2.addWidget(self.label('with_fit:'))
+        layout_fitting_2.addWidget(self.with_fit_combbox)
+        layout_fitting_2.addWidget(self.plot_data_button)
         layout_fitting_2.addWidget(self.insert_startvals_button)
 
         layout.addLayout(layout_fitting)
@@ -1036,12 +1070,12 @@ class LOAD_STANDARD_DATA(QWidget):
         self.odf_phase_1_path.setReadOnly(True)
         self.odf_phase_1_button.setEnabled(False)
 
-        if number_of_phases == 1:
-            self.odf_phase_2_button.setDisabled(True)
-            self.odf_phase_2_path.setReadOnly(True)
-        if number_of_phases == 2:
-            self.odf_phase_2_button.setDisabled(False)
-            self.odf_phase_2_path.setReadOnly(False)
+        # if number_of_phases == 1:
+        self.odf_phase_2_button.setDisabled(True)
+        self.odf_phase_2_path.setReadOnly(True)
+        # if number_of_phases == 2:
+        #     self.odf_phase_2_button.setDisabled(False)
+        #     self.odf_phase_2_path.setReadOnly(False)
 
         self.ok_button.clicked.connect(self.emit_and_quit)
 
@@ -1122,6 +1156,7 @@ class LOAD_STANDARD_DATA(QWidget):
             self.odf_phase_1_button.setEnabled(True)
             self.select_odf_phase_1.setText('"select odf phase 1 (= {}):   "'.format(self.phase_keys[0]))
             self.select_odf_phase_1.setText('select odf phase 1 (= {}): '.format(self.phase_keys[0]))
+            self.phase_key_dict[1] = self.phase_keys[0]
 
         print(self.path_of_data_file.text())
 
