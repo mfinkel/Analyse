@@ -482,6 +482,7 @@ class AllData(Data):
                     print force, h, k, l, phi, psi, strain
                 dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
                 dic[phase][force][1].append([float(strain), float(strainerr), float(stress), float(stresserr)])
+
         data.close()
         phase_keys = dic.keys()
 
@@ -512,7 +513,7 @@ class AllData(Data):
         data = open(filename, 'r')
         lines = data.readlines()
         dic = {}
-        for i in xrange(1, len(lines)):  #
+        for i in xrange(0, len(lines)):  #
             line = lines[i].strip()  # removes with spaces at the frond and the end
             if "#" not in line:
                 l = re.split(r'\s*', line)
@@ -529,9 +530,18 @@ class AllData(Data):
                     else:
                         dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
                         dic[phase][force][1].append([float(strain), float(strainerr), float(stress), float(stresserr)])
+            else:
+                print line
+                if "#Material:" in line:
+                    mmm = re.split('\s+', line)
+                    material = ''
+                    for g in xrange(1, len(mmm)):
+                        material+= mmm[g]
+                        material+= ' '
+                    print material
         data.close()
         phase_keys = dic.keys()
-        return phase_keys
+        return phase_keys, material
 
         # print phase_keys
         # for i, phase in enumerate(phase_keys):

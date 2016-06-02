@@ -499,8 +499,9 @@ Methods:
 
 
 class FitStrainWithTexture(object):
-    def __init__(self, data_object):
+    def __init__(self, data_object, material):
         self.data_object = data_object
+        self.material = material
         # self.xvals =
         # self.force = force
         # self.diameter = diameter
@@ -1294,7 +1295,7 @@ class FitStrainWithTexture(object):
             result = lm.minimize(self.__residuum_without_texture_single_phase, params, method=fit_method, args=(xvals,),
                                  kws={'data_phase_1': data_phase_1, 'data_phase_2': data_phase_2, 'method': method,
                                       'fitted_phase': phase})
-            params = result.params
+            # params = result.params
             print "Params withot texture: "
             print lm.fit_report(result.params)
             self.__counter = 0
@@ -1971,6 +1972,7 @@ class FitStrainWithTexture(object):
         i = sorted(data.keys())[0]
         dat = data[i]
         dat2 = data[sorted(data.keys())[1]]
+        plt.figure("Material: {}, phase: {}, hkl: {}{}{}".format(self.material, phase, h, k, l))
         for j in xrange(len(dat[0])):
             phi, psi, hh, kk, ll = dat[0][j]
             eps, epserr, strain, strainerr = 0, 0, 0, 0  # dat[1][j]
@@ -1980,24 +1982,29 @@ class FitStrainWithTexture(object):
                 Psi.append(np.sin(psi) ** 2)
                 epsilon.append((eps2 - eps) / (strain2 - strain))  #
 
+        try:
+            for j in xrange(len(dat2[0])):
+                phi, psi, hh, kk, ll = dat2[0][j]
+                eps, epserr, strain, strainerr = 0, 0, 0, 0  # dat[1][j]
+                eps2, epserr2, strain2, strainerr2 = dat2[1][j]
+                if h == hh and k == kk and l == ll:
+                    print psi
+                    Psi2.append(np.sin(psi) ** 2)
+                    epsilon2.append((eps2 - eps) / (strain2 - strain))  #
+            plt.plot(Psi2, epsilon2, 'go', label="Data {} kN".format(sorted(data.keys())[1]))
 
-        for j in xrange(len(dat2[0])):
-            phi, psi, hh, kk, ll = dat[0][j]
-            eps, epserr, strain, strainerr = 0, 0, 0, 0  # dat[1][j]
-            eps2, epserr2, strain2, strainerr2 = dat2[1][j]
-            if h == hh and k == kk and l == ll:
-                print psi
-                Psi2.append(np.sin(psi) ** 2)
-                epsilon2.append((eps2 - eps) / (strain2 - strain))  #
+        except IndexError:
+            pass
+
 
         if with_fit:
             if texture:
                 x, y = self.func_text(h, k, l, self.__params, phase, method=method)
             else:
                 x, y = self.func_untext(h, k, l, self.__params, phase, method=method)
-        plt.figure("{}, hkl: {}{}{}".format(phase, h, k, l))
+
         plt.plot(Psi, epsilon, 'bo', label="Data {} kN".format(sorted(data.keys())[0]))
-        plt.plot(Psi2, epsilon2, 'go', label="Data {} kN".format(sorted(data.keys())[1]))
+
         if with_fit:
             plt.plot(x, y, 'r-', label="fit {}".format(method))
         plt.xlabel('$\sin^2(\Psi)$')

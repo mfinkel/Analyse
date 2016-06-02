@@ -501,6 +501,8 @@ class CentralWidget(QWidget):
         self.with_fit_combbox = self.create_jn_combbox()
         self.plot_polefig_button.clicked.connect(self.plot_pole_figure)
         self.plot_data_button.clicked.connect(self.plot_data_fuc)
+        self.connect(self, SIGNAL('polefigurevals'), self.show_pole_figure)
+        self.connect(self, SIGNAL('result_of_fit'), self.show_result_of_fit)
         self.layout_handling()
 
     def plot_data_fuc(self):
@@ -561,7 +563,6 @@ class CentralWidget(QWidget):
         plt.show()
 
     def plot_pole_figure(self):
-        self.connect(self, SIGNAL('polefigurevals'), self.show_pole_figure)
         thread.start_new_thread(self.plot_pole_figure_thread, ())
 
     def change_name_of_phase_qlineedit(self):
@@ -606,11 +607,15 @@ class CentralWidget(QWidget):
 
     def recive_the_pathes_of_standard_data_format(self, *args):
         print(args)
-        odf1, odf2, data_file, phase_key_dict = args[0]
+        odf1, odf2, data_file, phase_key_dict, material = args[0]
         odf1 = str(odf1)
         odf2 = str(odf2)
         data_file = str(data_file)
         self.name_of_phase_dic[1] = phase_key_dict[1]
+        material = str(material).strip()
+        self.material.setText(material)
+        self.change_outputfile_name()
+        self.change_name_of_phase_qlineedit()
         try:
             self.name_of_phase_dic[2] = phase_key_dict[2]
         except KeyError:
@@ -642,7 +647,7 @@ class CentralWidget(QWidget):
         self.plot_polefig_button.setEnabled(True)
         self.plot_data_button.setEnabled(True)
 
-        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
+        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material=self.material)
         self.fit_object.print_params()
 
     def receve_the_pathes_SPODI_case(self, *args):
@@ -763,7 +768,6 @@ class CentralWidget(QWidget):
         mbox.exec_()
 
     def fit_the_data(self):
-        self.connect(self, SIGNAL('result_of_fit'), self.show_result_of_fit)
         thread.start_new_thread(self.do_the_fit, ())
 
     def layout_handling(self):
@@ -1172,7 +1176,7 @@ class LOAD_STANDARD_DATA(QWidget):
         filename = os.path.normpath(str(filename))
         self.path_of_data_file.setText(filename)
         data = handle_data.AllData()
-        self.phase_keys = data.just_read_data(filename)
+        self.phase_keys, self.material = data.just_read_data(filename)
         if len(self.phase_keys) == 2:
             self.odf_phase_1_path.setReadOnly(False)
             self.odf_phase_1_button.setEnabled(True)
@@ -1202,7 +1206,7 @@ class LOAD_STANDARD_DATA(QWidget):
         odf2 = self.odf_phase_2_path.text()
         data_file = self.path_of_data_file.text()
 
-        self.emit(SIGNAL("data_dir_list"), (odf1, odf2, data_file, self.phase_key_dict))
+        self.emit(SIGNAL("data_dir_list"), (odf1, odf2, data_file, self.phase_key_dict, self.material))
         self.close()
 
 
