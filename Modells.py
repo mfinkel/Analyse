@@ -2052,12 +2052,16 @@ class FitStrainWithTexture(object):
         #         if "p2" in key:
         #             params[key].vary = True
         # pars = self.__return_free_or_fixed_parameters(params=params, free=True)
+        if method == "voigt" or method == "hill":
+            euler = (0, 0, 0)
+            self.a_voigt = self.__A_voigt(euler, 0, 0, 0, 0, fitted_phase=phase)
+
         F_33_list = []
         for b in xrange(len(psi)):
             a = psi[b]
             phi = np.pi
             F_33_list.append(self.F(phi=phi, psi=a, h=h, k=k, l=l, i=2, j=2, method=method, use_in_fit=False))
-
+            cli_progress_test(b, len(psi))
         # print "s1 ", s1, "s2 ", s2
         # eps = s1 + s2 * (np.cos(psi) ** 2)
         return np.sin(psi) ** 2, F_33_list

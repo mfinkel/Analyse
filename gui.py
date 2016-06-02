@@ -749,6 +749,11 @@ class CentralWidget(QWidget):
                                                 texture=Bool)
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
         self.plot_polefig_button.setEnabled(True)
+        self.emit(SIGNAL('result_of_fit'), (text, result))
+        thread.exit()
+
+    def show_result_of_fit(self, *args):
+        text, result = args[0]
         print(text)
         mbox = QMessageBox()
         mbox.standardButtons()
@@ -756,11 +761,10 @@ class CentralWidget(QWidget):
         mbox.setText(text)
         mbox.setDetailedText(lm.fit_report(result[0].params))
         mbox.exec_()
-        thread.exit()
 
     def fit_the_data(self):
-
-        result = thread.start_new_thread(self.do_the_fit, ())
+        self.connect(self, SIGNAL('result_of_fit'), self.show_result_of_fit)
+        thread.start_new_thread(self.do_the_fit, ())
 
     def layout_handling(self):
         # Layout handling
