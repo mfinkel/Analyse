@@ -2040,18 +2040,24 @@ class FitStrainWithTexture(object):
     def func_text(self, h, k, l, params, phase, method='hill'):
         params_keys = params.keys()
         psi = np.arange(0, np.pi / 2, 0.01)
-        # for key in params_keys:
-        #     if phase == 1:
-        #         if "p1" in key:
-        #             params[key].vary = True
-        #         if "p2" in key:
-        #             params[key].vary = False
-        #     if phase == 2:
-        #         if "p1" in key:
-        #             params[key].vary = False
-        #         if "p2" in key:
-        #             params[key].vary = True
-        # pars = self.__return_free_or_fixed_parameters(params=params, free=True)
+        symmetry_fixed_phase = 0
+        symmetry_fitted_phase = 0
+
+        if phase == 1:
+            symmetry_fitted_phase = self.symmetry_phase_1
+            if self.phase_flag:
+                symmetry_fixed_phase = self.symmetry_phase_2
+
+        elif phase == 2:
+            symmetry_fitted_phase = self.symmetry_phase_2
+            symmetry_fixed_phase = self.symmetry_phase_1
+
+        self.set_parameters_of_the_FITTED_PHASE_in_matrix_representation(params, symmetry_fitted_phase)
+        print "phaseflag ", self.phase_flag
+        if self.phase_flag:
+            self.set_parameters_of_the_FIXED_PHASE_in_matrix_representation_multi_phase(params, symmetry_fixed_phase)
+        else:
+            self.set_parameters_of_the_FIXED_PHASE_in_matrix_representation_single_phase(params, symmetry_fitted_phase)
         if method == "voigt" or method == "hill":
             euler = (0, 0, 0)
             self.a_voigt = self.__A_voigt(euler, 0, 0, 0, 0, fitted_phase=phase)
@@ -2062,8 +2068,6 @@ class FitStrainWithTexture(object):
             phi = np.pi
             F_33_list.append(self.F(phi=phi, psi=a, h=h, k=k, l=l, i=2, j=2, method=method, use_in_fit=False))
             cli_progress_test(b, len(psi))
-        # print "s1 ", s1, "s2 ", s2
-        # eps = s1 + s2 * (np.cos(psi) ** 2)
         return np.sin(psi) ** 2, F_33_list
 
 
