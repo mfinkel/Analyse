@@ -517,6 +517,7 @@ class AllData(Data):
             line = lines[i].strip()  # removes with spaces at the frond and the end
             if "#" not in line:
                 l = re.split(r'\s*', line)
+                # print l
                 force, phase, h, k, l, phi, psi, strain, strainerr, stress, stresserr = l
                 phi = deg_to_rad(float(phi))
                 psi = deg_to_rad(float(psi))

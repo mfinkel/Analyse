@@ -698,7 +698,7 @@ class CentralWidget(QWidget):
             self.plot_polefig_button.setEnabled(True)
             self.plot_data_button.setEnabled(True)
             # self.Data_Iron.fit_all_peaks()
-        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
+        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material="iron")
         # self.connect(self, SIGNAL('1'), self.fit_object.set_params_phase_1)
         # self.connect(self, SIGNAL('2'), self.fit_object.set_params_phase_2)
         self.fit_object.print_params()

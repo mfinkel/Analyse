@@ -1123,6 +1123,7 @@ class FitStrainWithTexture(object):
 
         for n in xrange(len(applied_forces)):  # Loop over all forces
             xvals_fit = xvals_fitted[n]
+            print xvals
             # print xvals_mat
             # print "applied_force: ", applied_forces
             # xvals_inc = xvals_inclusion[n]
@@ -1136,7 +1137,12 @@ class FitStrainWithTexture(object):
                 data_fit_err.append(abs(strain_fit / stress_fit) * (abs(strain_fit_err / strain_fit) +
                                                                     abs(stress_fit_err / stress_fit)))
                 # data_mat_err.append(strain_mat_err)
-
+                sigma_11 = params["sigma_11"].value * stress_fit
+                sigma_22 = params["sigma_22"].value * stress_fit
+                sigma_33 = params["sigma_33"].value * stress_fit
+                sigma_12 = params["sigma_12"].value * stress_fit
+                sigma_13 = params["sigma_13"].value * stress_fit
+                sigma_23 = params["sigma_23"].value * stress_fit
                 # theory_val = 0.
                 if method == "hill":
                     s1, s2 = RV(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
@@ -1151,15 +1157,15 @@ class FitStrainWithTexture(object):
                     s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
                                   c_44=pars["c_44"].value)
 
-                # eps = s1 * (sigma_11 + sigma_22 + sigma_33) \
-                #       + s2 * (sigma_11 * np.cos(phi) ** 2 * np.sin(psi) ** 2 +
-                #               sigma_22 * np.sin(phi) ** 2 * np.sin(psi) ** 2 +
-                #               sigma_33 * np.cos(psi) ** 2) \
-                #       + s2 * (sigma_12 * np.sin(2 * phi) * np.sin(psi) ** 2 +
-                #               sigma_13 * np.cos(phi) * np.sin(2 * psi) +
-                #               sigma_23 * np.sin(phi) * np.sin(2 * psi))
+                eps = s1 * (sigma_11 + sigma_22 + sigma_33) \
+                      + s2 * (sigma_11 * np.cos(phi) ** 2 * np.sin(psi) ** 2 +
+                              sigma_22 * np.sin(phi) ** 2 * np.sin(psi) ** 2 +
+                              sigma_33 * np.cos(psi) ** 2) \
+                      + s2 * (sigma_12 * np.sin(2 * phi) * np.sin(psi) ** 2 +
+                              sigma_13 * np.cos(phi) * np.sin(2 * psi) +
+                              sigma_23 * np.sin(phi) * np.sin(2 * psi))
 
-                eps = s1 + s2 * np.cos(psi) ** 2
+                # eps = s1 + s2 * np.cos(psi) ** 2
 
                 theory_fit.append(eps)
 
@@ -1268,6 +1274,7 @@ class FitStrainWithTexture(object):
         """
         self.__counter = 0
         params = self.__params
+        start_params = self.__params
         data = []  # self.__strains_data
         weight = []  # self.__weights
         xvals = []  # self.xvals
@@ -1292,12 +1299,12 @@ class FitStrainWithTexture(object):
                 if "p2" in key:
                     params[key].vary = True
         if texture:
-            result = lm.minimize(self.__residuum_without_texture_single_phase, params, method=fit_method, args=(xvals,),
-                                 kws={'data_phase_1': data_phase_1, 'data_phase_2': data_phase_2, 'method': method,
-                                      'fitted_phase': phase})
+            # result = lm.minimize(self.__residuum_without_texture_single_phase, params, method=fit_method, args=(xvals,),
+            #                      kws={'data_phase_1': data_phase_1, 'data_phase_2': data_phase_2, 'method': method,
+            #                           'fitted_phase': phase})
             # params = result.params
             print "Params withot texture: "
-            print lm.fit_report(result.params)
+            print self.__params.pretty_print()  # lm.fit_report(result.params)
             self.__counter = 0
             result = lm.minimize(self.__residuum_with_texture, params, method=fit_method, args=(xvals,),
                                  kws={'data_phase_1': data_phase_1, 'data_phase_2': data_phase_2, 'method': method,
@@ -1971,7 +1978,7 @@ class FitStrainWithTexture(object):
         print sorted(data.keys())
         i = sorted(data.keys())[0]
         dat = data[i]
-        dat2 = data[sorted(data.keys())[1]]
+        #
         plt.figure("Material: {}, phase: {}, hkl: {}{}{}".format(self.material, phase, h, k, l))
         for j in xrange(len(dat[0])):
             phi, psi, hh, kk, ll = dat[0][j]
@@ -1983,6 +1990,7 @@ class FitStrainWithTexture(object):
                 epsilon.append((eps2 - eps) / (strain2 - strain))  #
 
         try:
+            dat2 = data[sorted(data.keys())[1]]
             for j in xrange(len(dat2[0])):
                 phi, psi, hh, kk, ll = dat2[0][j]
                 eps, epserr, strain, strainerr = 0, 0, 0, 0  # dat[1][j]
