@@ -1123,7 +1123,7 @@ class FitStrainWithTexture(object):
 
         for n in xrange(len(applied_forces)):  # Loop over all forces
             xvals_fit = xvals_fitted[n]
-            print xvals
+            print 'xvals: ', xvals_fit
             # print xvals_mat
             # print "applied_force: ", applied_forces
             # xvals_inc = xvals_inclusion[n]
@@ -1137,12 +1137,12 @@ class FitStrainWithTexture(object):
                 data_fit_err.append(abs(strain_fit / stress_fit) * (abs(strain_fit_err / strain_fit) +
                                                                     abs(stress_fit_err / stress_fit)))
                 # data_mat_err.append(strain_mat_err)
-                sigma_11 = params["sigma_11"].value * stress_fit
-                sigma_22 = params["sigma_22"].value * stress_fit
-                sigma_33 = params["sigma_33"].value * stress_fit
-                sigma_12 = params["sigma_12"].value * stress_fit
-                sigma_13 = params["sigma_13"].value * stress_fit
-                sigma_23 = params["sigma_23"].value * stress_fit
+                sigma_11 = params["sigma_11"].value  # * stress_fit
+                sigma_22 = params["sigma_22"].value  # * stress_fit
+                sigma_33 = params["sigma_33"].value  # * stress_fit
+                sigma_12 = params["sigma_12"].value  # * stress_fit
+                sigma_13 = params["sigma_13"].value  # * stress_fit
+                sigma_23 = params["sigma_23"].value  # * stress_fit
                 # theory_val = 0.
                 if method == "hill":
                     s1, s2 = RV(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
@@ -1169,20 +1169,6 @@ class FitStrainWithTexture(object):
 
                 theory_fit.append(eps)
 
-
-        # for i, nn in enumerate(sorted(data_phase_1.keys())):  # Loop over all forces
-        #     if i == 0:
-        #         pass
-        #     else:
-        #         xvals_fit = xvals_fitted[1]
-        #         for m in xrange(len(xvals_fit)):
-        #             phi, psi, h, k, l = xvals_fit[m]
-        #             # force1 = int(sorted(data_phase_1.keys())[0])
-        #             # force2 = int(sorted(data_phase_1.keys())[1])
-        #             # print sorted(data_phase_1.keys())
-        #             # print strain_stress_data_fitted[0]
-        #
-        #
         #             strain_fit1, strain_fit_err1, stress_fit1, stress_fit_err1 = strain_stress_data_fitted[0][m]
         #             strain_fit2, strain_fit_err2, stress_fit2, stress_fit_err2 = strain_stress_data_fitted[1][m]
         #             data_fit.append((strain_fit2-strain_fit1)/(stress_fit2 - stress_fit1))
@@ -1192,48 +1178,15 @@ class FitStrainWithTexture(object):
         #                   + abs((strain_fit2 - strain_fit1) / (stress_fit2 - stress_fit1)**2) * stress_fit_err1
         #             data_fit_err.append(err)
         #
-        #
-        #             # sigma_11 = params["sigma_11"].value * stress_fit
-        #             # sigma_22 = params["sigma_22"].value * stress_fit
-        #             # sigma_33 = params["sigma_33"].value * stress_fit
-        #             # sigma_12 = params["sigma_12"].value * stress_fit
-        #             # sigma_13 = params["sigma_13"].value * stress_fit
-        #             # sigma_23 = params["sigma_23"].value * stress_fit
-        #
-        #             if method == "hill":
-        #                 s1, s2 = RV(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
-        #                             c_44=pars["c_44"].value)
-        #             if method == "voigt":
-        #                 s1, s2 = Voigt__(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
-        #                                  c_44=pars["c_44"].value)
-        #             if method == "eshelby":
-        #                 s1, s2 = BHM_dW(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
-        #                                 c_44=pars["c_44"].value)
-        #             if method == "reus":
-        #                 s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
-        #                               c_44=pars["c_44"].value)
-        #
-        #             # eps = s1 * (sigma_11 + sigma_22 + sigma_33) \
-        #             #       + s2 * (sigma_11 * np.cos(phi) ** 2 * np.sin(psi) ** 2 +
-        #             #               sigma_22 * np.sin(phi) ** 2 * np.sin(psi) ** 2 +
-        #             #               sigma_33 * np.cos(psi) ** 2) \
-        #             #       + s2 * (sigma_12 * np.sin(2 * phi) * np.sin(psi) ** 2 +
-        #             #               sigma_13 * np.cos(phi) * np.sin(2 * psi) +
-        #             #               sigma_23 * np.sin(phi) * np.sin(2 * psi))
-        #
-        #             eps = s1 + s2 * np.cos(psi) ** 2
-        #
-        #             theory_fit.append(eps)
 
         t2 = tm.clock()
         dt = t2 - t1
-        # print "time for iteration #%i: %i min %i sec" % (self.__counter, int(dt / 60), int(dt % 60))
 
-        # if theo is not None:
-        #     return theory_fit
-        #
-        # if weight is None:
-        #     return np.array(data) - np.array(theory_fit)
+        print "theory: ", theory_fit
+
+        print "data: ", data_fit
+        print "err: ", data_fit_err
+        # print "time for iteration #%i: %i min %i sec" % (self.__counter, int(dt / 60), int(dt % 60))
 
         return (np.array(data_fit) - np.array(theory_fit)) / (np.array(data_fit_err))
 
@@ -1284,7 +1237,10 @@ class FitStrainWithTexture(object):
         # leastsq, nelder, lbfgsb, powell, cg, newton, cobyla, tnc, dogleg, slsqp,
         # differential_evolution
         data_phase_1 = self.data_object.fitted_data.get_force_dict_phase_1()
-        data_phase_2 = self.data_object.fitted_data.get_force_dict_phase_2()
+        if self.phase_flag:
+            data_phase_2 = self.data_object.fitted_data.get_force_dict_phase_2()
+        else:
+            data_phase_2 = None
         print "Texture: ", texture
         params_keys = params.keys()
         for key in params_keys:
@@ -1974,6 +1930,8 @@ class FitStrainWithTexture(object):
         Psi2 = []
         epsilon = []
         epsilon2 = []
+        epsilon2err = []
+        epsilonerr = []
         # for i in data.keys():
         print sorted(data.keys())
         i = sorted(data.keys())[0]
@@ -1982,24 +1940,30 @@ class FitStrainWithTexture(object):
         plt.figure("Material: {}, phase: {}, hkl: {}{}{}".format(self.material, phase, h, k, l))
         for j in xrange(len(dat[0])):
             phi, psi, hh, kk, ll = dat[0][j]
-            eps, epserr, strain, strainerr = 0, 0, 0, 0  # dat[1][j]
-            eps2, epserr2, strain2, strainerr2 = dat[1][j]
+            eps, epserr, stress, stresserr = 0, 0, 0, 0  # dat[1][j]
+            eps2, epserr2, stress2, stresserr2 = dat[1][j]
             if h == hh and k == kk and l == ll:
                 print psi
                 Psi.append(np.sin(psi) ** 2)
-                epsilon.append((eps2 - eps) / (strain2 - strain))  #
+                epsilon.append((eps2 - eps) / (stress2 - stress))  #
+                epsilonerr.append(abs(eps2 / stress2) * (abs(epserr2 / eps2) +
+                                                                    abs(stresserr2 / stress2)))
 
         try:
             dat2 = data[sorted(data.keys())[1]]
             for j in xrange(len(dat2[0])):
                 phi, psi, hh, kk, ll = dat2[0][j]
-                eps, epserr, strain, strainerr = 0, 0, 0, 0  # dat[1][j]
-                eps2, epserr2, strain2, strainerr2 = dat2[1][j]
+                eps, epserr, stress, stresserr = 0, 0, 0, 0  # dat[1][j]
+                eps2, epserr2, stress2, stresserr2 = dat2[1][j]
                 if h == hh and k == kk and l == ll:
                     print psi
                     Psi2.append(np.sin(psi) ** 2)
-                    epsilon2.append((eps2 - eps) / (strain2 - strain))  #
-            plt.plot(Psi2, epsilon2, 'go', label="Data {} kN".format(sorted(data.keys())[1]))
+                    epsilon2.append((eps2 - eps) / (stress2 - stress))  #
+                    epsilon2err.append(abs(eps2 / stress2) * (abs(epserr2 / eps2) +
+                                                                    abs(stresserr2 / stress2)))
+
+            plt.errorbar(Psi2, epsilon2, yerr=epsilon2err, fmt='go', label="Data {} kN".format(sorted(data.keys())[1]))
+            # plt.plot(Psi2, epsilon2, 'go', label="Data {} kN".format(sorted(data.keys())[1]))
 
         except IndexError:
             pass
@@ -2010,8 +1974,8 @@ class FitStrainWithTexture(object):
                 x, y = self.func_text(h, k, l, self.__params, phase, method=method)
             else:
                 x, y = self.func_untext(h, k, l, self.__params, phase, method=method)
-
-        plt.plot(Psi, epsilon, 'bo', label="Data {} kN".format(sorted(data.keys())[0]))
+        plt.errorbar(Psi, epsilon, yerr=epsilonerr, fmt='bo', label="Data {} kN".format(sorted(data.keys())[0]))
+        # plt.plot(Psi, epsilon, 'bo', label="Data {} kN".format(sorted(data.keys())[0]))
 
         if with_fit:
             plt.plot(x, y, 'r-', label="fit {}".format(method))

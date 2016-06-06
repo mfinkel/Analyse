@@ -49,7 +49,7 @@ class Data(object):
         """
         area = (self.sample_diameter * np.power(10., -3.)) ** 2 / 4 * np.pi
         stress = force * np.power(10., 3) / area
-        stress_error = stress * (2 * 0.01 / self.sample_diameter + 0.05)
+        stress_error = np.sqrt(stress * (2 * 0.01 / self.sample_diameter + 0.05))
         return stress, stress_error
 
 
@@ -327,6 +327,7 @@ class SPODIData(Data):
 
         weight = np.sqrt((np.cos(Theta0) / np.sin(Theta) * Theta_0_weight) ** 2 +
                          (np.sin(Theta0) / (np.sin(Theta) ** 2) * np.cos(Theta) * Theta_weight) ** 2)
+
         # e2=(Theta0-Theta)/np.tan(Theta)
         # print 'Epsilon: ',e1, "weight: ", weight, self.Theta_0_weight, Theta_0_weight
         # print "strain: ", e1, weight
