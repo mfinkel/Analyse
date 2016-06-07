@@ -2275,7 +2275,7 @@ class FitGneupelHerold(FitStrainWithTexture):
         # h = int(fit_time / 3600)
         # m = int((fit_time % 3600) / 60)
         # s = int(fit_time % 60)
-        comment = "selfconsistent calculation of sigma tensor and elastic constants"
+        comment = "Gneupel Herold way of fitting"
         # "Using an other definition for the reus model (wreite s(g) =(g_im * g_jn * g_ko * g_lp * c^0_mnop)^-1"  # add some comment here
         # time = "%ih %i min %i sec" % (h, m, s)
         date = kwargs["date_of_fit"]
