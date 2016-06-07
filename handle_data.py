@@ -49,7 +49,9 @@ class Data(object):
         """
         area = (self.sample_diameter * np.power(10., -3.)) ** 2 / 4 * np.pi
         stress = force * np.power(10., 3) / area
-        stress_error = np.sqrt(stress * (2 * 0.01 / self.sample_diameter + 0.05))
+        stress_error = np.sqrt((force * 0.2 / ((self.sample_diameter / 2) ** 2 * np.pi)) ** 2
+                               + (2 * force / ((self.sample_diameter / 2) ** 3 * np.pi) * (
+        self.sample_diameter / 2) * 0.1) ** 2)
         return stress, stress_error
 
 
