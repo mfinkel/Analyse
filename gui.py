@@ -481,6 +481,11 @@ class CentralWidget(QWidget):
         self.do_the_fit_button = QPushButton('fitting Data')
         self.do_the_fit_button.setEnabled(False)
         self.do_the_fit_button.clicked.connect(self.fit_the_data)
+
+        self.do_the_fit_gh_button = QPushButton('fit gh')
+        self.do_the_fit_gh_button.setEnabled(False)
+        self.do_the_fit_gh_button.clicked.connect(self.do_the_fit_gh)
+
         self.material = QLineEdit("iron")
         self.output_filename = QLineEdit("Result_" + str(self.material.text()) + "_" + str(self.modi.currentText()))
         self.material.returnPressed.connect(self.change_outputfile_name)
@@ -531,6 +536,7 @@ class CentralWidget(QWidget):
 
     def plot_pole_figure_thread(self):
         self.do_the_fit_button.setEnabled(False)
+        self.do_the_fit_gh_button.setEnabled(False)
         h = int(str(self.miller_h.text()))
         k = int(str(self.miller_k.text()))
         l = int(str(self.miller_l.text()))
@@ -553,6 +559,7 @@ class CentralWidget(QWidget):
         print (args)
         h, k, l, theta, r, VAL = args[0]
         self.do_the_fit_button.setEnabled(True)
+        self.do_the_fit_gh_button.setEnabled(True)
         fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
         p1 = axs.contourf(theta, r, VAL, 100)
 
@@ -643,11 +650,13 @@ class CentralWidget(QWidget):
         self.data_object.read_data(self.path_of_standad_datafile, phase_name_dict=self.name_of_phase_dic)
 
         self.do_the_fit_button.setEnabled(True)
+        self.do_the_fit_gh_button.setEnabled(True)
         self.insert_startvals_button.setEnabled(True)
         self.plot_polefig_button.setEnabled(True)
         self.plot_data_button.setEnabled(True)
 
         self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material=self.material)
+        self.fit_object_gh = Modells.FitGneupelHerold(data_object=self.data_object, material=self.material)
         self.fit_object.print_params()
 
     def receve_the_pathes_SPODI_case(self, *args):
@@ -694,11 +703,13 @@ class CentralWidget(QWidget):
         else:
             self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region, plot=False)
             self.do_the_fit_button.setEnabled(True)
+            self.do_the_fit_gh_button.setEnabled(True)
             self.insert_startvals_button.setEnabled(True)
             self.plot_polefig_button.setEnabled(True)
             self.plot_data_button.setEnabled(True)
             # self.Data_Iron.fit_all_peaks()
         self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material="iron")
+        self.fit_object_gh = Modells.FitGneupelHerold(data_object=self.data_object, material="iron")
         # self.connect(self, SIGNAL('1'), self.fit_object.set_params_phase_1)
         # self.connect(self, SIGNAL('2'), self.fit_object.set_params_phase_2)
         self.fit_object.print_params()
@@ -723,6 +734,7 @@ class CentralWidget(QWidget):
         # self.Data_Iron.fit_all_peaks()
 
         self.do_the_fit_button.setEnabled(True)
+        self.do_the_fit_gh_button.setEnabled(True)
         self.insert_startvals_button.setEnabled(True)
         self.plot_polefig_button.setEnabled(True)
         self.plot_data_button.setEnabled(True)
@@ -757,8 +769,39 @@ class CentralWidget(QWidget):
         self.emit(SIGNAL('result_of_fit'), (text, result))
         thread.exit()
 
+    def do_the_fit_gh(self):
+        # self.plot_polefig_button.setEnabled(False)
+        Bool = False
+        if self.text_jn.currentText() == "Yes":
+            Bool = True
+        print(self.modi.currentText(), "\n",
+              Bool)
+        print("----------------------------\n",
+              "Fit the data using model: " +
+              self.modi.currentText() +
+              "\n",
+              "With texture: ", self.text_jn.currentText(), "\n",
+              "Fitting phase: ", self.fit_phase_combbox, "\n",
+              "----------------------------")
+
+        # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
+
+        result = self.fit_object_gh.do_the_fitting_gneupel_herold(filename=str(self.output_filename.text()),
+                                                material="iron",
+                                                method=str(self.modi.currentText()),
+                                                phase=int(str(self.fit_phase_combbox.currentText())),
+                                                phase_name=self.name_of_phase_dic[
+                                                    int(str(self.fit_phase_combbox.currentText()))],
+                                                texture=Bool)
+        text = "Finnished calculation\nresults are stored under {}".format(result[1])
+        self.show_result_of_fit(text, result)
+        # self.plot_polefig_button.setEnabled(True)
+
     def show_result_of_fit(self, *args):
-        text, result = args[0]
+        try:
+            text, result = args[0]
+        except ValueError:
+            text, result = args
         print(text)
         mbox = QMessageBox()
         mbox.standardButtons()
@@ -837,6 +880,7 @@ class CentralWidget(QWidget):
         layout_fitting_2.addWidget(self.label('with_fit:'))
         layout_fitting_2.addWidget(self.with_fit_combbox)
         layout_fitting_2.addWidget(self.plot_data_button)
+        layout_fitting_2.addWidget(self.do_the_fit_gh_button)
         layout_fitting_2.addWidget(self.insert_startvals_button)
 
         layout.addLayout(layout_fitting)

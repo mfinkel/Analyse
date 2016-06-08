@@ -1381,7 +1381,7 @@ class FitStrainWithTexture(object):
         nice_result = self.__print_result_nicely(result, fitting_time=dt, date_of_fit=date, method=fit_method)
 
         filename = path + filename
-        filename = self.__save_data(filename, material, phase_name, nice_result)
+        filename = self.save_data(filename, material, phase_name, nice_result)
         # print "over all compliance Matrix:"
         # print self.calc_the_over_all_constant_c_tensor(self.__constant_c_tensor_extended_notation_fitted_phase,
         #                                                fitted_phase=phase)
@@ -1489,7 +1489,7 @@ class FitStrainWithTexture(object):
         nice_result = self.__print_result_nicely(result, fitting_time=dt, date_of_fit=date, method=fit_method)
         Material = material
         filename = path + filename
-        self.__save_data(filename, Material, nice_result)
+        self.save_data(filename, Material, nice_result)
         return result
 
     def __print_result_nicely(self, res, **kwargs):
@@ -1545,7 +1545,7 @@ class FitStrainWithTexture(object):
             return filename
 
     @staticmethod
-    def __uniquify(path, sep=''):
+    def uniquify(path, sep=''):
         def name_sequence():
             count = IT.count()
             yield ''
@@ -1562,10 +1562,10 @@ class FitStrainWithTexture(object):
             tempfile._name_sequence = orig
         return filename
 
-    def __save_data(self, filename, material, phase, data):
+    def save_data(self, filename, material, phase, data):
         filename = u'{0:s}.txt'.format(filename)
         # filename = self.__test_if_file_exists(filename)
-        filename = self.__uniquify(filename)
+        filename = self.uniquify(filename)
         result = open(filename, "w")
         string_to_write = "Material: %s\nFitted phase: %s\n" % (material, phase) + data
         result.write(string_to_write)
@@ -2024,13 +2024,22 @@ class FitStrainWithTexture(object):
         res = 1
         return res
 
-    def plot_data(self, h, k, l, phase, with_fit=False, method='hill', texture=False):
+    def plot_data(self, h, k, l, phase, params = None, with_fit=False, method='hill', texture=False):
         data = []
+        h = int(h)
+        k = int(k)
+        l = int(l)
         if phase == 1:
             data = self.data_object.fitted_data.get_force_dict_phase_1()
 
         if phase == 2:
             data = self.data_object.fitted_data.get_force_dict_phase_2()
+
+        if params is None:
+            params = self.params
+        else:
+            params = params
+        # params.pretty_print()
         Psi = []
         Psi2 = []
         epsilon = []
@@ -2042,9 +2051,10 @@ class FitStrainWithTexture(object):
         i = sorted(data.keys())[0]
         dat = data[i]
         #
-        plt.figure("Material: {}, phase: {}, hkl: {}{}{}".format(self.material, phase, h, k, l))
+        plt.figure("Material: {}, phase: {}, hkl: {}{}{}".format(str(self.material), phase, h, k, l))
         for j in xrange(len(dat[0])):
             phi, psi, hh, kk, ll = dat[0][j]
+            hh, kk, ll = int(hh), int(kk), int(ll)
             eps, epserr, stress, stresserr = 0, 0, 0, 0  # dat[1][j]
             eps2, epserr2, stress2, stresserr2 = dat[1][j]
             if h == hh and k == kk and l == ll:
@@ -2079,9 +2089,9 @@ class FitStrainWithTexture(object):
 
         if with_fit:
             if texture:
-                x, y = self.func_text(h, k, l, self.params, phase, method=method)
+                x, y = self.func_text(h, k, l, params, phase, method=method)
             else:
-                x, y = self.func_untext(h, k, l, self.params, phase, method=method)
+                x, y = self.func_untext(h, k, l, params, phase, method=method)
         plt.errorbar(Psi, epsilon, yerr=epsilonerr, fmt='bo', label="Data {} kN".format(sorted(data.keys())[0]))
         # plt.plot(Psi, epsilon, 'bo', label="Data {} kN".format(sorted(data.keys())[0]))
 
@@ -2089,7 +2099,10 @@ class FitStrainWithTexture(object):
             plt.plot(x, y, 'r-', label="fit {}".format(method))
         plt.xlabel('$\sin^2(\Psi)$')
         plt.ylabel('$\epsilon/\sigma$')
-        plt.legend()
+        try:
+            plt.legend()
+        except IndexError:
+            pass
         plt.xlim([0, 1])
         plt.show()
 
@@ -2178,9 +2191,11 @@ class FitGneupelHerold(FitStrainWithTexture):
             for force in force_dict:  # loop over all forces
                 phi_psi_hkl, eps_strain = force_dict[force]
                 for phi, psi, h, k, l in phi_psi_hkl:
-                    hkl = str(h)+str(k)+str(k)
+                    hkl = str(int(h))+str(int(k))+str(int(l))
                     if hkl not in hkl_list_dict[phase]:
                         hkl_list_dict[phase].append(hkl)
+        print '#######################################################################'
+        print hkl_list_dict
         return hkl_list_dict
 
     def create_hkl_data_dict(self):
@@ -2189,7 +2204,7 @@ class FitGneupelHerold(FitStrainWithTexture):
         for phase in self.data_object.fitted_data.data_dict:
             hkl_data_dict[phase] = {}
             for hkl in self.hkl_list_dict[phase]:
-                hkl_data_dict[phase][hkl] = [[],[],[]]  # [[cos(psi)^2, strain/stress, srain/stress err], ...]
+                hkl_data_dict[phase][hkl] = [[], [], []]  # [[cos(psi)^2, strain/stress, srain/stress err], ...]
         # psi = []
         # val = []
         # valerr = []
@@ -2200,7 +2215,7 @@ class FitGneupelHerold(FitStrainWithTexture):
                 for i in xrange(len(phi_psi_hkl)):
                     phi, psi_, h, k, l = phi_psi_hkl[i]
                     eps, eps_err, stress, stress_err = eps_strain[i]
-                    hkl_ = str(h)+str(k)+str(l)
+                    hkl_ = str(int(h))+str(int(k))+str(int(l))
                     if hkl_ in hkl_data_dict[phase].keys():
                         hkl_data_dict[phase][hkl_][0].append(np.cos(psi_)**2)
                         hkl_data_dict[phase][hkl_][1].append(eps/stress)
@@ -2218,23 +2233,45 @@ class FitGneupelHerold(FitStrainWithTexture):
         hkl_l = []
         for hkl in self.hkl_data_dict[phase]:
             xdata, ydata, yerr = self.hkl_data_dict[phase][hkl]
-            s1, s1err, s2, s2err = fit_object.lin_fit(xdata, ydata, yerr)
-            s1l.append(s1)
-            s1errl.append(s1err)
-            s2l.append(s2)
-            s2errl.append(s2err)
-            hkl_l.append(hkl)
+            print 'hkl: ', hkl
+            try:
+                s1, s1err, s2, s2err = fit_object.lin_fit(xdata, ydata, yerr)
+                s1l.append(s1)
+                s1errl.append(s1err)
+                s2l.append(s2)
+                s2errl.append(s2err)
+                hkl_l.append(hkl)
+                plt.figure("fit s1, s2, hkl: {}, phase: {}".format(hkl, phase))
+                plt.errorbar(xdata, ydata, yerr=yerr, fmt='bo', label="Data")
+                Psi = np.arange(0, np.pi /2, 0.01)
+                Psi = np.cos(Psi)**2
+                params = lm.Parameters()
+                params.add('a', value=s1)
+                params.add('b', value=s2)
+                val = fit_object.residual(params=params, xdata=Psi)
+                plt.plot(Psi, val, 'r-', label="fit, \ns1 = {}\ns2 = {}".format(s1, s2))
 
+                plt.xlabel('$\cos^2(\Psi)$')
+                plt.ylabel('$\epsilon/\sigma$')
+                plt.legend()
+                plt.xlim([0, 1])
+
+            except TypeError:
+                pass
+        plt.show()
         self.Data.set_data(hkl=hkl_l, s1=s1l, s2=s2l, s1_err=s1errl, s2_err=s2errl)
 
     def do_the_fitting_gneupel_herold(self, filename, material, method="reus", path=".\\results\\", texture=False, phase=1,
                        phase_name=""):
+        self.hkl_list_dict = self.create_list_of_all_existiing_hkl()
+        self.create_hkl_data_dict()
         self.fit_all_hkl(phase)
 
         Gamma = []
         hkl = self.Data.data['hkl']
 
         for i in hkl:
+            print "hkl\'s", i
             Gamma.append(Gama(float(i[0]), float(i[1]), float(i[2])))
 
         s1 = self.Data.data['s1']
@@ -2257,12 +2294,34 @@ class FitGneupelHerold(FitStrainWithTexture):
             result = fitting_Reus(Gamma, s1, s2, s1_err, s2_err)
 
         date = tm.localtime()
-
+        for hkl in self.hkl_list_dict[phase]:
+            h, k, l = hkl[0], hkl[1], hkl[2]
+            self.plot_data(h, k, l, phase, params=result.params, with_fit=True)
         nice_result = self.__print_result(result,  date_of_fit=date, method=fit_method)
 
         filename = path + filename
-        filename = self.__save_data(filename, material, phase_name, nice_result)
+        filename = self.save_data(filename, material, phase_name, nice_result)
         return result, filename
+
+    def func_untext(self, h, k, l, params, phase, method='hill'):
+
+        pars = params
+        if method == "hill":
+            s1, s2 = RV(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                        c_44=pars["c_44"].value)
+        if method == "voigt":
+            s1, s2 = Voigt__(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                             c_44=pars["c_44"].value)
+        if method == "eshelby":
+            s1, s2 = BHM_dW(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                            c_44=pars["c_44"].value)
+        if method == "reus":
+            s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                          c_44=pars["c_44"].value)
+        psi = np.arange(0, np.pi / 2, 0.01)
+        print "s1 ", s1, "s2 ", s2
+        eps = s1 + s2 - s2 * (np.sin(psi) ** 2)
+        return np.sin(psi) ** 2, eps
 
     def __print_result(self, res, **kwargs):
         """
@@ -2281,10 +2340,10 @@ class FitGneupelHerold(FitStrainWithTexture):
         date = kwargs["date_of_fit"]
         da = tm.strftime("%d.%m.%Y, %H:%M", date)
         pars = lm.fit_report(res.params)
-        sym_matrix = self.symmetry_phase_1 + " " + self.__odf_phase_1.crystal_symmetry
+        sym_matrix = self.symmetry_phase_1 #+ " " + self.__odf_phase_1.crystal_symmetry
         sym_inclusion = "None"
         if self.phase_flag:
-            sym_inclusion = self.symmetry_phase_2 + " " + self.__odf_phase_2.crystal_symmetry
+            sym_inclusion = self.symmetry_phase_2 #+ " " + self.__odf_phase_2.crystal_symmetry
         out = \
             "\nMethod:         %s\
            \nSymmetry:       %s\
@@ -2320,19 +2379,28 @@ class LinFit(object):
         a = params['a'].value
         b = params['b'].value
 
-        model = a + b * xdata
-
+        model = a + b * np.array(xdata)
+        model = model
+        # print 'Model: ', model
+        # print 'yData: ', ydata
+        # print 'weight: ', weight
         if ydata is None :
             return model
         if weight is None:
+            ydata = np.array(ydata)
             return model - ydata
+        ydata = np.array(ydata)
+        weight = np.array(weight)
         return (model - ydata) / weight
 
     def lin_fit(self, xdata, ydata = None, yerr=None):
         self.xdata = xdata
         self.ydata = ydata
         self.ydataerr = yerr
-        a0, b0 = self.__start_vals(self.xdata, self.ydata)
+        try:
+            a0, b0 = self.__start_vals(self.xdata, self.ydata)
+        except IndexError:
+            return None
         params = lm.Parameters()
         params.add('a', value=a0)
         params.add('b', value=b0)
@@ -2346,6 +2414,7 @@ class LinFit(object):
         return a, aerr, b, berr
 
     def __start_vals(self, x, y):
+        print x, y
         return y[0], (y[-1]-y[0])/(x[-1]-x[0])
 
 
