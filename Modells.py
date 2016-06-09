@@ -2296,7 +2296,8 @@ class FitGneupelHerold(FitStrainWithTexture):
         date = tm.localtime()
         for hkl in self.hkl_list_dict[phase]:
             h, k, l = hkl[0], hkl[1], hkl[2]
-            self.plot_data(h, k, l, phase, params=result.params, with_fit=True)
+            self.plot_data(h, k, l, phase, params=result.params, with_fit=True, method=method)
+        self.plot_data_gamma(Gamma, phase, s1, s1_err, s2, s2_err, params=result.params, method=method)
         nice_result = self.__print_result(result,  date_of_fit=date, method=fit_method)
 
         filename = path + filename
@@ -2322,6 +2323,55 @@ class FitGneupelHerold(FitStrainWithTexture):
         print "s1 ", s1, "s2 ", s2
         eps = s1 + s2 - s2 * (np.sin(psi) ** 2)
         return np.sin(psi) ** 2, eps
+
+    def func_untext_gamma(self, Gamma, params, phase, method='hill'):
+
+        pars = params
+        s1l = []
+        s2l = []
+        for G in Gamma:
+            if method == "hill":
+                s1, s2 = RV(Gamma=G, c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                            c_44=pars["c_44"].value)
+            if method == "voigt":
+                s1, s2 = Voigt__(Gamma=G, c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                                 c_44=pars["c_44"].value)
+            if method == "eshelby":
+                s1, s2 = BHM_dW(Gamma=G, c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                                c_44=pars["c_44"].value)
+            if method == "reus":
+                s1, s2 = Reus(Gamma=G, c_11=pars["c_11"].value, c_12=pars["c_12"].value,
+                              c_44=pars["c_44"].value)
+            s1l.append(s1)
+            s2l.append(s2)
+
+        return s1l, s2l
+
+    def plot_data_gamma(self, Gamma, phase, s1, s1err, s2, s2err, params=None, method='hill'):
+
+
+        if params is None:
+            params = self.params
+        else:
+            params = params
+
+        plt.figure("Material: {}, phase: {}, method: ".format(str(self.material), phase, method))
+        plt.errorbar(Gamma, s1, yerr=s1err, fmt='go', label="s1")
+
+        plt.errorbar(Gamma, s2, yerr=s2err, fmt='bo', label="s2")
+        # plt.plot(Psi, epsilon, 'bo', label="Data {} kN".format(sorted(data.keys())[0]))
+
+        s1_fit, s2_fit = self.func_untext_gamma(Gamma, params, phase, method)
+        plt.plot(Gamma, s1_fit, 'r-', label="fit s1")
+        plt.plot(Gamma, s2_fit, 'r-', label="fit s2")
+        plt.xlabel('$\Gamma$')
+        plt.ylabel('$s_1, 1/2s_2$')
+        try:
+            plt.legend()
+        except IndexError:
+            pass
+        # plt.xlim([0, 1])
+        plt.show()
 
     def __print_result(self, res, **kwargs):
         """
