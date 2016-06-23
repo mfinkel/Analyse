@@ -2389,6 +2389,7 @@ class FitGneupelHerold(FitStrainWithTexture):
         # time = "%ih %i min %i sec" % (h, m, s)
         date = kwargs["date_of_fit"]
         da = tm.strftime("%d.%m.%Y, %H:%M", date)
+
         pars = lm.fit_report(res.params)
         sym_matrix = self.symmetry_phase_1 #+ " " + self.__odf_phase_1.crystal_symmetry
         sym_inclusion = "None"
@@ -3117,7 +3118,13 @@ class ODF(object):
         # ----------
         # the plot
         # ----------
-        r, theta = np.meshgrid(PSI, PHI)
+        PSI_neu=[]
+        for i in PSI:  # stereographic LAMBERT projection
+            x = np.sin(i)/(np.cos(i)+1)
+            print x
+            PSI_neu.append(x)
+        PSI_neu = np.array(PSI_neu)
+        r, theta = np.meshgrid(PSI_neu, PHI)
 
         # fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
         # p1 = axs.contourf(theta, np.degrees(r), VAL, 100)
@@ -3126,7 +3133,7 @@ class ODF(object):
         # axs.set_title("pole figure {}{}{}\n".format(h, k, l))
         #
         # plt.show()
-        return theta, np.degrees(r), VAL
+        return theta, r, VAL  # np.degrees(r)
 
     def integrate(self, A, phi, psi, h, k, l, *args):
         # performe the integration around q//h
@@ -3183,6 +3190,7 @@ class ODF(object):
         res = 0
         # hkls = self.calc_al_symetrical_identical_hkl(h, k, l)
         # for h, k, l in hkls:
+
         for i in range(0, 360, step):
             r = deg_to_rad(i)
             phi1, phi, phi2 = self.calc_eulerangles(r % (2 * np.pi), h, k, l)
@@ -3194,6 +3202,7 @@ class ODF(object):
             # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2
 
         return res / (2 * np.pi)
+
 
     def calc_al_symetrical_identical_hkl(self, h, k, l):
         """
@@ -3224,6 +3233,7 @@ class ODF(object):
             if j not in result:
                 result.append(j)
         return result
+
 
     def integrate_interpol(self, phi, psi, h, k, l, *args):
         """

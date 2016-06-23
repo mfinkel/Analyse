@@ -561,11 +561,14 @@ class CentralWidget(QWidget):
         self.do_the_fit_button.setEnabled(True)
         self.do_the_fit_gh_button.setEnabled(True)
         fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
+        print(r)
         p1 = axs.contourf(theta, r, VAL, 100)
+        axs.grid(True)
 
         cbar = plt.colorbar(p1, ax=axs)
         axs.set_title("pole figure {}{}{}\n".format(h, k, l))
-
+        axs.set_theta_zero_location("S")
+        # axs.set_theta_offset(pi)
 
         plt.show()
 
