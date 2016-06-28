@@ -407,7 +407,7 @@ class SPODIData(Data):
     def psii(self, chi_of_scatteringvector, theta, theta_o, chi, omega):
         '''polar angle of q in the Specimen frame'''
         r = 1.
-        # psi = np.arccos(self.LQ()[2] / r)
+        # psi = np.arccos(self.LQ(chi_of_scatteringvector, theta, theta_o, chi, omega)[2] / r)
         psi = np.arccos(np.dot(self.z_P_in_lab_frame(chi, omega), self.q(chi_of_scatteringvector, theta, theta_o)))
         return float(psi)
 
@@ -590,8 +590,8 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     data = SPODIData(6)
-    theta = -45
-    omega = theta
+    theta = 40
+    omega = 45
     CHI = [0, 15, 30, 45, 60, 75, 90]
     PHI = []
     PSI = []
@@ -611,8 +611,8 @@ if __name__ == "__main__":
         PHI.append(phi)
         PSI.append(psi)
         Q = data.q(chi_of_scatteringvector=90,
-                   theta=135,
-                   theta_o=135)
+                   theta=theta,
+                   theta_o=theta)
         title = "omega: {}, chi: {}, phi: {}, psi: {}".format(omega, chi, phi, psi)
 
         res = data.transformation_L_from_I_to_P(chi=chi, omega=omega)
