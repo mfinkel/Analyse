@@ -339,10 +339,10 @@ class SPODIData(Data):
     def transformation_L_from_I_to_P(chi, omega):
         """
            define transformation from lab.frame I to specimen frame P
-           acording to Graesslin
+           according to Graesslin
         """
-        chi = deg_to_rad(chi)
-        omega = -deg_to_rad(omega)
+        chi = -deg_to_rad(chi)
+        omega = deg_to_rad(omega)
         phi = 0
 
         # rot around z_L'
@@ -363,7 +363,7 @@ class SPODIData(Data):
                       [0., 0., 1.]
                       ]
                      )
-        res = W.dot(X.dot(O))
+        res = O.dot(X.dot(W))
         # res = O.dot(X.dot(W))
         # L_1 = np.dot(res, np.array([[1], [0], [0]]))
         # L_2 = np.dot(res, np.array([[0], [1], [0]]))
@@ -384,7 +384,7 @@ class SPODIData(Data):
         # x = np.sin(chi) * np.cos(omega)
         # y = np.sin(chi) * np.sin(omega)
         # z = np.cos(chi)
-        return np.dot(self.transformation_L_from_I_to_P(chi, omega), np.array([[0], [0], [1]])).transpose()
+        return np.dot(self.transformation_L_from_I_to_P(chi, omega).transpose(), np.array([[0], [0], [1]])).transpose()
 
     @staticmethod
     def q(chi_of_scatteringvector, theta, theta_o):
@@ -394,12 +394,11 @@ class SPODIData(Data):
         q = np.array([[np.sin(chi_) * np.cos(Theta)],
                       [np.sin(chi_) * np.sin(Theta)],
                       [np.cos(chi_)]])
-        # q=np.array([[-1/np.sqrt(2)], [-1/np.sqrt(2)], [0]])
         return q
 
     def LQ(self, chi_of_scatteringvector, theta, theta_o, chi, omega):
         '''q in specimen frame'''
-        L = self.transformation_L_from_I_to_P(chi, omega).transpose()
+        L = self.transformation_L_from_I_to_P(chi, omega)
         # Q = np.array(self.q())
         # print Q
         return L.dot(self.q(chi_of_scatteringvector, theta, theta_o))
@@ -407,8 +406,8 @@ class SPODIData(Data):
     def psii(self, chi_of_scatteringvector, theta, theta_o, chi, omega):
         '''polar angle of q in the Specimen frame'''
         r = 1.
-        # psi = np.arccos(self.LQ(chi_of_scatteringvector, theta, theta_o, chi, omega)[2] / r)
-        psi = np.arccos(np.dot(self.z_P_in_lab_frame(chi, omega), self.q(chi_of_scatteringvector, theta, theta_o)))
+        psi = np.arccos(self.LQ(chi_of_scatteringvector, theta, theta_o, chi, omega)[2] / r)
+        # psi = np.arccos(np.dot(self.z_P_in_lab_frame(chi, omega), self.q(chi_of_scatteringvector, theta, theta_o)))
         return float(psi)
 
     def PHII(self, chi_of_scatteringvector, theta, theta_o, chi, omega):
@@ -615,7 +614,7 @@ if __name__ == "__main__":
                    theta_o=theta)
         title = "omega: {}, chi: {}, phi: {}, psi: {}".format(omega, chi, phi, psi)
 
-        res = data.transformation_L_from_I_to_P(chi=chi, omega=omega)
+        res = data.transformation_L_from_I_to_P(chi=chi, omega=omega).transpose()
 
         L_1 = np.dot(res, np.array([[1], [0], [0]]))
         L_2 = np.dot(res, np.array([[0], [1], [0]]))
