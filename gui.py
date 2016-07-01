@@ -658,8 +658,8 @@ class CentralWidget(QWidget):
         self.plot_polefig_button.setEnabled(True)
         self.plot_data_button.setEnabled(True)
 
-        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material=self.material)
-        self.fit_object_gh = Modells.FitGneupelHerold(data_object=self.data_object, material=self.material)
+        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material=self.material.text())
+        self.fit_object_gh = Modells.FitGneupelHerold(data_object=self.data_object, material=self.material.text())
         self.fit_object.print_params()
 
     def receve_the_pathes_SPODI_case(self, *args):

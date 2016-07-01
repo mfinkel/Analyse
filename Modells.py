@@ -2325,10 +2325,18 @@ class FitGneupelHerold(FitStrainWithTexture):
         return np.sin(psi) ** 2, eps
 
     def func_untext_gamma(self, Gamma, params, phase, method='hill'):
-
+        """
+        CREATES lists of s1 and s2 for the given Gamma
+        :param Gamma:
+        :param params:
+        :param phase:
+        :param method:
+        :return:
+        """
         pars = params
         s1l = []
         s2l = []
+        Gamma = Gamma
         for G in Gamma:
             if method == "hill":
                 s1, s2 = RV(Gamma=G, c_11=pars["c_11"].value, c_12=pars["c_12"].value,
@@ -2342,6 +2350,7 @@ class FitGneupelHerold(FitStrainWithTexture):
             if method == "reus":
                 s1, s2 = Reus(Gamma=G, c_11=pars["c_11"].value, c_12=pars["c_12"].value,
                               c_44=pars["c_44"].value)
+            # print "Gamma: ", G, "s1: ", s1, "s2: ", s2
             s1l.append(s1)
             s2l.append(s2)
 
@@ -2355,15 +2364,15 @@ class FitGneupelHerold(FitStrainWithTexture):
         else:
             params = params
 
-        plt.figure("Material: {}, phase: {}, method: ".format(str(self.material), phase, method))
+        plt.figure("Material: {}, phase: {}, method: ".format(str(self.material), str(phase), method))
         plt.errorbar(Gamma, s1, yerr=s1err, fmt='go', label="s1")
 
         plt.errorbar(Gamma, s2, yerr=s2err, fmt='bo', label="s2")
         # plt.plot(Psi, epsilon, 'bo', label="Data {} kN".format(sorted(data.keys())[0]))
-
-        s1_fit, s2_fit = self.func_untext_gamma(Gamma, params, phase, method)
-        plt.plot(Gamma, s1_fit, 'r-', label="fit s1")
-        plt.plot(Gamma, s2_fit, 'r-', label="fit s2")
+        GGG = np.arange(0, 0.35, 0.35 / 20)
+        s1_fit, s2_fit = self.func_untext_gamma(GGG, params, phase, method)
+        plt.plot(GGG, s1_fit, 'r-', label="fit s1")
+        plt.plot(GGG, s2_fit, 'r-', label="fit s2")
         plt.xlabel('$\Gamma$')
         plt.ylabel('$s_1, 1/2s_2$')
         try:
@@ -2371,6 +2380,9 @@ class FitGneupelHerold(FitStrainWithTexture):
         except IndexError:
             pass
         # plt.xlim([0, 1])
+        filename = "Material_{}_phase_{}_method_{}".format(str(self.material), str(phase), method)
+        print filename
+        plt.savefig(filename+".svg", format="svg")
         plt.show()
 
     def __print_result(self, res, **kwargs):
