@@ -797,15 +797,48 @@ class CentralWidget(QWidget):
                                                     int(str(self.fit_phase_combbox.currentText()))],
                                                 texture=Bool)
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
-        self.show_result_of_fit(text, result)
+        plot_dic = result[2]
+        self.show_result_of_fit(text, result, plot_dic)
         # self.plot_polefig_button.setEnabled(True)
+
+    def cos2psi_plot(self, plots_dic):
+        for figname, data in plots_dic.iteritems():
+            xdata, ydata, yerr = data[0]
+            Psi, val, s1, s2 = data[1]
+            plt.figure(figname)
+            plt.errorbar(xdata, ydata, yerr=yerr, fmt='bo', label="Data")
+            plots_dic[figname].append([xdata, ydata, yerr])
+
+
+
+            plt.plot(Psi, val, 'r-', label="fit, \ns1 = {}\ns2 = {}".format(s1, s2))
+
+            plt.xlabel('$\cos^2(\Psi)$')
+            plt.ylabel('$\epsilon/\sigma$')
+            plt.legend()
+            plt.xlim([0, 1])
+            print ("savefig, ", figname, ".svg")
+            plt.savefig(".\\sin2psi-plots\\"+figname+".svg", format="svg")
+            plt.savefig(".\\sin2psi-plots\\"+figname+".pdf", format="pdf")
+            plt.savefig(".\\sin2psi-plots\\"+figname+".png", format="png")
+        plt.show()
 
     def show_result_of_fit(self, *args):
         try:
-            text, result = args[0]
+            try:
+                text, result = args[0]
+            except ValueError:
+                print (len(args))
+                text, result = args
+
         except ValueError:
-            text, result = args
-        print(text)
+            try:
+                text, result, plots_dic = args[0]
+            except ValueError:
+                print (len(args))
+                text, result, plots_dic = args
+            print(text)
+            self.cos2psi_plot(plots_dic=plots_dic)
         mbox = QMessageBox()
         mbox.standardButtons()
         mbox.setIcon(QMessageBox.Information)

@@ -2051,7 +2051,8 @@ class FitStrainWithTexture(object):
         i = sorted(data.keys())[0]
         dat = data[i]
         #
-        plt.figure("Material: {}, phase: {}, hkl: {}{}{}".format(str(self.material), phase, h, k, l))
+        name = "sin2psi_mat-{}_ph-{}_hkl-{}{}{}".format(self.material, phase, h, k, l)
+        plt.figure(name)
         for j in xrange(len(dat[0])):
             phi, psi, hh, kk, ll = dat[0][j]
             hh, kk, ll = int(hh), int(kk), int(ll)
@@ -2104,6 +2105,10 @@ class FitStrainWithTexture(object):
         except IndexError:
             pass
         plt.xlim([0, 1])
+        print name
+        # plt.savefig(name, "svg")
+        # plt.savefig(".\\sin2psi-plots\\{}.png".format(name), "png")
+        # plt.savefig(".\\sin2psi-plots\\{}.pdf".format(name), "pdf")
         plt.show()
 
     def func_untext(self, h, k, l, params, phase, method='hill'):
@@ -2231,6 +2236,7 @@ class FitGneupelHerold(FitStrainWithTexture):
         s2l = []
         s2errl = []
         hkl_l = []
+        plots_dic = {}  # key = figname, val = [[xdata, ydata, yerr],[psi, val, s1, s2]]
         for hkl in self.hkl_data_dict[phase]:
             xdata, ydata, yerr = self.hkl_data_dict[phase][hkl]
             print 'hkl: ', hkl
@@ -2241,31 +2247,43 @@ class FitGneupelHerold(FitStrainWithTexture):
                 s2l.append(s2)
                 s2errl.append(s2err)
                 hkl_l.append(hkl)
-                plt.figure("fit s1, s2, hkl: {}, phase: {}".format(hkl, phase))
-                plt.errorbar(xdata, ydata, yerr=yerr, fmt='bo', label="Data")
+                name = "fit_s1_s2_hkl_{}_phase_{}".format(hkl, phase)
+                plots_dic[name] = []
+                # plt.figure(name)
+                # plt.errorbar(xdata, ydata, yerr=yerr, fmt='bo', label="Data")
+                plots_dic[name].append([xdata, ydata, yerr])
                 Psi = np.arange(0, np.pi /2, 0.01)
                 Psi = np.cos(Psi)**2
                 params = lm.Parameters()
                 params.add('a', value=s1)
                 params.add('b', value=s2)
                 val = fit_object.residual(params=params, xdata=Psi)
-                plt.plot(Psi, val, 'r-', label="fit, \ns1 = {}\ns2 = {}".format(s1, s2))
 
-                plt.xlabel('$\cos^2(\Psi)$')
-                plt.ylabel('$\epsilon/\sigma$')
-                plt.legend()
-                plt.xlim([0, 1])
+
+                plots_dic[name].append([Psi, val, s1, s2])
+                # plt.plot(Psi, val, 'r-', label="fit, \ns1 = {}\ns2 = {}".format(s1, s2))
+                #
+                # plt.xlabel('$\cos^2(\Psi)$')
+                # plt.ylabel('$\epsilon/\sigma$')
+                # plt.legend()
+                # plt.xlim([0, 1])
+
+
 
             except TypeError:
                 pass
-        plt.show()
+
+            # print "savefig, ", name, ".svg"
+            # plt.savefig(name+".svg", "svg")
+        # plt.show()
         self.Data.set_data(hkl=hkl_l, s1=s1l, s2=s2l, s1_err=s1errl, s2_err=s2errl)
+        return plots_dic
 
     def do_the_fitting_gneupel_herold(self, filename, material, method="reus", path=".\\results\\", texture=False, phase=1,
                        phase_name=""):
         self.hkl_list_dict = self.create_list_of_all_existiing_hkl()
         self.create_hkl_data_dict()
-        self.fit_all_hkl(phase)
+        plots_dic = self.fit_all_hkl(phase)
 
         Gamma = []
         hkl = self.Data.data['hkl']
@@ -2296,13 +2314,13 @@ class FitGneupelHerold(FitStrainWithTexture):
         date = tm.localtime()
         for hkl in self.hkl_list_dict[phase]:
             h, k, l = hkl[0], hkl[1], hkl[2]
-            self.plot_data(h, k, l, phase, params=result.params, with_fit=True, method=method)
-        self.plot_data_gamma(Gamma, phase, s1, s1_err, s2, s2_err, params=result.params, method=method)
+            # self.plot_data(h, k, l, phase, params=result.params, with_fit=True, method=method)
+        # self.plot_data_gamma(Gamma, phase, s1, s1_err, s2, s2_err, params=result.params, method=method)
         nice_result = self.__print_result(result,  date_of_fit=date, method=fit_method)
 
         filename = path + filename
         filename = self.save_data(filename, material, phase_name, nice_result)
-        return result, filename
+        return result, filename, plots_dic
 
     def func_untext(self, h, k, l, params, phase, method='hill'):
 
@@ -2443,11 +2461,7 @@ class LinFit(object):
         b = params['b'].value
 
         model = a + b * np.array(xdata)
-        model = model
-        # print 'Model: ', model
-        # print 'yData: ', ydata
-        # print 'weight: ', weight
-        if ydata is None :
+        if ydata is None:
             return model
         if weight is None:
             ydata = np.array(ydata)
