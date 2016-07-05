@@ -2215,17 +2215,43 @@ class FitGneupelHerold(FitStrainWithTexture):
         # valerr = []
         for phase in self.data_object.fitted_data.data_dict:
             force_dict = self.data_object.fitted_data.data_dict[phase]
-            for force in force_dict:
-                phi_psi_hkl, eps_strain = force_dict[force]
-                for i in xrange(len(phi_psi_hkl)):
-                    phi, psi_, h, k, l = phi_psi_hkl[i]
-                    eps, eps_err, stress, stress_err = eps_strain[i]
-                    hkl_ = str(int(h))+str(int(k))+str(int(l))
-                    if hkl_ in hkl_data_dict[phase].keys():
-                        hkl_data_dict[phase][hkl_][0].append(np.cos(psi_)**2)
-                        hkl_data_dict[phase][hkl_][1].append(eps/stress)
-                        err = self.calc_error_of_strain_over_stress(eps, stress, eps_err, stress_err)
-                        hkl_data_dict[phase][hkl_][2].append(err)
+            force_keys = sorted(force_dict.keys())
+            # for i in force_keys:
+            print "Forces", force_keys
+            try:
+                if len(force_keys)<2:
+                    force_2 = force_keys[0]
+                    phi_psi_hkl_2, eps_strain_2 = force_dict[force_2]
+                    phi_psi_hkl_1 = phi_psi_hkl_2
+                    eps_strain_1 = []
+                    for m in xrange(len(eps_strain_2)):
+                        eps_strain_1.append([0, 0, 0, 0])
+                else:
+                    force_1 = force_keys[0]
+                    force_2 = force_keys[1]
+                    phi_psi_hkl_1, eps_strain_1 = force_dict[force_1]
+                    phi_psi_hkl_2, eps_strain_2 = force_dict[force_2]
+                for i in xrange(len(phi_psi_hkl_1)):
+                    phi, psi_, h, k, l = phi_psi_hkl_1[i]
+                    for j in xrange(len(phi_psi_hkl_2)):
+                        phi_2, psi__2, h_2, k_2, l_2 = phi_psi_hkl_2[j]
+                        if phi == phi_2 and psi_ == psi__2 and h == h_2 and k == k_2 and l == l_2:
+                            eps_1, eps_err_1, stress_1, stress_err_1 = eps_strain_1[i]
+                            eps_2, eps_err_2, stress_2, stress_err_2 = eps_strain_2[j]
+                            hkl_ = str(int(h)) + str(int(k)) + str(int(l))
+                            print phi, phi_2, psi_, psi__2, hkl_
+                            if hkl_ in hkl_data_dict[phase].keys():
+                                hkl_data_dict[phase][hkl_][0].append(np.cos(psi_) ** 2)
+                                hkl_data_dict[phase][hkl_][1].append((eps_2 - eps_1) / (stress_2 - stress_1))
+                                if len(force_keys) < 2:
+                                    err_1 = 0
+                                else:
+                                    err_1 = self.calc_error_of_strain_over_stress(eps_1, stress_1, eps_err_1, stress_err_1)
+                                err_2 = self.calc_error_of_strain_over_stress(eps_2, stress_2, eps_err_2, stress_err_2)
+                                err = (err_1+err_2)
+                                hkl_data_dict[phase][hkl_][2].append(err)
+            except IndexError:
+                pass
 
         self.hkl_data_dict = hkl_data_dict
 
