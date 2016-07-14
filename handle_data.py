@@ -47,11 +47,13 @@ class Data(object):
         :param force: applied force in kN
         :return: stress
         """
-        area = (self.sample_diameter * np.power(10., -3.)) ** 2 / 4 * np.pi
-        stress = force * np.power(10., 3) / area
-        stress_error = np.sqrt((force * 0.2 / ((self.sample_diameter / 2) ** 2 * np.pi)) ** 2
+        sample_diameter = float(self.sample_diameter) * np.power(10., -3.)
+        area = (sample_diameter) ** 2 / 4 * np.pi
+        force = force * np.power(10., 3)
+        stress = force / area
+        stress_error = np.sqrt((force * 0.1 / ((self.sample_diameter / 2) ** 2 * np.pi)) ** 2
                                + (2 * force / ((self.sample_diameter / 2) ** 3 * np.pi) * (
-        self.sample_diameter / 2) * 0.1) ** 2)
+                                self.sample_diameter / 2) * 0.05) ** 2)
         return stress, stress_error
 
 
