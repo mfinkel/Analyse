@@ -10,6 +10,7 @@ from matplotlib.backend_bases import key_press_handler
 from matplotlib.backends.backend_qt4agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar)
+import matplotlib as mpl
 from matplotlib.backends import qt4_compat
 import matplotlibwidget
 
@@ -562,10 +563,13 @@ class CentralWidget(QWidget):
         self.do_the_fit_gh_button.setEnabled(True)
         fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
         print(r)
-        p1 = axs.contourf(theta, r, VAL, 100)
+
+        v = np.linspace(0.7, 1.8, 23, endpoint=True)
+        p1 = axs.contourf(theta, r, VAL, v,  vmin=0.7, vmax=1.8)  # 100,
         axs.grid(True)
 
-        cbar = plt.colorbar(p1, ax=axs)
+        cbar = plt.colorbar(p1, ax=axs, ticks=v)  # norm=mpl.colors.Normalize(vmin=0.7, vmax=1.8))
+        cbar.set_clim(0.7, 1.8)
         axs.set_title("pole figure {}{}{}\n".format(h, k, l))
         axs.set_theta_zero_location("S")
         # axs.set_theta_offset(pi)
