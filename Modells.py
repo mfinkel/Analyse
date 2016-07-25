@@ -1115,6 +1115,8 @@ class FitStrainWithTexture(object):
 
         for n in xrange(len(applied_forces)):  # Loop over all forces
             xvals_fit = xvals_fitted[n]
+            st_st_1 = strain_stress_data_fitted[n]
+            st_st_2 = strain_stress_data_fitted[n+1]
             # print xvals_mat
             # print "applied_force: ", applied_forces
             # xvals_inc = xvals_inclusion[n]
@@ -2219,7 +2221,7 @@ class FitGneupelHerold(FitStrainWithTexture):
             # for i in force_keys:
             print "Forces", force_keys
             try:
-                if len(force_keys)<2:
+                if len(force_keys) < 2:
                     force_2 = force_keys[0]
                     phi_psi_hkl_2, eps_strain_2 = force_dict[force_2]
                     phi_psi_hkl_1 = phi_psi_hkl_2
