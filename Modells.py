@@ -1114,15 +1114,19 @@ class FitStrainWithTexture(object):
         theory_fix = []
 
         for n in xrange(len(applied_forces)):  # Loop over all forces
-            xvals_fit = xvals_fitted[n]
+            xvals_fit1 = xvals_fitted[n]
+            xvals_fit2 = xvals_fitted[n + 1]
             st_st_1 = strain_stress_data_fitted[n]
-            st_st_2 = strain_stress_data_fitted[n+1]
+            st_st_2 = strain_stress_data_fitted[n + 1]
             # print xvals_mat
             # print "applied_force: ", applied_forces
             # xvals_inc = xvals_inclusion[n]
             # print len(xvals_mat)
-            for m in xrange(len(xvals_fit)):
-                phi, psi, h, k, l = xvals_fit[m]
+            for m in xrange(len(xvals_fit1)):
+                phi1, psi1, h1, k1, l1 = xvals_fit1[m]
+                mach_token = -1
+                for a in xrange(len(xvals_fit2)):
+
                 # print "phi: ", phi
                 strain_fit, strain_fit_err, stress_fit, stress_fit_err = strain_stress_data_fitted[n][m]
                 data_fit.append(strain_fit / stress_fit)
