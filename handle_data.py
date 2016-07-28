@@ -75,7 +75,7 @@ class SPODIData(Data):
             list_of_dirs = [list_of_dirs]
 
         for i in list_of_dirs:
-            data_files = i + "*.eth"
+            data_files = i + "*.dat"
             print data_files
             data_files = glob(str(data_files))
             data_files.sort()
@@ -98,6 +98,8 @@ class SPODIData(Data):
         Parameters = [Force, Omega, Chi]
         :param filename:
         '''
+        filename = os.path.normpath(str(filename))
+        path, filename = os.path.split(filename)
         name_split = re.split('_', filename)
         force = name_split[1][0:-2]
         force = float(force)
@@ -436,6 +438,7 @@ class SPODIData(Data):
         return float(phi)
 
     def get_sum_data(self):
+        print "hallo", self.data_dic_raw
         omega1 = self.data_dic_raw[0][0][1]
         print "omega", omega1
         sum_intens = np.zeros((len(self.data_dic_raw[0][0][4])))
