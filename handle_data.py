@@ -127,10 +127,13 @@ class SPODIData(Data):
         err = []
         for i in xrange(1, len(lines)):  #
             line = lines[i].strip()  # removes withspaces at the frond and the end
-            l = re.split(r'\s*', line)
-            TTheta.append(float(l[0]))
-            Intens.append(float(l[1]))
-            err.append(float(l[2]))
+            if "#"in line:
+                pass
+            else:
+                l = re.split(r'\s*', line)
+                TTheta.append(float(l[0]))
+                Intens.append(float(l[1]))
+                err.append(float(l[2]))
         data.close()
         return [TTheta, Intens, err]
 

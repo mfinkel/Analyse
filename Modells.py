@@ -2237,7 +2237,7 @@ class FitGneupelHerold(FitStrainWithTexture):
                     phi, psi_, h, k, l = phi_psi_hkl_1[i]
                     for j in xrange(len(phi_psi_hkl_2)):
                         phi_2, psi__2, h_2, k_2, l_2 = phi_psi_hkl_2[j]
-                        if phi == phi_2 and psi_ == psi__2 and h == h_2 and k == k_2 and l == l_2:
+                        if abs(phi - phi_2)<0.001 and abs(psi_ - psi__2)<0.001 and h == h_2 and k == k_2 and l == l_2:
                             eps_1, eps_err_1, stress_1, stress_err_1 = eps_strain_1[i]
                             eps_2, eps_err_2, stress_2, stress_err_2 = eps_strain_2[j]
                             hkl_ = str(int(h)) + str(int(k)) + str(int(l))
