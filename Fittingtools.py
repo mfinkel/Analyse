@@ -124,7 +124,7 @@ def gauss_lin_fitting(x_list, av_count_l, plot=False):
     # print 'Theta: ',p_final[1], ' ', res[0]
     return res
 
-def gauss_lin_fitting_2(x_list, av_count_l, weights=None, plot=False):
+def gauss_lin_fitting_2(x_list, av_count_l, weights=None, plot=False, dataset=False, force=False, Chi=False):
     """
     fitting one peak with a psoido voigt function
     :param x_list:
@@ -147,9 +147,10 @@ def gauss_lin_fitting_2(x_list, av_count_l, weights=None, plot=False):
         res = [out.params["center"].value, out.params["center"].stderr] # p_final[2]
     # print "hallo", res
     if plot:
+        plt.figure("Dataset: {}, Chi: {}, force: {}".format(dataset, Chi, force))
         plt.plot(x_list, av_count_l, "bo")
         plt.plot(x_list, out.init_fit, "k--")
-        plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f" % (res[0], res[1]))
+        plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f" % (float(res[0]), float(res[1])))
         plt.legend(loc='upper right', numpoints=1)
         plt.show()
     # print (out.fit_report(min_correl=0.75))

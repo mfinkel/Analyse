@@ -53,7 +53,7 @@ class Data(object):
         stress = force / area
         stress_error = np.sqrt((force * 0.02 / ((self.sample_diameter / 2) ** 2 * np.pi)) ** 2
                                + (2 * force / ((self.sample_diameter / 2) ** 3 * np.pi) * (
-                                self.sample_diameter / 2) * 0.05) ** 2)
+            self.sample_diameter / 2) * 0.05) ** 2)
         return stress, stress_error
 
 
@@ -127,7 +127,7 @@ class SPODIData(Data):
         err = []
         for i in xrange(1, len(lines)):  #
             line = lines[i].strip()  # removes withspaces at the frond and the end
-            if "#"in line:
+            if "#" in line:
                 pass
             else:
                 l = re.split(r'\s*', line)
@@ -138,7 +138,8 @@ class SPODIData(Data):
         return [TTheta, Intens, err]
 
     @staticmethod
-    def fit_the_peaks_for_on_diffraction_pattern(data, peak_regions, plot=False):
+    def fit_the_peaks_for_on_diffraction_pattern(data, peak_regions, plot=False, datanumber=False, force=False,
+                                                 Chi=False):
         """
         fitting the individual peaks of each diffraction pattern
         :param plot: plot each fit.
@@ -158,7 +159,8 @@ class SPODIData(Data):
             dax = data[0][x:y]
             day = data[1][x:y]
             day_err = data[2][x:y]
-            gauss = Fittingtools.gauss_lin_fitting_2(dax, day, day_err, plot=plot)
+            gauss = Fittingtools.gauss_lin_fitting_2(dax, day, day_err, plot=plot, dataset=datanumber, force=force,
+                                                     Chi=Chi)
             hkl_2_theta[j][3] = gauss[0]
             hkl_2_theta[j][4] = gauss[1]
         return hkl_2_theta
@@ -176,13 +178,17 @@ class SPODIData(Data):
             print "phase, peak_regin: ", phase, peak_regions
             # self.data_dic_phases[phase] = list()
             force_dic = {}
+            number = 1
             for j in self.data_dic_raw:  # loop over all forces
                 help_list = []
                 for n in self.data_dic_raw[j]:  # loop over all orientations of the sample
                     force, omega, chi, two_theta, intens, error = n
                     data = [two_theta, intens, error]
-                    hkl_2_theta = self.fit_the_peaks_for_on_diffraction_pattern(data=data, peak_regions=peak_regions)
+                    hkl_2_theta = self.fit_the_peaks_for_on_diffraction_pattern(data=data, peak_regions=peak_regions,
+                                                                                plot=True, datanumber=number,
+                                                                                force=force, Chi=chi)
                     hkl_2_theta = hkl_2_theta.tolist()
+                    number += 1
                     print hkl_2_theta
                     for m in hkl_2_theta:
                         help_list.append([phase, force, omega, chi, m])
@@ -349,7 +355,7 @@ class SPODIData(Data):
            according to Graesslin
         """
         chi = -deg_to_rad(chi)
-        omega = deg_to_rad(omega)
+        omega = -deg_to_rad(omega)
         phi = 0
 
         # rot around z_L'
@@ -362,6 +368,12 @@ class SPODIData(Data):
         X = np.array([[np.cos(chi), 0., -np.sin(chi)],
                       [0., 1., 0.],
                       [np.sin(chi), 0., np.cos(chi)]
+                      ]
+                     )
+        # rotation around x_L' axis (lefthanded if chi<0)
+        X = np.array([[1., 0., 0.],
+                      [0., np.cos(chi), np.sin(chi)],
+                      [0., -np.sin(chi), np.cos(chi)]
                       ]
                      )
         # rot around z_L
@@ -547,8 +559,8 @@ class AllData(Data):
                     mmm = re.split('\s+', line)
                     material = ''
                     for g in xrange(1, len(mmm)):
-                        material+= mmm[g]
-                        material+= ' '
+                        material += mmm[g]
+                        material += ' '
                     print material
         data.close()
         phase_keys = dic.keys()

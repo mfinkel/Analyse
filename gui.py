@@ -1123,25 +1123,29 @@ class LOAD_SPODI_DATA(QWidget):
         self.setLayout(layout)
 
     def select_odf_phase_1_func(self):
-        filename = QFileDialog.getOpenFileName(self, 'Open ODF of phase 1 File', '/')  # (self, 'Open ODF File', '/')
+        path = os.path.split(str(self.odf_phase_1_path.text()))[0]
+        filename = QFileDialog.getOpenFileName(self, 'Open ODF of phase 1 File', path)  # (self, 'Open ODF File', '/')
         filename = os.path.normpath(str(filename))
         self.odf_phase_1_path.setText(filename)
         print(self.odf_phase_1_path.text())
 
     def select_odf_phase_2_func(self):
-        filename = QFileDialog.getOpenFileName(self, 'Open ODF of phase 2 File', '/')  # (self, 'Open ODF File', '/')
+        path = os.path.split(str(self.odf_phase_2_path.text()))[0]
+        filename = QFileDialog.getOpenFileName(self, 'Open ODF of phase 2 File', path)  # (self, 'Open ODF File', '/')
         filename = os.path.normpath(str(filename))
         self.odf_phase_2_path.setText(filename)
         print(self.odf_phase_2_path.text())
 
     def select_unstraind_func(self):
-        filename = QFileDialog.getExistingDirectory(self, 'Open unstraind data', '/')  # (self, 'Open ODF File', '/')
+        path = os.path.split(str(self.path_of_unstraind_data.text()))[0]
+        filename = QFileDialog.getExistingDirectory(self, 'Open unstraind data', path)  # (self, 'Open ODF File', '/')
         filename = os.path.normpath(str(filename))
         self.path_of_unstraind_data.setText(filename + "\\")
         print(self.path_of_unstraind_data.text())
 
     def select_straind_func(self, i):
-        filename = QFileDialog.getExistingDirectory(self, 'Open straind data', '/')  # (self, 'Open ODF File', '/')
+        path = os.path.split(str(self.straind_data[i].text()))[0]
+        filename = QFileDialog.getExistingDirectory(self, 'Open straind data', path)  # (self, 'Open ODF File', '/')
         filename = os.path.normpath(str(filename))
         self.straind_data[i].setText(filename + "\\")
         print(self.straind_data[i].text())
