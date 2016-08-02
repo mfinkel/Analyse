@@ -8,7 +8,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 import scipy.odr.odrpack as odr
 import matplotlib.pyplot as plt
-from lmfit.models import PseudoVoigtModel
+from lmfit.models import PseudoVoigtConstModel
 
 
 def breite(x, y):
@@ -124,31 +124,31 @@ def gauss_lin_fitting(x_list, av_count_l, plot=False):
     # print 'Theta: ',p_final[1], ' ', res[0]
     return res
 
-def gauss_lin_fitting_2(x_list, av_count_l, weights=None, plot=False, dataset=False, force=False, Chi=False):
+def gauss_lin_fitting_2(x_list, y_list, weights=None, plot=False, dataset=False, force=False, Chi=False, phase=False):
     """
     fitting one peak with a psoido voigt function
     :param x_list:
-    :param av_count_l:
+    :param y_list:
     :param weights:
     :param plot:
     :return:
     """
-    mod = PseudoVoigtModel()
-    p_guess = guesspara(x_list, av_count_l)
+    mod = PseudoVoigtConstModel()
+    p_guess = guesspara(x_list, y_list)
     pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2])
 
-    out = mod.fit(av_count_l, pars, x=x_list, weights=weights)  #
+    out = mod.fit(y_list, pars, x=x_list, weights=weights)  #
     y_ = out.best_fit
 
-    if max(av_count_l) < 150. or max(av_count_l - y_) / max(av_count_l) > 0.2:
+    if max(y_list) < 150. or max(y_list - y_) / max(y_list) > 0.2:
         res = ['nan', 'nan']
     else:
         # print out.params["center"].value, out.params["center"].stderr
         res = [out.params["center"].value, out.params["center"].stderr] # p_final[2]
     # print "hallo", res
     if plot:
-        plt.figure("Dataset: {}, Chi: {}, force: {}".format(dataset, Chi, force))
-        plt.plot(x_list, av_count_l, "bo")
+        plt.figure("Dataset: {}, Phase: {}, force: {}, Chi: {}".format(dataset, phase, force, Chi))
+        plt.plot(x_list, y_list, "bo")
         plt.plot(x_list, out.init_fit, "k--")
         plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f" % (float(res[0]), float(res[1])))
         plt.legend(loc='upper right', numpoints=1)

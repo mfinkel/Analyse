@@ -1306,7 +1306,7 @@ class phase_region_class(object):
         f = open(".\\phase_region_list.dat", "w")
         for i in phase_region_list:
             f.write("phase: " + str(i[0]))
-            f.write("\nhkl:    2Theta_min_pos:          2Theta_max_pos:\n")
+            f.write("\nhkl:    2Theta_min_pos:          2Theta_max_pos:            double:        peak:\n")
             print("i: ", i)
             for j in i[1]:
                 print("hkl: ", j)

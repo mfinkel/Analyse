@@ -139,7 +139,7 @@ class SPODIData(Data):
 
     @staticmethod
     def fit_the_peaks_for_on_diffraction_pattern(data, peak_regions, plot=False, datanumber=False, force=False,
-                                                 Chi=False):
+                                                 Chi=False, phase=False):
         """
         fitting the individual peaks of each diffraction pattern
         :param plot: plot each fit.
@@ -160,7 +160,7 @@ class SPODIData(Data):
             day = data[1][x:y]
             day_err = data[2][x:y]
             gauss = Fittingtools.gauss_lin_fitting_2(dax, day, day_err, plot=plot, dataset=datanumber, force=force,
-                                                     Chi=Chi)
+                                                     Chi=Chi, phase=phase)
             hkl_2_theta[j][3] = gauss[0]
             hkl_2_theta[j][4] = gauss[1]
         return hkl_2_theta
@@ -186,7 +186,7 @@ class SPODIData(Data):
                     data = [two_theta, intens, error]
                     hkl_2_theta = self.fit_the_peaks_for_on_diffraction_pattern(data=data, peak_regions=peak_regions,
                                                                                 plot=True, datanumber=number,
-                                                                                force=force, Chi=chi)
+                                                                                force=force, Chi=chi, phase=phase)
                     hkl_2_theta = hkl_2_theta.tolist()
                     number += 1
                     print hkl_2_theta
