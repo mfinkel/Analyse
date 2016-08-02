@@ -8,7 +8,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 import scipy.odr.odrpack as odr
 import matplotlib.pyplot as plt
-from lmfit.models import PseudoVoigtConstModel
+from lmfit.models import PseudoVoigtConstModel, PseudoVoigtDoublePeakModel
 
 
 def breite(x, y):
@@ -165,9 +165,10 @@ def pseudo_voigt_double_peak_fit(x_list, y_list, weights=None, plot=False, datas
     :param plot:
     :return:
     """
-    mod = PseudoVoigtConstModel()
-    p_guess = guesspara(x_list, y_list)
-    pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2])
+    mod = PseudoVoigtDoublePeakModel()
+    p_guess = guesspara_double_peak(x_list, y_list)
+    pars = mod.make_params(amplitude1=p_guess[0], center1=p_guess[1], sigma1=p_guess[2],
+                           amplitude2=p_guess[3], center2=p_guess[4], sigma2=p_guess[5], const=p_guess[6])
 
     out = mod.fit(y_list, pars, x=x_list, weights=weights)  #
     y_ = out.best_fit
@@ -176,7 +177,8 @@ def pseudo_voigt_double_peak_fit(x_list, y_list, weights=None, plot=False, datas
         res = ['nan', 'nan']
     else:
         # print out.params["center"].value, out.params["center"].stderr
-        res = [out.params["center"].value, out.params["center"].stderr] # p_final[2]
+        res = [out.params["center1"].value, out.params["center1"].stderr,
+               out.params["center2"].value, out.params["center2"].stderr] # p_final[2]
     # print "hallo", res
     if plot:
         plt.figure("Dataset: {}, Phase: {}, force: {}, Chi: {}".format(dataset, phase, force, Chi))
@@ -205,7 +207,47 @@ def guesspara(x_list, y_list):
     p_guess = [amplitude, x_center, sigma, offset]
     return p_guess
 
+def guesspara_double_peak(x_list, y_list):
+    # calc amlitudes:
+    amplitudes = []
+    def df_dx(x1, f1, x2, f2):
+        return (f2-f1)/(x2-x1)
+    for i in xrange(5, len(y_list)-5):
+        dfdx_left=[]
+        dfdx_right=[]
+        for ii in xrange(1, 4):
+            x1 = x_list[i-ii]
+            x2 = x_list[i]
+            y1 = y_list[i-ii]
+            y2 = y_list[i]
+            dfdx_left.append(df_dx(x1, y1, x2, y2))
+            x1 = x_list[i]
+            x2 = x_list[i+ii]
+            y1 = y_list[i]
+            y2 = y_list[i+ii]
+            dfdx_right.append(df_dx(x1, y1, x2, y2))
+        dfdx_left = np.average(np.array(dfdx_left))
+        dfdx_right = np.average(np.array(dfdx_right))
+        condition1 = df_dx(x_list[i], y_list[i], x_list[i - 1], y_list[i - 1])
+        condition2 = (y_list[i] > y_list[i + 1] > y_list[i + 2] > y_list[i + 3])
+        condition3 = (y_list[i] > y_list[i - 1] > y_list[i - 2] > y_list[i - 3])
+        if condition2 and condition3 and dfdx_left > 0 and dfdx_right < 0:
+            amplitudes.append([i, y_list[i]])
 
+    first, second = amplitudes[0][1], amplitudes[1][1]
+    first_i, second_i = amplitudes[0][0], amplitudes[1][0]
+    amplitude1 = first - min(y_list)
+    amplitude2 = second - min(y_list)
+    x_center1 = x_list[first_i]
+    x_center2 = x_list[second_i]
+    index_betwen_peaks = int((second_i-first_i)/2 + first_i)
+    offset = min(y_list)
+    temp_sigma1 = breite(x_list[0:index_betwen_peaks], y_list[0:index_betwen_peaks])
+    temp_sigma2 = breite(x_list[index_betwen_peaks:], y_list[index_betwen_peaks:])
+    sigma1 = temp_sigma1[0] / 2.3548
+    sigma2 = temp_sigma2[0] / 2.3548
+    p_guess = [amplitude1, x_center1, sigma1, amplitude2, x_center2, sigma2, offset]
+    return p_guess
 # least_square Fitt to determine the compliences
 
 def Gamma(h, k, l):

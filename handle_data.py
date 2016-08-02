@@ -166,10 +166,16 @@ class SPODIData(Data):
             dax = data[0][x:y]
             day = data[1][x:y]
             day_err = data[2][x:y]
-            if double==1:
-                gauss = Fittingtools.pseudo_voigt_single_peak_fit(dax, day, day_err, plot=plot, dataset=datanumber, force=force,
-                                                                  Chi=Chi, phase=phase)
-            if double==2:
+            if double == 1:
+                gauss = Fittingtools.pseudo_voigt_single_peak_fit(dax, day, day_err, plot=plot, dataset=datanumber,
+                                                                  force=force, Chi=Chi, phase=phase)
+            if double == 2:
+                gauss = Fittingtools.pseudo_voigt_double_peak_fit(dax, day, day_err, plot=plot, dataset=datanumber,
+                                                                  force=force, Chi=Chi, phase=phase)
+                if peak == 1:
+                    gauss = gauss[0:2]
+                if peak == 2:
+                    gauss = gauss[2:]
 
             hkl_2_theta[j][3] = gauss[0]
             hkl_2_theta[j][4] = gauss[1]
