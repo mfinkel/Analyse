@@ -437,6 +437,7 @@ class CentralWidget(QWidget):
         self.ok_button = QPushButton("OK")
         self.cancel_button = QPushButton("Cancel")
         self.region = phase_region_class()
+        self.checkBox = QCheckBox("Plot fit's: ")
 
         try:
             self.phase_peak_region = self.region.load()
@@ -708,7 +709,13 @@ class CentralWidget(QWidget):
         if Bool or not self.loaded_peak_region:
             self.select_hkl_SPODI_Data()
         else:
-            self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region, plot=False)
+            plot = False
+            if self.checkBox.isChecked():
+                plot = True
+            else:
+                plot = False
+
+            self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region, plot=plot)
             self.do_the_fit_button.setEnabled(True)
             self.do_the_fit_gh_button.setEnabled(True)
             self.insert_startvals_button.setEnabled(True)
@@ -723,7 +730,7 @@ class CentralWidget(QWidget):
 
     def select_hkl_SPODI_Data(self):
         x_data, y_data = self.data_object.get_sum_data()
-        print("data_x:", x_data)
+        # print("data_x:", x_data)
         self.central_plot.add_xy_data(x_data, y_data)
 
     def set_hkl_setting_and_fit_the_peaks_SPODI(self, value):
@@ -887,6 +894,7 @@ class CentralWidget(QWidget):
         layout_load_data_h3.addWidget(self.diameter)
         layout_load_data_h3.addWidget(self.automate)
         layout_load_data_h3.addWidget(self.select_hkl_setting_manualy_coice)
+        layout_load_data_h3.addWidget(self.checkBox)
         layout_load_data_h3.addWidget(self.load_data_button)
         layout.addLayout(layout_load_data_h1)
         layout.addLayout(layout_load_data_h2)
@@ -1026,9 +1034,9 @@ class LOAD_SPODI_DATA(QWidget):
         self.unstraind_button = QPushButton("select unstraind")
 
         self.odf_phase_1_path = QLineEdit(
-            "H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Stahl ST37\\ST37_textur_complet_recalc.txt")
+            "\\stressi2.stressi.frm2\User\2016\MFinkel\Duplex gezogen\DUBNA_pol\FE_ODF_compleat.txt")
         self.odf_phase_2_path = QLineEdit("None")  # "AL_textur_complet.txt"
-        self.path_of_unstraind_data = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans ohne Last\\")
+        self.path_of_unstraind_data = QLineEdit("H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Daten\\Duplex_Stahl_gezogen\\200N\\")
 
         self.straind_data = []
         self.straind_data_lable = []
@@ -1036,7 +1044,7 @@ class LOAD_SPODI_DATA(QWidget):
 
         # create boxes for all datafiles of different load
         for i in xrange(number_of_straind_datasets):
-            self.straind_data.append(QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans unter 5kN\\"))
+            self.straind_data.append(QLineEdit("H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Daten\\Duplex_Stahl_gezogen\\5KN\\"))
             self.straind_data_lable.append(QLabel("select straind data %i:" % (i)))
             self.straind_data_button.append(QPushButton("select straind %i:" % (i)))
 
@@ -1300,7 +1308,12 @@ class LOAD_STANDARD_DATA(QWidget):
 
 class phase_region_class(object):
     def __init__(self):
-        self.region = [[1, []], [2, []]]  # phase_region_list
+        self.region = [[1, []], [2, []]]  # phase_region_list, [[phase, [h, k, l, Tmin, Tmax, double, peak]], ...]
+        # double=0 if single peak
+        # double=1 else
+        # if double = 1 peak in [1,2]
+        # if peak = 1 use the first of the double peaks
+        # else use the second
 
     def save(self, phase_region_list):
         f = open(".\\phase_region_list.dat", "w")
@@ -1310,9 +1323,10 @@ class phase_region_class(object):
             print("i: ", i)
             for j in i[1]:
                 print("hkl: ", j)
-                print(j[0], j[1], j[2], j[3], j[4])
+                print(j[0], j[1], j[2], j[3], j[4], j[5], j[6])
                 try:
-                    string = "{} {} {} {} {} ".format(int(j[0]), int(j[1]), int(j[2]), j[3], j[4])
+                    string = "{} {} {} {} {} {} {}".format(int(j[0]), int(j[1]), int(j[2]), j[3], j[4],
+                                                           int(float(j[5])), int(float(j[6])))
                     f.write(string + "\n")
                     print("string: ", string)
                 except IndexError:
@@ -1341,7 +1355,6 @@ class phase_region_class(object):
                 self.region[phase - 1][1] = hkl_2_theta
                 hkl_2_theta = []
 
-
             else:
                 print("else_case: ", split)
                 h = int(split[0])
@@ -1349,7 +1362,9 @@ class phase_region_class(object):
                 l = int(split[2])
                 theta_min = int(split[3])
                 theta_max = int(split[4])
-                hkl_2_theta.append([h, k, l, theta_min, theta_max])
+                double = int(float(split[5]))
+                peak = int(float(split[6]))
+                hkl_2_theta.append([h, k, l, theta_min, theta_max, double, peak])
         print("REGION: ", self.region)
         return self.region
 

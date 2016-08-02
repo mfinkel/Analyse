@@ -136,11 +136,15 @@ class hkl_input_class(QtGui.QWidget):
         self.l = QtGui.QLabel("l")
         self.Theta_min = QtGui.QLabel("T_s")
         self.Theta_max = QtGui.QLabel("T_l")
+        self.double = QtGui.QLabel("double")
+        self.peak = QtGui.QLabel("peak")
         self.layout.addWidget(self.h, 0, 1)
         self.layout.addWidget(self.k, 0, 2)
         self.layout.addWidget(self.l, 0, 3)
         self.layout.addWidget(self.Theta_min, 0, 4)
         self.layout.addWidget(self.Theta_max, 0, 5)
+        self.layout.addWidget(self.double, 0, 6)
+        self.layout.addWidget(self.peak, 0, 7)
 
         # t = QtGui.QLineEdit("some text")
         # t.setReadOnly(True)
@@ -154,7 +158,7 @@ class hkl_input_class(QtGui.QWidget):
         for i in xrange(start, start + 5):
             line = []
             line.append(QtGui.QLabel("#" + str(i + 1)))
-            for j in xrange(5):
+            for j in xrange(7):
                 line.append(QtGui.QLineEdit("-1"))
             self.lines.append(line)
         m = 1
@@ -173,7 +177,7 @@ class hkl_input_class(QtGui.QWidget):
     def reset(self):
         print("reset: ")
         for i in xrange(0, len(self.lines)):
-            for j in range(1, 6):
+            for j in range(1, 8):
                 self.lines[i][j].setReadOnly(True)
                 self.lines[i][j].setText("-1")
                 self.lines[i][j].setStyleSheet("color: rgb(255, 100, 0);")
@@ -181,13 +185,14 @@ class hkl_input_class(QtGui.QWidget):
     def get_last_1(self):
         for i in range(0, len(self.lines)):
             if self.lines[i][1].text() == "-1":
-                for j in range(1, 4):
+                for j in range(1, 8):
                     self.lines[i][j].setReadOnly(False)
                     self.lines[i][j].setStyleSheet("color: rgb(0, 0, 0);")
                 for j in range(4, 6):
+                    self.lines[i][j].setReadOnly(True)
                     self.lines[i][j].setStyleSheet("color: rgb(0, 0, 0);")
                 return i
-            for j in range(0, 6):
+            for j in range(0, 8):
                 print "get last: ", self.lines[i][j].text()
                 try:
                     self.lines[i][j].setReadOnly(True)
@@ -306,7 +311,7 @@ class Preview(QtGui.QWidget):
         if position >= 4:
             position -= 5
             table2 = True
-        h, k, l, Theta_min, Theta_max = line
+        h, k, l, Theta_min, Theta_max, double, peak = line
         Theta_min = self.data_x[Theta_min]
         Theta_max = self.data_x[Theta_max]
         if not table2:
@@ -315,6 +320,8 @@ class Preview(QtGui.QWidget):
             self.table1_5.lines[position][3].setText(str(l))
             self.table1_5.lines[position][4].setText(str(Theta_min))
             self.table1_5.lines[position][5].setText(str(Theta_max))
+            self.table1_5.lines[position][6].setText(str(double))
+            self.table1_5.lines[position][7].setText(str(peak))
 
         else:
             self.table6_10.lines[position][1].setText(str(h))
@@ -322,6 +329,8 @@ class Preview(QtGui.QWidget):
             self.table6_10.lines[position][3].setText(str(l))
             self.table6_10.lines[position][4].setText(str(Theta_min))
             self.table6_10.lines[position][5].setText(str(Theta_max))
+            self.table6_10.lines[position][6].setText(str(double))
+            self.table6_10.lines[position][7].setText(str(peak))
 
     def add_reflex(self):
         print("add")
@@ -358,13 +367,13 @@ class Preview(QtGui.QWidget):
         if not table2:
             for i in xrange(0, buffer):
                 l = []
-                for j in xrange(1, 6):
+                for j in xrange(1, 8):
                     l.append(float(self.table1_5.lines[i][j].text()))
                 hkl_setting.append(l)
         else:
             for i in xrange(0, len(self.table1_5.lines)):
                 l = []
-                for j in xrange(1, 6):
+                for j in xrange(1, 8):
                     l.append(float(self.table1_5.lines[i][j].text()))
                 hkl_setting.append(l)
             if buffer == -1:
@@ -372,7 +381,7 @@ class Preview(QtGui.QWidget):
 
             for i in xrange(0, buffer):
                 l = []
-                for j in xrange(1, 6):
+                for j in xrange(1, 8):
                     l.append(float(self.table6_10.lines[i][j].text()))
                 hkl_setting.append(l)
         for i in xrange(len(hkl_setting)):
@@ -564,6 +573,7 @@ class Preview(QtGui.QWidget):
         self.roi_list = [0, 0, 0, 0]
         self.data_x = data_x
         self.data_y = data_y
+        self.ax.cla()
         # ax = self.figure.add_subplot(111)
         self.ax.plot(self.data_x, self.data_y)
 

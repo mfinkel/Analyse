@@ -71,6 +71,8 @@ class SPODIData(Data):
         :param list_of_dirs:
         :return:
         """
+        self.data_dic_raw = {}
+        self.data_dic_phases = {}
         if type(list_of_dirs) is not list:
             list_of_dirs = [list_of_dirs]
 
@@ -78,6 +80,9 @@ class SPODIData(Data):
             data_files = i + "*.dat"
             print data_files
             data_files = glob(str(data_files))
+            if len(data_files)==0:
+                data_files = i + "*.eth"
+                data_files = glob(str(data_files))
             data_files.sort()
             help_list = []
             force = 0
@@ -156,11 +161,16 @@ class SPODIData(Data):
             hkl_2_theta[j][2] = peak_regions[j][2]
             x = int(peak_regions[j][3])
             y = int(peak_regions[j][4])
+            double = int(peak_regions[j][5])
+            peak = int(peak_regions[j][6])
             dax = data[0][x:y]
             day = data[1][x:y]
             day_err = data[2][x:y]
-            gauss = Fittingtools.gauss_lin_fitting_2(dax, day, day_err, plot=plot, dataset=datanumber, force=force,
-                                                     Chi=Chi, phase=phase)
+            if double==1:
+                gauss = Fittingtools.pseudo_voigt_single_peak_fit(dax, day, day_err, plot=plot, dataset=datanumber, force=force,
+                                                                  Chi=Chi, phase=phase)
+            if double==2:
+
             hkl_2_theta[j][3] = gauss[0]
             hkl_2_theta[j][4] = gauss[1]
         return hkl_2_theta
@@ -185,7 +195,7 @@ class SPODIData(Data):
                     force, omega, chi, two_theta, intens, error = n
                     data = [two_theta, intens, error]
                     hkl_2_theta = self.fit_the_peaks_for_on_diffraction_pattern(data=data, peak_regions=peak_regions,
-                                                                                plot=True, datanumber=number,
+                                                                                plot=plot, datanumber=number,
                                                                                 force=force, Chi=chi, phase=phase)
                     hkl_2_theta = hkl_2_theta.tolist()
                     number += 1
@@ -453,9 +463,9 @@ class SPODIData(Data):
         return float(phi)
 
     def get_sum_data(self):
-        print "hallo", self.data_dic_raw
+        # print "hallo", self.data_dic_raw
         omega1 = self.data_dic_raw[0][0][1]
-        print "omega", omega1
+        # print "omega", omega1
         sum_intens = np.zeros((len(self.data_dic_raw[0][0][4])))
         for i in self.data_dic_raw[0]:
             print len(i[3]), len(i[4]), len(i[5])
