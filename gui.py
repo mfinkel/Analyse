@@ -1034,7 +1034,7 @@ class LOAD_SPODI_DATA(QWidget):
         self.unstraind_button = QPushButton("select unstraind")
 
         self.odf_phase_1_path = QLineEdit(
-            "H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Daten\\MFinkel\\")
+            "H:\Masterarbeit STRESS-SPEC\Daten\Daten-bearbeitet\Daten\MFinkel\Duplex gezogen\DUBNA_pol\AUS_ODF_compleat.txt")
         self.odf_phase_2_path = QLineEdit("None")  # "AL_textur_complet.txt"
         self.path_of_unstraind_data = QLineEdit("H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Daten\\Duplex_Stahl_gezogen\\200N\\")
 
