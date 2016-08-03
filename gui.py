@@ -496,7 +496,7 @@ class CentralWidget(QWidget):
         self.output_filename = QLineEdit("Result_" + str(self.material.text()) + "_" + str(self.modi.currentText()))
         self.material.returnPressed.connect(self.change_outputfile_name)
         self.modi.currentIndexChanged.connect(self.change_outputfile_name)
-        self.connect(self, SIGNAL("data"), self.central_plot.add_data)
+        # self.connect(self, SIGNAL("data"), self.central_plot.add_data)
 
         self.insert_startvals_button = QPushButton("insert params")
         self.insert_startvals_button.setEnabled(False)
@@ -697,6 +697,11 @@ class CentralWidget(QWidget):
         self.path_of_odf_phase2 = odf2
         self.path_of_unstraind_data = Data
         # self.path_of_data_under_strain = data_dir_list
+        self.data_object = handle_data.SPODIData(sample_diameter=int(str(self.diameter.text())),
+                                                     odf_phase_1_file=self.path_of_odf_phase1,
+                                                     odf_phase_2_file=self.path_of_odf_phase2)
+        self.data_object.load_data(self.path_of_unstraind_data)
+        self.select_hkl_SPODI_Data()  # plot the data
         self.load_data_button.setEnabled(True)
         self.load_data_button.clicked.connect(self.read_scattering_data_SPODI_case)
 
@@ -705,24 +710,16 @@ class CentralWidget(QWidget):
         # if self.select_hkl_setting_manualy_coice.isChecked()==True:  # .currentText() == "Yes":
         #     Bool = True
 
-        self.data_object = handle_data.SPODIData(sample_diameter=int(str(self.diameter.text())),
-                                                 odf_phase_1_file=self.path_of_odf_phase1,
-                                                 odf_phase_2_file=self.path_of_odf_phase2)
-        self.data_object.load_data(self.path_of_unstraind_data)
+
 
         # self.Data_Iron = methods.Data_old(str(self.odf_phase_1_path.text()), 6)
         # self.Data_Iron.read_scattering_SPODI_data(path_of_unstraind_data=str(self.path_of_unstraind_data.text()),
         #                                           path_of_straind_data=str(self.path_of_straind_data_1.text()))
-
+        self.select_hkl_SPODI_Data()
+        self.central_plot.roi_Button.setEnabled(False)
         if self.select_hkl_setting_manualy_coice.isChecked() or not self.loaded_peak_region:
-            self.select_hkl_SPODI_Data()
+            self.central_plot.roi_Button.setEnabled(True)
         else:
-            # plot = False
-            # if self.checkBoxPlotFits.isChecked():
-            #     plot = True
-            # else:
-            #     plot = False
-
             self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region,
                                           plot=self.checkBoxPlotFits.isChecked())
             self.do_the_fit_button.setEnabled(True)
@@ -750,7 +747,7 @@ class CentralWidget(QWidget):
         print("peak region: ", self.phase_peak_region)
 
         self.region.save(self.phase_peak_region)
-        self.region.load()
+        # self.region.load()
         # np.save(".\\phase_peak_region", np.array(self.phase_peak_region))
         print("saved peak region")
         print("------------------------------------")
@@ -764,7 +761,7 @@ class CentralWidget(QWidget):
         self.insert_startvals_button.setEnabled(True)
         self.plot_polefig_button.setEnabled(True)
         self.plot_data_button.setEnabled(True)
-        print("coming from other class:", "\n", self.phase_peak_region)
+        # print("coming from other class:", "\n", self.phase_peak_region)
 
     def do_the_fit(self):
         self.plot_polefig_button.setEnabled(False)
