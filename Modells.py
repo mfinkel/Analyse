@@ -2521,7 +2521,7 @@ class TensileTest(FitGneupelHerold):
                     sig.append(data[hkl][3][i])
                     sig_err.append(data[hkl][4][i])
             Fit = LinFit()
-            a, aerr, s1, s1err = Fit.lin_fit(sig, eps, eps_err)
+            a, aerr, s1, s1err = Fit.lin_fit(sig, eps, eps_err, a_const=False)
             result[hkl] = [s1, s1err]
             eps_calc = Fit.get_x_y_vals(sig)
             plt.errorbar(sig, eps, yerr=eps_err, xerr=sig_err, fmt="o", label="hkl: {}, s1: {}".format(hkl, s1))
@@ -2555,7 +2555,7 @@ class TensileTest(FitGneupelHerold):
                     sig.append(data[hkl][3][i])
                     sig_err.append(data[hkl][4][i])
             Fit = LinFit()
-            a, aerr, m, merr = Fit.lin_fit(sig, eps, eps_err)
+            a, aerr, m, merr = Fit.lin_fit(sig, eps, eps_err, a_const=False)
             result[hkl] = [m, merr, data[hkl][0][0]]
             eps_calc = Fit.get_x_y_vals(sig)
             plt.errorbar(sig, eps, yerr=eps_err, xerr=sig_err, fmt="o", label="hkl: {}, m: {}".format(hkl, m))
@@ -2608,7 +2608,7 @@ class LinFit(object):
         weight = np.array(weight)
         return (model - ydata) / weight
 
-    def lin_fit(self, xdata, ydata = None, yerr=None):
+    def lin_fit(self, xdata, ydata = None, yerr=None, a_const=False):
         self.xdata = xdata
         self.ydata = ydata
         self.ydataerr = yerr
@@ -2619,8 +2619,11 @@ class LinFit(object):
         params = lm.Parameters()
         params.add('a', value=a0)
         params.add('b', value=b0)
+        if a_const:
+            params['a'].vary = False
+            params['a'].value = 0
         result = lm.minimize(self.residual, params, args=(self.xdata,),
-                                 kws={'ydata': self.ydata, 'weight': self.ydataerr})
+                             kws={'ydata': self.ydata, 'weight': self.ydataerr})
         # res = [out.params["center"].value, out.params["center"].stderr]
         a = result.params['a'].value
         aerr = result.params['a'].stderr
