@@ -75,25 +75,29 @@ class SPODIData(Data):
         self.data_dic_phases = {}
         if type(list_of_dirs) is not list:
             list_of_dirs = [list_of_dirs]
+        data_files = []
+        for i in list_of_dirs:  # get all files from the selected directories
+            data_files_ = i + "*.dat"
+            print data_files_
+            data_files_ = glob(str(data_files_))
+            if len(data_files_)==0:
+                data_files_ = i + "*.eth"
+                data_files_ = glob(str(data_files_))
+            data_files_.sort()
+            for file in data_files_:
+                data_files.append(file)
 
-        for i in list_of_dirs:
-            data_files = i + "*.dat"
-            print data_files
-            data_files = glob(str(data_files))
-            if len(data_files)==0:
-                data_files = i + "*.eth"
-                data_files = glob(str(data_files))
-            data_files.sort()
-            help_list = []
-            force = 0
-            for j in data_files:
-                # force in kN, omega and Chi in deg
-                force, omega, chi = self.parse_filename(j)
-                # read the data from the file
-                two_theta, intens, error = self.read_data(j)
-                help_list.append([force, omega, chi, two_theta, intens, error])
-                # force, omega, Chi, two theta, intensity, error of intensity
-            self.data_dic_raw[force] = help_list
+        for file in data_files:  # loop over all files and read the data. Store it than in self.data_dic_raw.
+            # help_list = []
+            # force in kN, omega and Chi in deg
+            force, omega, chi = self.parse_filename(file)
+            if force not in self.data_dic_raw.keys():
+                self.data_dic_raw[force] = []
+            # read the data from the file
+            two_theta, intens, error = self.read_data(file)
+            self.data_dic_raw[force].append([force, omega, chi, two_theta, intens, error])
+            # force, omega, Chi, two theta, intensity, error of intensity
+            # self.data_dic_raw[force] = help_list
 
     @staticmethod
     def parse_filename(filename):
@@ -254,7 +258,7 @@ class SPODIData(Data):
                         h, k, l, two_theta, two_theta_error = hkl_2_theta
 
                         # vals of the unstraind data
-                        phase_0, force_0, omega_0, chi_0, hkl_2_theta_0 = force_dict[key_list[0]][n]
+                        phase_0, force_0, omega_0, chi_0, hkl_2_theta_0 = force_dict[0][n]
                         h_0, k_0, l_0, two_theta_0, two_theta_error_0 = hkl_2_theta_0
                         # print "omega_0: {0:d}, chi_0: {1:d}".format(int(omega_0), int(chi_0))
                         # print "omega: {0:d}, chi: {1:d}".format(int(omega), int(chi))
@@ -273,18 +277,18 @@ class SPODIData(Data):
                         psi = self.psii(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta_0 / 2,
                                         chi=chi, omega=omega)
                         if not (np.isnan(phi) or np.isnan(psi)):
-                            if chi != 90:
-                                phi_psi_hkl.append([phi, psi, h, k, l])
-                                print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
-                                    format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
+                            # if chi != 90:
+                            phi_psi_hkl.append([phi, psi, h, k, l])
+                            print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
+                                format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
 
-                                strain, strain_error = self.delta_epsilon(two_theta=two_theta,
-                                                                          two_theta_0=two_theta_0,
-                                                                          two_theta_err=two_theta_error,
-                                                                          two_theta_0_err=two_theta_error_0)
+                            strain, strain_error = self.delta_epsilon(two_theta=two_theta,
+                                                                      two_theta_0=two_theta_0,
+                                                                      two_theta_err=two_theta_error,
+                                                                      two_theta_0_err=two_theta_error_0)
 
-                                stress, stress_err = self.calc_applied_stress(force=force)
-                                strain_stress.append([strain, strain_error, stress, stress_err])
+                            stress, stress_err = self.calc_applied_stress(force=force)
+                            strain_stress.append([strain, strain_error, stress, stress_err])
                     force_stress_dict[v] = [phi_psi_hkl, strain_stress]
 
             self.fitted_data.data_dict[i] = force_stress_dict
