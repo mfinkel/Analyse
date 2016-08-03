@@ -467,6 +467,7 @@ class CentralWidget(QWidget):
         # add the central plot to display the data
         self.central_plot = matplotlibwidget.Preview("Select_Data")
         self.connect(self.central_plot, SIGNAL("phase_peak_region"), self.set_hkl_setting_and_fit_the_peaks_SPODI)
+        self.connect(self.central_plot, SIGNAL("MIN_MAX_COLOR"), self.color_peaks)
 
         # handel the fitting process
         self.Fit_phase = QLabel("Fit phases: ")
@@ -702,6 +703,8 @@ class CentralWidget(QWidget):
                                                      odf_phase_2_file=self.path_of_odf_phase2)
         self.data_object.load_data(self.path_of_unstraind_data)
         self.select_hkl_SPODI_Data()  # plot the data
+        if self.loaded_peak_region:
+            self.color_peakregion()
         self.load_data_button.setEnabled(True)
         self.load_data_button.clicked.connect(self.read_scattering_data_SPODI_case)
 
@@ -741,6 +744,22 @@ class CentralWidget(QWidget):
         # print("data_x:", x_data)
         self.central_plot.add_xy_data(x_data, y_data)
 
+    def color_peaks(self, MIN, MAX, color):
+        x_data, y_data = self.data_object.get_sum_data()
+        x_data = x_data[MIN:MAX]
+        y_data = y_data[MIN:MAX]
+        for i in xrange(len(x_data)):
+            y_data[i] = max(y_data)
+        y_data[0]=y_data[-1]=0
+        # print("data_x:", x_data)
+        self.central_plot.color_xy_data(x_data, y_data, color=color)
+
+    def color_peakregion(self):
+        color = matplotlibwidget.ColorGenerator()
+        for phasenr, hkl_region in self.phase_peak_region:
+            for h, k, l, MIN, MAX, double, peak in hkl_region:
+                self.color_peaks(MIN, MAX, color.get_color())
+
     def set_hkl_setting_and_fit_the_peaks_SPODI(self, value):
         self.phase_peak_region = value
         print("------------------------------------")
@@ -751,6 +770,8 @@ class CentralWidget(QWidget):
         # np.save(".\\phase_peak_region", np.array(self.phase_peak_region))
         print("saved peak region")
         print("------------------------------------")
+        self.select_hkl_SPODI_Data()
+        self.color_peakregion()
         self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region)
         # self.Data_Iron.set_hkl_setting(self.phase_peak_region)
         # self.Data_Iron.fit_all_peaks()
@@ -1345,7 +1366,7 @@ class LOAD_STANDARD_DATA(QWidget):
 
 class phase_region_class(object):
     def __init__(self):
-        self.region = [[1, []], [2, []]]  # phase_region_list, [[phase, [h, k, l, Tmin, Tmax, double, peak]], ...]
+        self.region = [[1, []], [2, []]]  # phase_region_list, [[phase, [[h, k, l, Tmin, Tmax, double, peak]],...], ...]
         # double=0 if single peak
         # double=1 else
         # if double = 1 peak in [1,2]
