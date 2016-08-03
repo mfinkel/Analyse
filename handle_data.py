@@ -107,7 +107,9 @@ class SPODIData(Data):
         path, filename = os.path.split(filename)
         name_split = re.split('_', filename)
         force = name_split[1][0:-2]
-        force = float(force)
+
+
+        force = float(force.replace(",","."))
         omega = 0.
         Chi = 0.
         for i in xrange(1, len(name_split)):

@@ -168,22 +168,33 @@ def pseudo_voigt_double_peak_fit(x_list, y_list, weights=None, plot=False, datas
     pvmod1 = GaussianModel(prefix='pv1_')
     pvmod2 = GaussianModel(prefix='pv2_')
     linmod = LinearModel(prefix='lm_')
-    # mod = PseudoVoigtDoublePeakModel()
-    mod = pvmod1 + pvmod2
+    mod = PseudoVoigtDoublePeakModel()
+    # mod = pvmod1 + pvmod2
     p_guess = guesspara_double_peak(x_list, y_list)
     # params = mod.make_params(pv1_amplitud=p_guess[0], pv1_center=p_guess[1], pv1_sigma=p_guess[2])
-    pars = mod.make_params(pv1_amplitud=p_guess[0], pv1_center=p_guess[1], pv1_sigma=p_guess[2],
-                              pv2_amplitud=p_guess[3], pv2_center=p_guess[4], pv2_sigma=p_guess[5])  # ,
+    # pars = mod.make_params(pv1_amplitud=p_guess[0], pv1_center=p_guess[1], pv1_sigma=p_guess[2],
+    #                           pv2_amplitud=p_guess[3], pv2_center=p_guess[4], pv2_sigma=p_guess[5])  # ,
                               # lm_intercept=p_guess[6], lm_slope=0)
-    # pars = mod.make_params(amplitude1=p_guess[0], center1=p_guess[1], sigma1=p_guess[2],
-    #                        amplitude2=p_guess[3], center2=p_guess[4], sigma2=p_guess[5],
-    #                        const=p_guess[6], a=0)
+    pars = mod.make_params(amplitude1=p_guess[0], center1=p_guess[1], sigma1=p_guess[2],
+                           amplitude2=p_guess[3], center2=p_guess[4], sigma2=p_guess[5],
+                           const=p_guess[6], a=0)
     # pars['lm_slope'].vary=False
-    # pars['center1'].set(value=p_guess[1], min=p_guess[1]-p_guess[2], max=p_guess[1]+p_guess[2])
-    # pars['center2'].set(value=p_guess[4], min=p_guess[4]-p_guess[5], max=p_guess[4]+p_guess[5])
-    pars['pv2_center'].set(value=p_guess[1], min=p_guess[1]-p_guess[2], max=p_guess[1]+p_guess[2])
-    pars['pv2_center'].set(value=p_guess[4], min=p_guess[4]-p_guess[5], max=p_guess[4]+p_guess[5])
-    # pars['a'].vary=False
+    min1 = p_guess[1] - p_guess[2]
+    max1 = p_guess[1] + p_guess[2]
+    if abs(min1 - max1) < 0.0001:
+        min1 = p_guess[1] - p_guess[1] * 0.1
+        max1 = p_guess[1] + p_guess[1] * 0.1
+    min2 = p_guess[4] - p_guess[5]
+    max2 = p_guess[4] + p_guess[5]
+    if abs(min2 - max2) < 0.0001:
+        min2 = p_guess[4] - p_guess[4] * 0.1
+        max2 = p_guess[4] + p_guess[4] * 0.1
+
+    pars['center1'].set(value=p_guess[1], min=min1, max=max1)
+    pars['center2'].set(value=p_guess[4], min=min2, max=max2)
+    # pars['pv2_center'].set(value=p_guess[1], min=p_guess[1]-p_guess[2], max=p_guess[1]+p_guess[2])
+    # pars['pv2_center'].set(value=p_guess[4], min=p_guess[4]-p_guess[5], max=p_guess[4]+p_guess[5])
+    pars['a'].vary=False
     # parss = pvmod2.make_params(pv2_amplitud=p_guess[3], pv2_center=p_guess[4], pv2_sigma=p_guess[5])
     # pars.add_many(parss)
     # pars.update(parss)
@@ -202,8 +213,10 @@ def pseudo_voigt_double_peak_fit(x_list, y_list, weights=None, plot=False, datas
         res = ['nan', 'nan']
     else:
         # print out.params["center"].value, out.params["center"].stderr
-        res = [out.params["pv1_center"].value, out.params["pv1_center"].stderr,
-               out.params["pv2_center"].value, out.params["pv2_center"].stderr] # p_final[2]
+        # res = [out.params["pv1_center"].value, out.params["pv1_center"].stderr,
+        #        out.params["pv2_center"].value, out.params["pv2_center"].stderr] # p_final[2]
+        res = [out.params["center1"].value, out.params["center1"].stderr,
+               out.params["center2"].value, out.params["center2"].stderr] # p_final[2]
     # print "hallo", res
     if plot:
         plt.figure("Dataset: {}, Phase: {}, force: {}, Chi: {}".format(dataset, phase, force, Chi))
@@ -237,7 +250,7 @@ def guesspara_double_peak(x_list, y_list):
     amplitudes = []
     def df_dx(x1, f1, x2, f2):
         return (f2-f1)/(x2-x1)
-    for i in xrange(5, len(y_list)-5):
+    for i in xrange(8, len(y_list)-8):
         dfdx_left=[]
         dfdx_right=[]
         for ii in xrange(1, 4):
@@ -251,12 +264,14 @@ def guesspara_double_peak(x_list, y_list):
             y1 = y_list[i]
             y2 = y_list[i+ii]
             dfdx_right.append(df_dx(x1, y1, x2, y2))
-        dfdx_left = np.average(np.array(dfdx_left))
-        dfdx_right = np.average(np.array(dfdx_right))
-        condition1 = df_dx(x_list[i], y_list[i], x_list[i - 1], y_list[i - 1])
-        condition2 = (y_list[i] > y_list[i + 1] > y_list[i + 2] > y_list[i + 3] > y_list[i + 4] > y_list[i + 5])
-        condition3 = (y_list[i] > y_list[i - 1] > y_list[i - 2] > y_list[i - 3] > y_list[i - 4] > y_list[i - 5])
-        if condition2 and condition3 and dfdx_left > 0 and dfdx_right < 0:
+
+        dfdx_left = np.sum(np.array(dfdx_left))
+        dfdx_right = np.sum(np.array(dfdx_right))
+        condition1 = max(y_list[i-5:i+5])<=y_list[i]
+        condition2 = (y_list[i] > y_list[i + 1] > y_list[i + 2])
+        condition3 = (y_list[i] > y_list[i - 1] > y_list[i - 2])
+        condition4 = dfdx_left > 0 and dfdx_right < 0
+        if condition1 and y_list[i]-200>min(y_list) and condition4:
             amplitudes.append([i, y_list[i]])
 
     first, second = amplitudes[0][1], amplitudes[-1][1]
