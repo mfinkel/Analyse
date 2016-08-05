@@ -621,6 +621,12 @@ class CentralWidget(QWidget):
             self.widget_set_data_path = LOAD_SPODI_DATA("set data path", number_of_phases=n_o_p,
                                                         number_of_straind_datasets=n_o_d)
             self.connect(self.widget_set_data_path, SIGNAL("data_dir_list"), self.receve_the_pathes_SPODI_case)
+            try:
+                self.phase_peak_region = self.region.load()
+                self.loaded_peak_region = True
+            except IOError:
+                self.loaded_peak_region = False
+                self.phase_peak_region = []
 
         elif self.choose_experiment_comb_box.currentText() == "POLDI":
             self.widget_set_data_path = LOAD_STANDARD_DATA("set data path", number_of_phases=n_o_p)
