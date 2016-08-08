@@ -572,7 +572,7 @@ class CentralWidget(QWidget):
         fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
         print(r)
 
-        v = np.linspace(0.7, 1.8, 23, endpoint=True)
+        v = np.linspace(VAL.min(), VAL.max(), 23, endpoint=True)
         p1 = axs.contourf(theta, r, VAL, v)  # 100,,  vmin=0.7, vmax=1.8
         axs.grid(True)
 
