@@ -135,12 +135,17 @@ def pseudo_voigt_single_peak_fit(x_list, y_list, weights=None, plot=False, datas
     """
     mod = PseudoVoigtConstModel()
     p_guess = guesspara(x_list, y_list)
-    pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2])
-
+    pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2], const=p_guess[3])
+    pars['const'].set(min=0, max=max(y_list))
+    pars['center'].set(min=min(x_list), max=max(x_list))
     out = mod.fit(y_list, pars, x=x_list, weights=weights)  #
     y_ = out.best_fit
+    chisqr = out.redchi
+    chis = out.redchi/y_.max()**2
+    chiss = out.chisqr
 
-    if max(y_list) < 150. or max(y_list - y_) / max(y_list) > 0.2:
+    compare = max(y_list)-background(x_list, y_list, out.params['center'], out.params['fwhm'])
+    if max(y_list) < 150. or max(y_list - y_) / max(y_list) > 0.2 or compare < 500 or chis > 0.8:
         res = ['nan', 'nan']
     else:
         # print out.params["center"].value, out.params["center"].stderr
@@ -150,7 +155,10 @@ def pseudo_voigt_single_peak_fit(x_list, y_list, weights=None, plot=False, datas
         plt.figure("Dataset: {}, Phase: {}, force: {}, Chi: {}".format(dataset, phase, force, Chi))
         plt.plot(x_list, y_list, "bo")
         plt.plot(x_list, out.init_fit, "k--")
-        plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f" % (float(res[0]), float(res[1])))
+        try:
+            plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f, chisqr: %.2f\nchiout: %.1f, chiss: %.1f" % (float(res[0]), float(res[1]), chisqr, chis, chiss))
+        except TypeError:
+            plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f, chisqr: %.2f\nchiout: %.1f, chiss: %.1f" % (float(res[0]), float(res[1]), chisqr, -1, chiss))
         plt.legend(loc='upper right', numpoints=1)
         plt.show()
     # print (out.fit_report(min_correl=0.75))
@@ -208,6 +216,7 @@ def pseudo_voigt_double_peak_fit(x_list, y_list, weights=None, plot=False, datas
 
     out = mod.fit(y_list, pars, x=x_list, weights=weights)  #
     y_ = out.best_fit
+    chisqr = out.redchi
 
     if max(y_list) < 150. or max(y_list - y_) / max(y_list) > 0.2:
         res = ['nan', 'nan']
@@ -222,11 +231,20 @@ def pseudo_voigt_double_peak_fit(x_list, y_list, weights=None, plot=False, datas
         plt.figure("Dataset: {}, Phase: {}, force: {}, Chi: {}".format(dataset, phase, force, Chi))
         plt.plot(x_list, y_list, "bo")
         plt.plot(x_list, out.init_fit, "k--")
-        plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f" % (float(res[0]), float(res[1])))
+        plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f, chisqr: %.2f" % (float(res[0]), float(res[1]), chisqr))
         plt.legend(loc='upper right', numpoints=1)
         plt.show()
     # print (out.fit_report(min_correl=0.75))
     return res
+
+def background(x_list, y_list, center, fwhm):
+    back = 0
+    count = 0
+    for i in xrange(len(x_list)):
+        if not center-fwhm < x_list[i] < center + fwhm:
+            back += y_list[i]
+            count += 1
+    return back/count
 
 def gauss_fitting_neu(x_list, av_count_l):
     p_guess = guesspara(x_list, av_count_l)

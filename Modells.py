@@ -2338,8 +2338,8 @@ class FitGneupelHerold(FitStrainWithTexture):
             result = fitting_Reus(Gamma, s1, s2, s1_err, s2_err)
 
         date = tm.localtime()
-        for hkl in self.hkl_list_dict[phase]:
-            h, k, l = hkl[0], hkl[1], hkl[2]
+        # for hkl in self.hkl_list_dict[phase]:
+        #     h, k, l = hkl[0], hkl[1], hkl[2]
             # self.plot_data(h, k, l, phase, params=result.params, with_fit=True, method=method)
         # self.plot_data_gamma(Gamma, phase, s1, s1_err, s2, s2_err, params=result.params, method=method)
         nice_result = self.__print_result(result,  date_of_fit=date, method=fit_method)
