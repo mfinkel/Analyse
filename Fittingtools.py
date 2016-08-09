@@ -8,7 +8,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 import scipy.odr.odrpack as odr
 import matplotlib.pyplot as plt
-from lmfit.models import PseudoVoigtModel
+from lmfit.models import PseudoVoigtConstModel, PseudoVoigtDoublePeakModel, PseudoVoigtModel, LinearModel, GaussianModel
 
 
 def breite(x, y):
@@ -124,37 +124,127 @@ def gauss_lin_fitting(x_list, av_count_l, plot=False):
     # print 'Theta: ',p_final[1], ' ', res[0]
     return res
 
-def gauss_lin_fitting_2(x_list, av_count_l, weights=None, plot=False):
+def pseudo_voigt_single_peak_fit(x_list, y_list, weights=None, plot=False, dataset=False, force=False, Chi=False, phase=False):
     """
     fitting one peak with a psoido voigt function
     :param x_list:
-    :param av_count_l:
+    :param y_list:
     :param weights:
     :param plot:
     :return:
     """
-    mod = PseudoVoigtModel()
-    p_guess = guesspara(x_list, av_count_l)
-    pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2])
-
-    out = mod.fit(av_count_l, pars, x=x_list, weights=weights)  #
+    mod = PseudoVoigtConstModel()
+    p_guess = guesspara(x_list, y_list)
+    pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2], const=p_guess[3])
+    pars['const'].set(min=0, max=max(y_list))
+    pars['center'].set(min=min(x_list), max=max(x_list))
+    out = mod.fit(y_list, pars, x=x_list, weights=weights)  #
     y_ = out.best_fit
+    chisqr = out.redchi
+    chis = out.redchi/y_.max()**2
+    chiss = out.chisqr
 
-    if max(av_count_l) < 150. or max(av_count_l - y_) / max(av_count_l) > 0.2:
+    compare = max(y_list)-background(x_list, y_list, out.params['center'], out.params['fwhm'])
+    if max(y_list) < 150. or max(y_list - y_) / max(y_list) > 0.2 or compare < 500 or chis > 0.8:
         res = ['nan', 'nan']
     else:
         # print out.params["center"].value, out.params["center"].stderr
         res = [out.params["center"].value, out.params["center"].stderr] # p_final[2]
     # print "hallo", res
     if plot:
-        plt.plot(x_list, av_count_l, "bo")
+        plt.figure("Dataset: {}, Phase: {}, force: {}, Chi: {}".format(dataset, phase, force, Chi))
+        plt.plot(x_list, y_list, "bo")
         plt.plot(x_list, out.init_fit, "k--")
-        plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f" % (res[0], res[1]))
+        try:
+            plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f, chisqr: %.2f\nchiout: %.1f, chiss: %.1f" % (float(res[0]), float(res[1]), chisqr, chis, chiss))
+        except TypeError:
+            plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f, chisqr: %.2f\nchiout: %.1f, chiss: %.1f" % (float(res[0]), float(res[1]), chisqr, -1, chiss))
         plt.legend(loc='upper right', numpoints=1)
         plt.show()
     # print (out.fit_report(min_correl=0.75))
     return res
 
+def pseudo_voigt_double_peak_fit(x_list, y_list, weights=None, plot=False, dataset=False, force=False, Chi=False, phase=False):
+    """
+    fitting one peak with a psoido voigt function
+    :param x_list:
+    :param y_list:
+    :param weights:
+    :param plot:
+    :return:
+    """
+    pvmod1 = GaussianModel(prefix='pv1_')
+    pvmod2 = GaussianModel(prefix='pv2_')
+    linmod = LinearModel(prefix='lm_')
+    mod = PseudoVoigtDoublePeakModel()
+    # mod = pvmod1 + pvmod2
+    p_guess = guesspara_double_peak(x_list, y_list)
+    # params = mod.make_params(pv1_amplitud=p_guess[0], pv1_center=p_guess[1], pv1_sigma=p_guess[2])
+    # pars = mod.make_params(pv1_amplitud=p_guess[0], pv1_center=p_guess[1], pv1_sigma=p_guess[2],
+    #                           pv2_amplitud=p_guess[3], pv2_center=p_guess[4], pv2_sigma=p_guess[5])  # ,
+                              # lm_intercept=p_guess[6], lm_slope=0)
+    pars = mod.make_params(amplitude1=p_guess[0], center1=p_guess[1], sigma1=p_guess[2],
+                           amplitude2=p_guess[3], center2=p_guess[4], sigma2=p_guess[5],
+                           const=p_guess[6], a=0)
+    # pars['lm_slope'].vary=False
+    min1 = p_guess[1] - p_guess[2]
+    max1 = p_guess[1] + p_guess[2]
+    if abs(min1 - max1) < 0.0001:
+        min1 = p_guess[1] - p_guess[1] * 0.1
+        max1 = p_guess[1] + p_guess[1] * 0.1
+    min2 = p_guess[4] - p_guess[5]
+    max2 = p_guess[4] + p_guess[5]
+    if abs(min2 - max2) < 0.0001:
+        min2 = p_guess[4] - p_guess[4] * 0.1
+        max2 = p_guess[4] + p_guess[4] * 0.1
+
+    pars['center1'].set(value=p_guess[1], min=min1, max=max1)
+    pars['center2'].set(value=p_guess[4], min=min2, max=max2)
+    # pars['pv2_center'].set(value=p_guess[1], min=p_guess[1]-p_guess[2], max=p_guess[1]+p_guess[2])
+    # pars['pv2_center'].set(value=p_guess[4], min=p_guess[4]-p_guess[5], max=p_guess[4]+p_guess[5])
+    pars['a'].vary=False
+    # parss = pvmod2.make_params(pv2_amplitud=p_guess[3], pv2_center=p_guess[4], pv2_sigma=p_guess[5])
+    # pars.add_many(parss)
+    # pars.update(parss)
+    # pars.update(linmod.make_params())
+    # pars.update(pvmod2.make_params(pv2_amplitud=p_guess[3], pv2_center=p_guess[4], pv2_sigma=p_guess[5]))
+    # pars.update(linmod.make_params(lm_intercept=p_guess[6], lm_slope=0))
+
+
+    # pars = mod.make_params(amplitude1=p_guess[0], center1=p_guess[1], sigma1=p_guess[2],
+    #                        amplitude2=p_guess[3], center2=p_guess[4], sigma2=p_guess[5], const=p_guess[6])
+
+    out = mod.fit(y_list, pars, x=x_list, weights=weights)  #
+    y_ = out.best_fit
+    chisqr = out.redchi
+
+    if max(y_list) < 150. or max(y_list - y_) / max(y_list) > 0.2:
+        res = ['nan', 'nan']
+    else:
+        # print out.params["center"].value, out.params["center"].stderr
+        # res = [out.params["pv1_center"].value, out.params["pv1_center"].stderr,
+        #        out.params["pv2_center"].value, out.params["pv2_center"].stderr] # p_final[2]
+        res = [out.params["center1"].value, out.params["center1"].stderr,
+               out.params["center2"].value, out.params["center2"].stderr] # p_final[2]
+    # print "hallo", res
+    if plot:
+        plt.figure("Dataset: {}, Phase: {}, force: {}, Chi: {}".format(dataset, phase, force, Chi))
+        plt.plot(x_list, y_list, "bo")
+        plt.plot(x_list, out.init_fit, "k--")
+        plt.plot(x_list, out.best_fit, 'r-', label = "T: %.3f\nerr: %.5f, chisqr: %.2f" % (float(res[0]), float(res[1]), chisqr))
+        plt.legend(loc='upper right', numpoints=1)
+        plt.show()
+    # print (out.fit_report(min_correl=0.75))
+    return res
+
+def background(x_list, y_list, center, fwhm):
+    back = 0
+    count = 0
+    for i in xrange(len(x_list)):
+        if not center-fwhm < x_list[i] < center + fwhm:
+            back += y_list[i]
+            count += 1
+    return back/count
 
 def gauss_fitting_neu(x_list, av_count_l):
     p_guess = guesspara(x_list, av_count_l)
@@ -173,7 +263,49 @@ def guesspara(x_list, y_list):
     p_guess = [amplitude, x_center, sigma, offset]
     return p_guess
 
+def guesspara_double_peak(x_list, y_list):
+    # calc amlitudes:
+    amplitudes = []
+    def df_dx(x1, f1, x2, f2):
+        return (f2-f1)/(x2-x1)
+    for i in xrange(8, len(y_list)-8):
+        dfdx_left=[]
+        dfdx_right=[]
+        for ii in xrange(1, 4):
+            x1 = x_list[i-ii]
+            x2 = x_list[i]
+            y1 = y_list[i-ii]
+            y2 = y_list[i]
+            dfdx_left.append(df_dx(x1, y1, x2, y2))
+            x1 = x_list[i]
+            x2 = x_list[i+ii]
+            y1 = y_list[i]
+            y2 = y_list[i+ii]
+            dfdx_right.append(df_dx(x1, y1, x2, y2))
 
+        dfdx_left = np.sum(np.array(dfdx_left))
+        dfdx_right = np.sum(np.array(dfdx_right))
+        condition1 = max(y_list[i-5:i+5])<=y_list[i]
+        condition2 = (y_list[i] > y_list[i + 1] > y_list[i + 2])
+        condition3 = (y_list[i] > y_list[i - 1] > y_list[i - 2])
+        condition4 = dfdx_left > 0 and dfdx_right < 0
+        if condition1 and y_list[i]-200>min(y_list) and condition4:
+            amplitudes.append([i, y_list[i]])
+
+    first, second = amplitudes[0][1], amplitudes[-1][1]
+    first_i, second_i = amplitudes[0][0], amplitudes[-1][0]
+    amplitude1 = first - min(y_list)
+    amplitude2 = second - min(y_list)
+    x_center1 = x_list[first_i]
+    x_center2 = x_list[second_i]
+    index_betwen_peaks = int((second_i-first_i)/2 + first_i)
+    offset = min(y_list)
+    temp_sigma1 = breite(x_list[0:index_betwen_peaks], y_list[0:index_betwen_peaks])
+    temp_sigma2 = breite(x_list[index_betwen_peaks:], y_list[index_betwen_peaks:])
+    sigma1 = temp_sigma1[0] / 2.3548
+    sigma2 = temp_sigma2[0] / 2.3548
+    p_guess = [amplitude1, x_center1, sigma1, amplitude2, x_center2, sigma2, offset]
+    return p_guess
 # least_square Fitt to determine the compliences
 
 def Gamma(h, k, l):

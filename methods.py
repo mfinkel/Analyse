@@ -199,7 +199,7 @@ class dataset:
             y = int(peak_regions[j][4])
             dax = self.data[0][x:y]
             day = self.data[1][x:y]
-            gauss = Fittingtools.gauss_lin_fitting_2(dax, day, plot=False)
+            gauss = Fittingtools.pseudo_voigt_single_peak_fit(dax, day, plot=False)
             self.hkl_TTheta[j][3] = gauss[0]
             self.hkl_TTheta[j][4] = gauss[1]
 

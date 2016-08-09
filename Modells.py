@@ -1114,19 +1114,15 @@ class FitStrainWithTexture(object):
         theory_fix = []
 
         for n in xrange(len(applied_forces)):  # Loop over all forces
-            xvals_fit1 = xvals_fitted[n]
-            xvals_fit2 = xvals_fitted[n + 1]
-            st_st_1 = strain_stress_data_fitted[n]
-            st_st_2 = strain_stress_data_fitted[n + 1]
+            xvals_fit = xvals_fitted[n]
+            # st_st_1 = strain_stress_data_fitted[n]
+            # st_st_2 = strain_stress_data_fitted[n+1]
             # print xvals_mat
             # print "applied_force: ", applied_forces
             # xvals_inc = xvals_inclusion[n]
             # print len(xvals_mat)
-            for m in xrange(len(xvals_fit1)):
-                phi1, psi1, h1, k1, l1 = xvals_fit1[m]
-                mach_token = -1
-                for a in xrange(len(xvals_fit2)):
-
+            for m in xrange(len(xvals_fit)):
+                phi, psi, h, k, l = xvals_fit[m]
                 # print "phi: ", phi
                 strain_fit, strain_fit_err, stress_fit, stress_fit_err = strain_stress_data_fitted[n][m]
                 data_fit.append(strain_fit / stress_fit)
@@ -2210,7 +2206,7 @@ class FitGneupelHerold(FitStrainWithTexture):
         return hkl_list_dict
 
     def create_hkl_data_dict(self):
-        hkl_data_dict = {}
+        hkl_data_dict = {}  # hkl_data_dict={phase:{hkl:[cos^2psi, delta_epsilon/delta_sigma, error]}}
         # hkl_pattern = re.compile(r'(\d)(\d)(\d)')
         for phase in self.data_object.fitted_data.data_dict:
             hkl_data_dict[phase] = {}
@@ -2241,7 +2237,7 @@ class FitGneupelHerold(FitStrainWithTexture):
                     phi, psi_, h, k, l = phi_psi_hkl_1[i]
                     for j in xrange(len(phi_psi_hkl_2)):
                         phi_2, psi__2, h_2, k_2, l_2 = phi_psi_hkl_2[j]
-                        if phi == phi_2 and psi_ == psi__2 and h == h_2 and k == k_2 and l == l_2:
+                        if abs(phi - phi_2)<0.001 and abs(psi_ - psi__2)<0.001 and h == h_2 and k == k_2 and l == l_2:
                             eps_1, eps_err_1, stress_1, stress_err_1 = eps_strain_1[i]
                             eps_2, eps_err_2, stress_2, stress_err_2 = eps_strain_2[j]
                             hkl_ = str(int(h)) + str(int(k)) + str(int(l))
@@ -2300,8 +2296,6 @@ class FitGneupelHerold(FitStrainWithTexture):
                 # plt.legend()
                 # plt.xlim([0, 1])
 
-
-
             except TypeError:
                 pass
 
@@ -2344,8 +2338,8 @@ class FitGneupelHerold(FitStrainWithTexture):
             result = fitting_Reus(Gamma, s1, s2, s1_err, s2_err)
 
         date = tm.localtime()
-        for hkl in self.hkl_list_dict[phase]:
-            h, k, l = hkl[0], hkl[1], hkl[2]
+        # for hkl in self.hkl_list_dict[phase]:
+        #     h, k, l = hkl[0], hkl[1], hkl[2]
             # self.plot_data(h, k, l, phase, params=result.params, with_fit=True, method=method)
         # self.plot_data_gamma(Gamma, phase, s1, s1_err, s2, s2_err, params=result.params, method=method)
         nice_result = self.__print_result(result,  date_of_fit=date, method=fit_method)
@@ -2476,6 +2470,118 @@ class FitGneupelHerold(FitStrainWithTexture):
         return out
 
 
+class TensileTest(FitGneupelHerold):
+    def __init__(self, data_object, material):
+        FitGneupelHerold.__init__(self, data_object, material)
+
+    def create_hkl_data_dict(self):
+        hkl_data_dict = {}  # hkl_data_dict={phase:{hkl:[cos^2psi, strain, strain_err, stress, stress_err]}}
+        for phase in self.data_object.fitted_data.data_dict:  # create the structure
+            hkl_data_dict[phase] = {}
+            for hkl in self.hkl_list_dict[phase]:
+                hkl_data_dict[phase][hkl] = [[], [], [], [], []]  # [[cos(psi)^2, strain, strain_err, stress, stress_err], ...]
+
+        for phase in self.data_object.fitted_data.data_dict:  # loop over all phases
+            force_dict = self.data_object.fitted_data.data_dict[phase]
+            force_keys = sorted(force_dict.keys())
+            for force in force_keys:  # loop over al forces
+                phi_psi_hkl, eps_strain = force_dict[force]
+                for i in xrange(len(phi_psi_hkl)):
+                    phi, psi, h, k, l = phi_psi_hkl[i]
+                    eps, eps_err, stress, stress_err = eps_strain[i]
+                    hkl_ = str(int(h)) + str(int(k)) + str(int(l))
+                    if hkl_ in hkl_data_dict[phase].keys():
+                        hkl_data_dict[phase][hkl_][0].append(np.cos(psi) ** 2)
+                        hkl_data_dict[phase][hkl_][1].append(eps)
+                        hkl_data_dict[phase][hkl_][2].append(eps_err)
+                        hkl_data_dict[phase][hkl_][3].append(stress)
+                        hkl_data_dict[phase][hkl_][4].append(stress_err)
+        self.hkl_data_dict = hkl_data_dict
+
+    def lateral_contraction(self, phase):
+        """
+        plot the lateral contraction (Querkontraktion, Psi=90°).
+        For this plot strain over stress. Linear fit the result.
+        strain = s1 * stress.
+        :param phase:
+        :return: a dictionary containing all s1, s1err parameters as values and the millerindices hkl as key.
+        """
+        data = self.hkl_data_dict[phase]
+        result = {}
+        plt.figure("lateral contraction, phase: {}".format(phase))
+        for hkl in data.keys():
+            eps = []
+            eps_err = []
+            sig = []
+            sig_err = []
+            for i in xrange(len(data[hkl][1])):
+                if data[hkl][0][i]<0.00001:  # means if Psi==90 eg. chi=0
+                    eps.append(data[hkl][1][i])
+                    eps_err.append(data[hkl][2][i])
+                    sig.append(data[hkl][3][i])
+                    sig_err.append(data[hkl][4][i])
+            Fit = LinFit()
+            a, aerr, s1, s1err = Fit.lin_fit(sig, eps, eps_err, a_const=False)
+            result[hkl] = [s1, s1err]
+            eps_calc = Fit.get_x_y_vals(sig)
+            plt.errorbar(sig, eps, yerr=eps_err, xerr=sig_err, fmt="o", label="hkl: {}, s1: {}".format(hkl, s1))
+            plt.plot(sig, eps_calc, "-r")
+        plt.legend()
+        plt.xlabel('$\sigma_{33}$')
+        plt.ylabel('$\epsilon$')
+        plt.show()
+        return result
+
+    def longitudinal_strain(self, phase):
+        """
+        plot the longitudinal  contraction (Längsdehnung, Psi!=90°).
+        For this plot strain over stress. Linear fit the result.
+        strain = (s1 +s2 * cos**2(Psi)) * stress = m * stress.
+        :param phase:
+        :return: a dictionary containing all s1, s1err parameters as values and the millerindices hkl as key.
+        """
+        data = self.hkl_data_dict[phase]
+        result = {}
+        plt.figure("longitudinal strain, phase: {}".format(phase))
+        for hkl in data.keys():
+            eps = []
+            eps_err = []
+            sig = []
+            sig_err = []
+            for i in xrange(len(data[hkl][1])):
+                if data[hkl][0][i] > 0.00001:  # means if Psi==90 eg. chi=0
+                    eps.append(data[hkl][1][i])
+                    eps_err.append(data[hkl][2][i])
+                    sig.append(data[hkl][3][i])
+                    sig_err.append(data[hkl][4][i])
+            Fit = LinFit()
+            a, aerr, m, merr = Fit.lin_fit(sig, eps, eps_err, a_const=False)
+            result[hkl] = [m, merr, data[hkl][0][0]]
+            eps_calc = Fit.get_x_y_vals(sig)
+            plt.errorbar(sig, eps, yerr=eps_err, xerr=sig_err, fmt="o", label="hkl: {}, m: {}".format(hkl, m))
+            plt.plot(sig, eps_calc, "-r")
+        plt.legend()
+        plt.xlabel('$\sigma_{33}$')
+        plt.ylabel('$\epsilon$')
+        plt.show()
+        return result
+
+    def fit_all_hkl(self, phase):
+        s1_dict = self.lateral_contraction(phase)
+        m_dict = self.longitudinal_strain(phase)
+        s1l = []
+        s1errl = []
+        s2l = []
+        s2errl = []
+        hkl_l = []
+        for hkl in s1_dict.keys():
+            s2l.append((m_dict[hkl][0]-s1_dict[hkl][0])/m_dict[hkl][2])
+            s2errl.append((1/m_dict[hkl][2])*np.sqrt(m_dict[hkl][1]**2+s1_dict[hkl][1]**2))
+            hkl_l.append(hkl)
+            s1l.append(s1_dict[hkl][0])
+            s1errl.append(s1_dict[hkl][1])
+        self.Data.set_data(hkl=hkl_l, s1=s1l, s2=s2l, s1_err=s1errl, s2_err=s2errl)
+        return {}
 
 class LinFit(object):
     def __init__(self):
@@ -2502,7 +2608,7 @@ class LinFit(object):
         weight = np.array(weight)
         return (model - ydata) / weight
 
-    def lin_fit(self, xdata, ydata = None, yerr=None):
+    def lin_fit(self, xdata, ydata = None, yerr=None, a_const=False):
         self.xdata = xdata
         self.ydata = ydata
         self.ydataerr = yerr
@@ -2513,14 +2619,21 @@ class LinFit(object):
         params = lm.Parameters()
         params.add('a', value=a0)
         params.add('b', value=b0)
+        if a_const:
+            params['a'].vary = False
+            params['a'].value = 0
         result = lm.minimize(self.residual, params, args=(self.xdata,),
-                                 kws={'ydata': self.ydata, 'weight': self.ydataerr})
+                             kws={'ydata': self.ydata, 'weight': self.ydataerr})
         # res = [out.params["center"].value, out.params["center"].stderr]
         a = result.params['a'].value
         aerr = result.params['a'].stderr
         b = result.params['b'].value
         berr = result.params['b'].stderr
+        self.params = result.params
         return a, aerr, b, berr
+
+    def get_x_y_vals(self, xdata):
+        return self.residual(self.params, xdata)
 
     def __start_vals(self, x, y):
         print x, y

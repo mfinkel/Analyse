@@ -437,6 +437,7 @@ class CentralWidget(QWidget):
         self.ok_button = QPushButton("OK")
         self.cancel_button = QPushButton("Cancel")
         self.region = phase_region_class()
+        self.checkBoxPlotFits = QCheckBox("Plot fit's ")
 
         try:
             self.phase_peak_region = self.region.load()
@@ -452,8 +453,8 @@ class CentralWidget(QWidget):
         self.number_of_phases_selecttion = self.create_n_o_phases_combbox()
         self.number_of_datasets_under_strain = self.create_number_of_datasets_combbox()
         self.diameter = QLineEdit("6")
-        self.automate = QLabel("select hkl manualy?")
-        self.select_hkl_setting_manualy_coice = self.create_jn_combbox()
+        # self.automate = QLabel("select hkl manualy?")  # QCheckBox("select hkl manually")
+        self.select_hkl_setting_manualy_coice = QCheckBox("select hkl manually")  # self.create_jn_combbox()
         self.load_data_button = QPushButton('load Data')
         self.load_data_button.setEnabled(False)
 
@@ -466,6 +467,7 @@ class CentralWidget(QWidget):
         # add the central plot to display the data
         self.central_plot = matplotlibwidget.Preview("Select_Data")
         self.connect(self.central_plot, SIGNAL("phase_peak_region"), self.set_hkl_setting_and_fit_the_peaks_SPODI)
+        self.connect(self.central_plot, SIGNAL("MIN_MAX_COLOR"), self.color_peaks)
 
         # handel the fitting process
         self.Fit_phase = QLabel("Fit phases: ")
@@ -487,11 +489,15 @@ class CentralWidget(QWidget):
         self.do_the_fit_gh_button.setEnabled(False)
         self.do_the_fit_gh_button.clicked.connect(self.do_the_fit_gh)
 
+        self.do_the_fit_tt_button = QPushButton('fit TT')
+        self.do_the_fit_tt_button.setEnabled(False)
+        self.do_the_fit_tt_button.clicked.connect(self.do_the_fit_tensile_test)
+
         self.material = QLineEdit("iron")
         self.output_filename = QLineEdit("Result_" + str(self.material.text()) + "_" + str(self.modi.currentText()))
         self.material.returnPressed.connect(self.change_outputfile_name)
         self.modi.currentIndexChanged.connect(self.change_outputfile_name)
-        self.connect(self, SIGNAL("data"), self.central_plot.add_data)
+        # self.connect(self, SIGNAL("data"), self.central_plot.add_data)
 
         self.insert_startvals_button = QPushButton("insert params")
         self.insert_startvals_button.setEnabled(False)
@@ -538,6 +544,7 @@ class CentralWidget(QWidget):
     def plot_pole_figure_thread(self):
         self.do_the_fit_button.setEnabled(False)
         self.do_the_fit_gh_button.setEnabled(False)
+        self.do_the_fit_tt_button.setEnabled(False)
         h = int(str(self.miller_h.text()))
         k = int(str(self.miller_k.text()))
         l = int(str(self.miller_l.text()))
@@ -561,15 +568,16 @@ class CentralWidget(QWidget):
         h, k, l, theta, r, VAL = args[0]
         self.do_the_fit_button.setEnabled(True)
         self.do_the_fit_gh_button.setEnabled(True)
+        self.do_the_fit_tt_button.setEnabled(True)
         fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
         print(r)
 
-        v = np.linspace(0.7, 1.8, 23, endpoint=True)
-        p1 = axs.contourf(theta, r, VAL, v,  vmin=0.7, vmax=1.8)  # 100,
+        v = np.linspace(VAL.min(), VAL.max(), 23, endpoint=True)
+        p1 = axs.contourf(theta, r, VAL, v)  # 100,,  vmin=0.7, vmax=1.8
         axs.grid(True)
 
         cbar = plt.colorbar(p1, ax=axs, ticks=v)  # norm=mpl.colors.Normalize(vmin=0.7, vmax=1.8))
-        cbar.set_clim(0.7, 1.8)
+        # cbar.set_clim(0.7, 1.8)
         axs.set_title("pole figure {}{}{}\n".format(h, k, l))
         axs.set_theta_zero_location("S")
         # axs.set_theta_offset(pi)
@@ -613,6 +621,12 @@ class CentralWidget(QWidget):
             self.widget_set_data_path = LOAD_SPODI_DATA("set data path", number_of_phases=n_o_p,
                                                         number_of_straind_datasets=n_o_d)
             self.connect(self.widget_set_data_path, SIGNAL("data_dir_list"), self.receve_the_pathes_SPODI_case)
+            try:
+                self.phase_peak_region = self.region.load()
+                self.loaded_peak_region = True
+            except IOError:
+                self.loaded_peak_region = False
+                self.phase_peak_region = []
 
         elif self.choose_experiment_comb_box.currentText() == "POLDI":
             self.widget_set_data_path = LOAD_STANDARD_DATA("set data path", number_of_phases=n_o_p)
@@ -658,12 +672,14 @@ class CentralWidget(QWidget):
 
         self.do_the_fit_button.setEnabled(True)
         self.do_the_fit_gh_button.setEnabled(True)
+        self.do_the_fit_tt_button.setEnabled(True)
         self.insert_startvals_button.setEnabled(True)
         self.plot_polefig_button.setEnabled(True)
         self.plot_data_button.setEnabled(True)
 
         self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material=self.material.text())
         self.fit_object_gh = Modells.FitGneupelHerold(data_object=self.data_object, material=self.material.text())
+        self.fit_object_TT = Modells.TensileTest(data_object=self.data_object, material=self.material.text())
         self.fit_object.print_params()
 
     def receve_the_pathes_SPODI_case(self, *args):
@@ -673,58 +689,82 @@ class CentralWidget(QWidget):
         :return:
         """
         print(args, len(args[0]))
-        odf1, odf2, unstraind, data_dir_list = args[0]
+        odf1, odf2, Data = args[0]
         odf1 = str(odf1)
         odf2 = str(odf2)
-        unstraind = str(unstraind)
-        for i in data_dir_list:
-            i = str(i)
-            print(i, type(i))
+        Data = str(Data)
+        # for i in data_dir_list:
+        #     i = str(i)
+        #     print(i, type(i))
         print(odf1)
         if odf2 == "None":
             odf2 = None
-        print(odf1, odf2, unstraind, data_dir_list)
+        print(odf1, odf2, Data)
         self.path_of_odf_phase1 = odf1
         self.path_of_odf_phase2 = odf2
-        self.path_of_unstraind_data = unstraind
-        self.path_of_data_under_strain = data_dir_list
+        self.path_of_unstraind_data = Data
+        # self.path_of_data_under_strain = data_dir_list
+        self.data_object = handle_data.SPODIData(sample_diameter=int(str(self.diameter.text())),
+                                                     odf_phase_1_file=self.path_of_odf_phase1,
+                                                     odf_phase_2_file=self.path_of_odf_phase2)
+        self.data_object.load_data(self.path_of_unstraind_data)
+        self.select_hkl_SPODI_Data()  # plot the data
+        if self.loaded_peak_region:
+            self.color_peakregion()
         self.load_data_button.setEnabled(True)
         self.load_data_button.clicked.connect(self.read_scattering_data_SPODI_case)
 
     def read_scattering_data_SPODI_case(self):
-        Bool = False
-        if self.select_hkl_setting_manualy_coice.currentText() == "Yes":
-            Bool = True
+        # Bool = self.select_hkl_setting_manualy_coice.isChecked()
+        # if self.select_hkl_setting_manualy_coice.isChecked()==True:  # .currentText() == "Yes":
+        #     Bool = True
 
-        self.data_object = handle_data.SPODIData(sample_diameter=int(str(self.diameter.text())),
-                                                 odf_phase_1_file=self.path_of_odf_phase1,
-                                                 odf_phase_2_file=self.path_of_odf_phase2)
-        self.data_object.load_data(self.path_of_data_under_strain)
+
 
         # self.Data_Iron = methods.Data_old(str(self.odf_phase_1_path.text()), 6)
         # self.Data_Iron.read_scattering_SPODI_data(path_of_unstraind_data=str(self.path_of_unstraind_data.text()),
         #                                           path_of_straind_data=str(self.path_of_straind_data_1.text()))
-
-        if Bool or not self.loaded_peak_region:
-            self.select_hkl_SPODI_Data()
+        self.select_hkl_SPODI_Data()
+        self.central_plot.roi_Button.setEnabled(False)
+        if self.select_hkl_setting_manualy_coice.isChecked() or not self.loaded_peak_region:
+            self.central_plot.roi_Button.setEnabled(True)
         else:
-            self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region, plot=False)
+            self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region,
+                                          plot=self.checkBoxPlotFits.isChecked())
             self.do_the_fit_button.setEnabled(True)
             self.do_the_fit_gh_button.setEnabled(True)
+            self.do_the_fit_tt_button.setEnabled(True)
             self.insert_startvals_button.setEnabled(True)
             self.plot_polefig_button.setEnabled(True)
             self.plot_data_button.setEnabled(True)
             # self.Data_Iron.fit_all_peaks()
         self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material="iron")
         self.fit_object_gh = Modells.FitGneupelHerold(data_object=self.data_object, material="iron")
+        self.fit_object_TT = Modells.TensileTest(data_object=self.data_object, material=self.material.text())
         # self.connect(self, SIGNAL('1'), self.fit_object.set_params_phase_1)
         # self.connect(self, SIGNAL('2'), self.fit_object.set_params_phase_2)
         self.fit_object.print_params()
 
     def select_hkl_SPODI_Data(self):
         x_data, y_data = self.data_object.get_sum_data()
-        print("data_x:", x_data)
+        # print("data_x:", x_data)
         self.central_plot.add_xy_data(x_data, y_data)
+
+    def color_peaks(self, MIN, MAX, color):
+        x_data, y_data = self.data_object.get_sum_data()
+        x_data = x_data[MIN:MAX]
+        y_data = y_data[MIN:MAX]
+        for i in xrange(len(x_data)):
+            y_data[i] = max(y_data)
+        y_data[0]=y_data[-1]=0
+        # print("data_x:", x_data)
+        self.central_plot.color_xy_data(x_data, y_data, color=color)
+
+    def color_peakregion(self):
+        color = matplotlibwidget.ColorGenerator()
+        for phasenr, hkl_region in self.phase_peak_region:
+            for h, k, l, MIN, MAX, double, peak in hkl_region:
+                self.color_peaks(MIN, MAX, color.get_color())
 
     def set_hkl_setting_and_fit_the_peaks_SPODI(self, value):
         self.phase_peak_region = value
@@ -732,20 +772,23 @@ class CentralWidget(QWidget):
         print("peak region: ", self.phase_peak_region)
 
         self.region.save(self.phase_peak_region)
-        self.region.load()
+        # self.region.load()
         # np.save(".\\phase_peak_region", np.array(self.phase_peak_region))
         print("saved peak region")
         print("------------------------------------")
+        self.select_hkl_SPODI_Data()
+        self.color_peakregion()
         self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region)
         # self.Data_Iron.set_hkl_setting(self.phase_peak_region)
         # self.Data_Iron.fit_all_peaks()
 
         self.do_the_fit_button.setEnabled(True)
         self.do_the_fit_gh_button.setEnabled(True)
+        self.do_the_fit_tt_button.setEnabled(True)
         self.insert_startvals_button.setEnabled(True)
         self.plot_polefig_button.setEnabled(True)
         self.plot_data_button.setEnabled(True)
-        print("coming from other class:", "\n", self.phase_peak_region)
+        # print("coming from other class:", "\n", self.phase_peak_region)
 
     def do_the_fit(self):
         self.plot_polefig_button.setEnabled(False)
@@ -813,8 +856,6 @@ class CentralWidget(QWidget):
             plt.errorbar(xdata, ydata, yerr=yerr, fmt='bo', label="Data")
             plots_dic[figname].append([xdata, ydata, yerr])
 
-
-
             plt.plot(Psi, val, 'r-', label="fit, \ns1 = {}\ns2 = {}".format(s1, s2))
 
             plt.xlabel('$\cos^2(\Psi)$')
@@ -853,6 +894,35 @@ class CentralWidget(QWidget):
     def fit_the_data(self):
         thread.start_new_thread(self.do_the_fit, ())
 
+    def do_the_fit_tensile_test(self):
+        # self.plot_polefig_button.setEnabled(False)
+        Bool = False
+        if self.text_jn.currentText() == "Yes":
+            Bool = True
+        print(self.modi.currentText(), "\n",
+              Bool)
+        print("----------------------------\n",
+              "Fit the data using model: " +
+              self.modi.currentText() +
+              "\n",
+              "With texture: ", self.text_jn.currentText(), "\n",
+              "Fitting phase: ", self.fit_phase_combbox, "\n",
+              "----------------------------")
+
+        # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
+
+        result = self.fit_object_TT.do_the_fitting_gneupel_herold(filename=str(self.output_filename.text()),
+                                                material="iron",
+                                                method=str(self.modi.currentText()),
+                                                phase=int(str(self.fit_phase_combbox.currentText())),
+                                                phase_name=self.name_of_phase_dic[
+                                                    int(str(self.fit_phase_combbox.currentText()))],
+                                                texture=Bool)
+        text = "Finnished calculation\nresults are stored under {}".format(result[1])
+        plot_dic = result[2]
+        self.show_result_of_fit(text, result, plot_dic)
+        # self.plot_polefig_button.setEnabled(True)
+
     def layout_handling(self):
         # Layout handling
         layout = QVBoxLayout()
@@ -880,17 +950,18 @@ class CentralWidget(QWidget):
         layout_load_data_h2.addWidget(self.choose_experiment_comb_box)
         layout_load_data_h2.addWidget(self.label("# of phases: "))
         layout_load_data_h2.addWidget(self.number_of_phases_selecttion)
-        layout_load_data_h2.addWidget(self.label("# of dataset's under strain: "))
-        layout_load_data_h2.addWidget(self.number_of_datasets_under_strain)
+        # layout_load_data_h2.addWidget(self.label("# of dataset's under strain: "))
+        # layout_load_data_h2.addWidget(self.number_of_datasets_under_strain)
         layout_load_data_h2.addWidget(self.open_data_folders)
-        layout_load_data_h3.addWidget(self.label("set diameter in mm: "))
-        layout_load_data_h3.addWidget(self.diameter)
-        layout_load_data_h3.addWidget(self.automate)
-        layout_load_data_h3.addWidget(self.select_hkl_setting_manualy_coice)
-        layout_load_data_h3.addWidget(self.load_data_button)
+        layout_load_data_h2.addWidget(self.label("set diameter in mm: "))
+        layout_load_data_h2.addWidget(self.diameter)
+        # layout_load_data_h3.addWidget(self.automate)
+        layout_load_data_h2.addWidget(self.select_hkl_setting_manualy_coice)
+        layout_load_data_h2.addWidget(self.checkBoxPlotFits)
+        layout_load_data_h2.addWidget(self.load_data_button)
         layout.addLayout(layout_load_data_h1)
         layout.addLayout(layout_load_data_h2)
-        layout.addLayout(layout_load_data_h3)
+        # layout.addLayout(layout_load_data_h3)
         layout.addWidget(HLine[2])
 
         # handel the fitting process
@@ -921,6 +992,7 @@ class CentralWidget(QWidget):
         layout_fitting_2.addWidget(self.with_fit_combbox)
         layout_fitting_2.addWidget(self.plot_data_button)
         layout_fitting_2.addWidget(self.do_the_fit_gh_button)
+        layout_fitting_2.addWidget(self.do_the_fit_tt_button)
         layout_fitting_2.addWidget(self.insert_startvals_button)
 
         layout.addLayout(layout_fitting)
@@ -1026,19 +1098,19 @@ class LOAD_SPODI_DATA(QWidget):
         self.unstraind_button = QPushButton("select unstraind")
 
         self.odf_phase_1_path = QLineEdit(
-            "H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Stahl ST37\\ST37_textur_complet_recalc.txt")
+            "H:\Masterarbeit STRESS-SPEC\Daten\Daten-bearbeitet\Daten\ODF_Daten\Duplex gezogen\DUBNA_pol\FE_ODF_compleat.txt")
         self.odf_phase_2_path = QLineEdit("None")  # "AL_textur_complet.txt"
-        self.path_of_unstraind_data = QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans ohne Last\\")
+        self.path_of_unstraind_data = QLineEdit("H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Daten\\Duplex_Stahl_gezogen\\200N\\")
 
         self.straind_data = []
         self.straind_data_lable = []
         self.straind_data_button = []
 
         # create boxes for all datafiles of different load
-        for i in xrange(number_of_straind_datasets):
-            self.straind_data.append(QLineEdit("..\\Daten-bearbeitet\\Stahl ST37\\" + "Euler-Scans unter 5kN\\"))
-            self.straind_data_lable.append(QLabel("select straind data %i:" % (i)))
-            self.straind_data_button.append(QPushButton("select straind %i:" % (i)))
+        # for i in xrange(number_of_straind_datasets):
+        #     self.straind_data.append(QLineEdit("H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Daten\\Duplex_Stahl_gezogen\\5KN\\"))
+        #     self.straind_data_lable.append(QLabel("select straind data %i:" % (i)))
+        #     self.straind_data_button.append(QPushButton("select straind %i:" % (i)))
 
         self.select_odf_phase_1 = QLabel("select odf phase 1:   ")
         self.select_odf_phase_2 = QLabel("select odf phase 2:   ")
@@ -1048,8 +1120,8 @@ class LOAD_SPODI_DATA(QWidget):
         self.odf_phase_2_button.clicked.connect(self.select_odf_phase_2_func)
         self.unstraind_button.clicked.connect(self.select_unstraind_func)
 
-        for i in xrange(len(self.straind_data_button)):
-            self.straind_data_button[i].clicked.connect(partial(self.select_straind_func, i))
+        # for i in xrange(len(self.straind_data_button)):
+        #     self.straind_data_button[i].clicked.connect(partial(self.select_straind_func, i))
         # self.straind_button_1.clicked.connect(self.select_straind_func_1)
 
         if number_of_phases == 1:
@@ -1071,9 +1143,9 @@ class LOAD_SPODI_DATA(QWidget):
         layout1 = QHBoxLayout()
         layout_odf_phase_1_input = QHBoxLayout()
         layout_odf_phase_2_input = QHBoxLayout()
-        layout_straind_data = []
-        for i in xrange(len(self.straind_data)):
-            layout_straind_data.append(QHBoxLayout())
+        # layout_straind_data = []
+        # for i in xrange(len(self.straind_data)):
+        #     layout_straind_data.append(QHBoxLayout())
         # layout_straind_data_1 = QHBoxLayout()
         # layout_straind_data_2 = QHBoxLayout()
         # layout_straind_data_3 = QHBoxLayout()
@@ -1098,10 +1170,10 @@ class LOAD_SPODI_DATA(QWidget):
         layout_odf_phase_2_input.addWidget(self.odf_phase_2_button)
 
         # insert straind datasets
-        for i in xrange(len(layout_straind_data)):
-            layout_straind_data[i].addWidget(self.straind_data_lable[i])
-            layout_straind_data[i].addWidget(self.straind_data[i])
-            layout_straind_data[i].addWidget(self.straind_data_button[i])
+        # for i in xrange(len(layout_straind_data)):
+        #     layout_straind_data[i].addWidget(self.straind_data_lable[i])
+        #     layout_straind_data[i].addWidget(self.straind_data[i])
+        #     layout_straind_data[i].addWidget(self.straind_data_button[i])
 
         # insert unstraind data
         layout_unstraind_data.addWidget(self.select_unstraind)
@@ -1111,8 +1183,8 @@ class LOAD_SPODI_DATA(QWidget):
         layout.addLayout(layout_odf_phase_1_input)
         layout.addLayout(layout_odf_phase_2_input)
         layout.addLayout(layout_unstraind_data)
-        for i in layout_straind_data:
-            layout.addLayout(i)
+        # for i in layout_straind_data:
+        #     layout.addLayout(i)
         # layout.addLayout(layout_straind_data_1)
         # layout.addLayout(layout_straind_data_2)
         # layout.addLayout(layout_straind_data_3)
@@ -1123,25 +1195,29 @@ class LOAD_SPODI_DATA(QWidget):
         self.setLayout(layout)
 
     def select_odf_phase_1_func(self):
-        filename = QFileDialog.getOpenFileName(self, 'Open ODF of phase 1 File', '/')  # (self, 'Open ODF File', '/')
+        path = os.path.split(str(self.odf_phase_1_path.text()))[0]
+        filename = QFileDialog.getOpenFileName(self, 'Open ODF of phase 1 File', path)  # (self, 'Open ODF File', '/')
         filename = os.path.normpath(str(filename))
         self.odf_phase_1_path.setText(filename)
         print(self.odf_phase_1_path.text())
 
     def select_odf_phase_2_func(self):
-        filename = QFileDialog.getOpenFileName(self, 'Open ODF of phase 2 File', '/')  # (self, 'Open ODF File', '/')
+        path = os.path.split(str(self.odf_phase_2_path.text()))[0]
+        filename = QFileDialog.getOpenFileName(self, 'Open ODF of phase 2 File', path)  # (self, 'Open ODF File', '/')
         filename = os.path.normpath(str(filename))
         self.odf_phase_2_path.setText(filename)
         print(self.odf_phase_2_path.text())
 
     def select_unstraind_func(self):
-        filename = QFileDialog.getExistingDirectory(self, 'Open unstraind data', '/')  # (self, 'Open ODF File', '/')
+        path = os.path.split(str(self.path_of_unstraind_data.text()))[0]
+        filename = QFileDialog.getExistingDirectory(self, 'Open data', path)  # (self, 'Open ODF File', '/')
         filename = os.path.normpath(str(filename))
         self.path_of_unstraind_data.setText(filename + "\\")
         print(self.path_of_unstraind_data.text())
 
     def select_straind_func(self, i):
-        filename = QFileDialog.getExistingDirectory(self, 'Open straind data', '/')  # (self, 'Open ODF File', '/')
+        path = os.path.split(str(self.straind_data[i].text()))[0]
+        filename = QFileDialog.getExistingDirectory(self, 'Open straind data', path)  # (self, 'Open ODF File', '/')
         filename = os.path.normpath(str(filename))
         self.straind_data[i].setText(filename + "\\")
         print(self.straind_data[i].text())
@@ -1153,12 +1229,12 @@ class LOAD_SPODI_DATA(QWidget):
         """
         odf1 = self.odf_phase_1_path.text()
         odf2 = self.odf_phase_2_path.text()
-        unstraind = self.path_of_unstraind_data.text()
+        Data = self.path_of_unstraind_data.text()
         data_dir_list = []
         data_dir_list.append(self.path_of_unstraind_data.text())
-        for i in xrange(len(self.straind_data)):
-            data_dir_list.append(self.straind_data[i].text())
-        self.emit(SIGNAL("data_dir_list"), (odf1, odf2, unstraind, data_dir_list))
+        # for i in xrange(len(self.straind_data)):
+        #     data_dir_list.append(self.straind_data[i].text())
+        self.emit(SIGNAL("data_dir_list"), (odf1, odf2, Data))
         self.close()
 
 
@@ -1296,19 +1372,25 @@ class LOAD_STANDARD_DATA(QWidget):
 
 class phase_region_class(object):
     def __init__(self):
-        self.region = [[1, []], [2, []]]  # phase_region_list
+        self.region = [[1, []], [2, []]]  # phase_region_list, [[phase, [[h, k, l, Tmin, Tmax, double, peak]],...], ...]
+        # double=0 if single peak
+        # double=1 else
+        # if double = 1 peak in [1,2]
+        # if peak = 1 use the first of the double peaks
+        # else use the second
 
     def save(self, phase_region_list):
         f = open(".\\phase_region_list.dat", "w")
         for i in phase_region_list:
             f.write("phase: " + str(i[0]))
-            f.write("\nhkl:    2Theta_min_pos:          2Theta_max_pos:\n")
+            f.write("\nhkl:    2Theta_min_pos:          2Theta_max_pos:            double:        peak:\n")
             print("i: ", i)
             for j in i[1]:
                 print("hkl: ", j)
-                print(j[0], j[1], j[2], j[3], j[4])
+                print(j[0], j[1], j[2], j[3], j[4], j[5], j[6])
                 try:
-                    string = "{} {} {} {} {} ".format(int(j[0]), int(j[1]), int(j[2]), j[3], j[4])
+                    string = "{} {} {} {} {} {} {}".format(int(j[0]), int(j[1]), int(j[2]), j[3], j[4],
+                                                           int(float(j[5])), int(float(j[6])))
                     f.write(string + "\n")
                     print("string: ", string)
                 except IndexError:
@@ -1337,7 +1419,6 @@ class phase_region_class(object):
                 self.region[phase - 1][1] = hkl_2_theta
                 hkl_2_theta = []
 
-
             else:
                 print("else_case: ", split)
                 h = int(split[0])
@@ -1345,7 +1426,9 @@ class phase_region_class(object):
                 l = int(split[2])
                 theta_min = int(split[3])
                 theta_max = int(split[4])
-                hkl_2_theta.append([h, k, l, theta_min, theta_max])
+                double = int(float(split[5]))
+                peak = int(float(split[6]))
+                hkl_2_theta.append([h, k, l, theta_min, theta_max, double, peak])
         print("REGION: ", self.region)
         return self.region
 

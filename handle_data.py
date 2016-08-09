@@ -53,7 +53,7 @@ class Data(object):
         stress = force / area
         stress_error = np.sqrt((force * 0.02 / ((self.sample_diameter / 2) ** 2 * np.pi)) ** 2
                                + (2 * force / ((self.sample_diameter / 2) ** 3 * np.pi) * (
-                                self.sample_diameter / 2) * 0.05) ** 2)
+            self.sample_diameter / 2) * 0.05) ** 2)
         return stress, stress_error
 
 
@@ -71,24 +71,33 @@ class SPODIData(Data):
         :param list_of_dirs:
         :return:
         """
+        self.data_dic_raw = {}
+        self.data_dic_phases = {}
         if type(list_of_dirs) is not list:
             list_of_dirs = [list_of_dirs]
+        data_files = []
+        for i in list_of_dirs:  # get all files from the selected directories
+            data_files_ = i + "*.dat"
+            print data_files_
+            data_files_ = glob(str(data_files_))
+            if len(data_files_)==0:
+                data_files_ = i + "*.eth"
+                data_files_ = glob(str(data_files_))
+            data_files_.sort()
+            for file in data_files_:
+                data_files.append(file)
 
-        for i in list_of_dirs:
-            data_files = i + "*.eth"
-            print data_files
-            data_files = glob(str(data_files))
-            data_files.sort()
-            help_list = []
-            force = 0
-            for j in data_files:
-                # force in kN, omega and Chi in deg
-                force, omega, chi = self.parse_filename(j)
-                # read the data from the file
-                two_theta, intens, error = self.read_data(j)
-                help_list.append([force, omega, chi, two_theta, intens, error])
-                # force, omega, Chi, two theta, intensity, error of intensity
-            self.data_dic_raw[force] = help_list
+        for file in data_files:  # loop over all files and read the data. Store it than in self.data_dic_raw.
+            # help_list = []
+            # force in kN, omega and Chi in deg
+            force, omega, chi = self.parse_filename(file)
+            if force not in self.data_dic_raw.keys():
+                self.data_dic_raw[force] = []
+            # read the data from the file
+            two_theta, intens, error = self.read_data(file)
+            self.data_dic_raw[force].append([force, omega, chi, two_theta, intens, error])
+            # force, omega, Chi, two theta, intensity, error of intensity
+            # self.data_dic_raw[force] = help_list
 
     @staticmethod
     def parse_filename(filename):
@@ -98,9 +107,13 @@ class SPODIData(Data):
         Parameters = [Force, Omega, Chi]
         :param filename:
         '''
+        filename = os.path.normpath(str(filename))
+        path, filename = os.path.split(filename)
         name_split = re.split('_', filename)
         force = name_split[1][0:-2]
-        force = float(force)
+
+
+        force = float(force.replace(",","."))
         omega = 0.
         Chi = 0.
         for i in xrange(1, len(name_split)):
@@ -125,15 +138,19 @@ class SPODIData(Data):
         err = []
         for i in xrange(1, len(lines)):  #
             line = lines[i].strip()  # removes withspaces at the frond and the end
-            l = re.split(r'\s*', line)
-            TTheta.append(float(l[0]))
-            Intens.append(float(l[1]))
-            err.append(float(l[2]))
+            if "#" in line:
+                pass
+            else:
+                l = re.split(r'\s*', line)
+                TTheta.append(float(l[0]))
+                Intens.append(float(l[1]))
+                err.append(float(l[2]))
         data.close()
         return [TTheta, Intens, err]
 
     @staticmethod
-    def fit_the_peaks_for_on_diffraction_pattern(data, peak_regions, plot=False):
+    def fit_the_peaks_for_on_diffraction_pattern(data, peak_regions, plot=False, datanumber=False, force=False,
+                                                 Chi=False, phase=False):
         """
         fitting the individual peaks of each diffraction pattern
         :param plot: plot each fit.
@@ -150,10 +167,22 @@ class SPODIData(Data):
             hkl_2_theta[j][2] = peak_regions[j][2]
             x = int(peak_regions[j][3])
             y = int(peak_regions[j][4])
+            double = int(peak_regions[j][5])
+            peak = int(peak_regions[j][6])
             dax = data[0][x:y]
             day = data[1][x:y]
             day_err = data[2][x:y]
-            gauss = Fittingtools.gauss_lin_fitting_2(dax, day, day_err, plot=plot)
+            if double == 1:
+                gauss = Fittingtools.pseudo_voigt_single_peak_fit(dax, day, day_err, plot=plot, dataset=datanumber,
+                                                                  force=force, Chi=Chi, phase=phase)
+            if double == 2:
+                gauss = Fittingtools.pseudo_voigt_double_peak_fit(dax, day, day_err, plot=plot, dataset=datanumber,
+                                                                  force=force, Chi=Chi, phase=phase)
+                if peak == 1:
+                    gauss = gauss[0:2]
+                if peak == 2:
+                    gauss = gauss[2:]
+
             hkl_2_theta[j][3] = gauss[0]
             hkl_2_theta[j][4] = gauss[1]
         return hkl_2_theta
@@ -171,13 +200,17 @@ class SPODIData(Data):
             print "phase, peak_regin: ", phase, peak_regions
             # self.data_dic_phases[phase] = list()
             force_dic = {}
+            number = 1
             for j in self.data_dic_raw:  # loop over all forces
                 help_list = []
                 for n in self.data_dic_raw[j]:  # loop over all orientations of the sample
                     force, omega, chi, two_theta, intens, error = n
                     data = [two_theta, intens, error]
-                    hkl_2_theta = self.fit_the_peaks_for_on_diffraction_pattern(data=data, peak_regions=peak_regions)
+                    hkl_2_theta = self.fit_the_peaks_for_on_diffraction_pattern(data=data, peak_regions=peak_regions,
+                                                                                plot=plot, datanumber=number,
+                                                                                force=force, Chi=chi, phase=phase)
                     hkl_2_theta = hkl_2_theta.tolist()
+                    number += 1
                     print hkl_2_theta
                     for m in hkl_2_theta:
                         help_list.append([phase, force, omega, chi, m])
@@ -225,7 +258,7 @@ class SPODIData(Data):
                         h, k, l, two_theta, two_theta_error = hkl_2_theta
 
                         # vals of the unstraind data
-                        phase_0, force_0, omega_0, chi_0, hkl_2_theta_0 = force_dict[key_list[0]][n]
+                        phase_0, force_0, omega_0, chi_0, hkl_2_theta_0 = force_dict[0][n]
                         h_0, k_0, l_0, two_theta_0, two_theta_error_0 = hkl_2_theta_0
                         # print "omega_0: {0:d}, chi_0: {1:d}".format(int(omega_0), int(chi_0))
                         # print "omega: {0:d}, chi: {1:d}".format(int(omega), int(chi))
@@ -244,18 +277,18 @@ class SPODIData(Data):
                         psi = self.psii(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta_0 / 2,
                                         chi=chi, omega=omega)
                         if not (np.isnan(phi) or np.isnan(psi)):
-                            if chi != 90:
-                                phi_psi_hkl.append([phi, psi, h, k, l])
-                                print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
-                                    format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
+                            # if chi != 90:
+                            phi_psi_hkl.append([phi, psi, h, k, l])
+                            print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
+                                format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
 
-                                strain, strain_error = self.delta_epsilon(two_theta=two_theta,
-                                                                          two_theta_0=two_theta_0,
-                                                                          two_theta_err=two_theta_error,
-                                                                          two_theta_0_err=two_theta_error_0)
+                            strain, strain_error = self.delta_epsilon(two_theta=two_theta,
+                                                                      two_theta_0=two_theta_0,
+                                                                      two_theta_err=two_theta_error,
+                                                                      two_theta_0_err=two_theta_error_0)
 
-                                stress, stress_err = self.calc_applied_stress(force=force)
-                                strain_stress.append([strain, strain_error, stress, stress_err])
+                            stress, stress_err = self.calc_applied_stress(force=force)
+                            strain_stress.append([strain, strain_error, stress, stress_err])
                     force_stress_dict[v] = [phi_psi_hkl, strain_stress]
 
             self.fitted_data.data_dict[i] = force_stress_dict
@@ -344,7 +377,7 @@ class SPODIData(Data):
            according to Graesslin
         """
         chi = -deg_to_rad(chi)
-        omega = deg_to_rad(omega)
+        omega = -deg_to_rad(omega)
         phi = 0
 
         # rot around z_L'
@@ -357,6 +390,12 @@ class SPODIData(Data):
         X = np.array([[np.cos(chi), 0., -np.sin(chi)],
                       [0., 1., 0.],
                       [np.sin(chi), 0., np.cos(chi)]
+                      ]
+                     )
+        # rotation around x_L' axis (lefthanded if chi<0)
+        X = np.array([[1., 0., 0.],
+                      [0., np.cos(chi), np.sin(chi)],
+                      [0., -np.sin(chi), np.cos(chi)]
                       ]
                      )
         # rot around z_L
@@ -436,8 +475,9 @@ class SPODIData(Data):
         return float(phi)
 
     def get_sum_data(self):
+        # print "hallo", self.data_dic_raw
         omega1 = self.data_dic_raw[0][0][1]
-        print "omega", omega1
+        # print "omega", omega1
         sum_intens = np.zeros((len(self.data_dic_raw[0][0][4])))
         for i in self.data_dic_raw[0]:
             print len(i[3]), len(i[4]), len(i[5])
@@ -541,8 +581,8 @@ class AllData(Data):
                     mmm = re.split('\s+', line)
                     material = ''
                     for g in xrange(1, len(mmm)):
-                        material+= mmm[g]
-                        material+= ' '
+                        material += mmm[g]
+                        material += ' '
                     print material
         data.close()
         phase_keys = dic.keys()

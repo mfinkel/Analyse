@@ -136,11 +136,15 @@ class hkl_input_class(QtGui.QWidget):
         self.l = QtGui.QLabel("l")
         self.Theta_min = QtGui.QLabel("T_s")
         self.Theta_max = QtGui.QLabel("T_l")
+        self.double = QtGui.QLabel("double")
+        self.peak = QtGui.QLabel("peak")
         self.layout.addWidget(self.h, 0, 1)
         self.layout.addWidget(self.k, 0, 2)
         self.layout.addWidget(self.l, 0, 3)
         self.layout.addWidget(self.Theta_min, 0, 4)
         self.layout.addWidget(self.Theta_max, 0, 5)
+        self.layout.addWidget(self.double, 0, 6)
+        self.layout.addWidget(self.peak, 0, 7)
 
         # t = QtGui.QLineEdit("some text")
         # t.setReadOnly(True)
@@ -154,7 +158,7 @@ class hkl_input_class(QtGui.QWidget):
         for i in xrange(start, start + 5):
             line = []
             line.append(QtGui.QLabel("#" + str(i + 1)))
-            for j in xrange(5):
+            for j in xrange(7):
                 line.append(QtGui.QLineEdit("-1"))
             self.lines.append(line)
         m = 1
@@ -173,7 +177,7 @@ class hkl_input_class(QtGui.QWidget):
     def reset(self):
         print("reset: ")
         for i in xrange(0, len(self.lines)):
-            for j in range(1, 6):
+            for j in range(1, 8):
                 self.lines[i][j].setReadOnly(True)
                 self.lines[i][j].setText("-1")
                 self.lines[i][j].setStyleSheet("color: rgb(255, 100, 0);")
@@ -181,13 +185,14 @@ class hkl_input_class(QtGui.QWidget):
     def get_last_1(self):
         for i in range(0, len(self.lines)):
             if self.lines[i][1].text() == "-1":
-                for j in range(1, 4):
+                for j in range(1, 8):
                     self.lines[i][j].setReadOnly(False)
                     self.lines[i][j].setStyleSheet("color: rgb(0, 0, 0);")
                 for j in range(4, 6):
+                    self.lines[i][j].setReadOnly(True)
                     self.lines[i][j].setStyleSheet("color: rgb(0, 0, 0);")
                 return i
-            for j in range(0, 6):
+            for j in range(0, 8):
                 print "get last: ", self.lines[i][j].text()
                 try:
                     self.lines[i][j].setReadOnly(True)
@@ -223,13 +228,13 @@ class Preview(QtGui.QWidget):
         self.roi_Button = QtGui.QPushButton("ROI")
         self.roi_Button.setToolTip("Check to create a ROI in the image. Uncheck to fix the ROI")
         self.roi_Button.setCheckable(True)
-        self.oscillation_Button = QtGui.QPushButton("Oscillation")
-        self.oscillation_Button.setEnabled(False)
-        self.oscillation_Button.setToolTip(
-            "Plots the oscillation of the Data images and the OB images in the chosen ROI")
+        # self.oscillation_Button = QtGui.QPushButton("Oscillation")
+        # self.oscillation_Button.setEnabled(False)
+        # self.oscillation_Button.setToolTip(
+        #     "Plots the oscillation of the Data images and the OB images in the chosen ROI")
 
         self.toolbar.addWidget(self.roi_Button)
-        self.toolbar.addWidget(self.oscillation_Button)
+        # self.toolbar.addWidget(self.oscillation_Button)
 
         # # Tabel with the hkl's in it
         data = {'col1': ['1', '2', '3'], 'col2': ['4', '5', '6'], 'col3': ['7', '8', '9']}
@@ -249,9 +254,10 @@ class Preview(QtGui.QWidget):
         self.send_hkl_list_button.clicked.connect(self.send_hkl_list)
 
         self.roi_Button.clicked.connect(self.roi)
-        self.oscillation_Button.clicked.connect(self.oscillation)
+        # self.oscillation_Button.clicked.connect(self.oscillation)
 
         self.ax = self.figure.add_subplot(111)
+        self.ax1 = self.figure.add_subplot(111)
 
         # set the layout1
         layout = QtGui.QVBoxLayout()
@@ -306,7 +312,7 @@ class Preview(QtGui.QWidget):
         if position >= 4:
             position -= 5
             table2 = True
-        h, k, l, Theta_min, Theta_max = line
+        h, k, l, Theta_min, Theta_max, double, peak = line
         Theta_min = self.data_x[Theta_min]
         Theta_max = self.data_x[Theta_max]
         if not table2:
@@ -315,6 +321,8 @@ class Preview(QtGui.QWidget):
             self.table1_5.lines[position][3].setText(str(l))
             self.table1_5.lines[position][4].setText(str(Theta_min))
             self.table1_5.lines[position][5].setText(str(Theta_max))
+            self.table1_5.lines[position][6].setText(str(double))
+            self.table1_5.lines[position][7].setText(str(peak))
 
         else:
             self.table6_10.lines[position][1].setText(str(h))
@@ -322,6 +330,8 @@ class Preview(QtGui.QWidget):
             self.table6_10.lines[position][3].setText(str(l))
             self.table6_10.lines[position][4].setText(str(Theta_min))
             self.table6_10.lines[position][5].setText(str(Theta_max))
+            self.table6_10.lines[position][6].setText(str(double))
+            self.table6_10.lines[position][7].setText(str(peak))
 
     def add_reflex(self):
         print("add")
@@ -334,7 +344,19 @@ class Preview(QtGui.QWidget):
 
         Theta_min = self.roi_list[2]
         Theta_max = self.roi_list[3]
-        print Theta_min, Theta_max, buffer
+        # print Theta_min, Theta_max, buffer
+        # MIN = get_index_from_arry(self.data_x, Theta_min)
+        # MAX = get_index_from_arry(self.data_x, Theta_max)
+        #
+        # x_data = self.data_x[MIN:MAX]
+        # y_data = self.data_y[MIN:MAX]
+        # for i in xrange(len(x_data)):
+        #     y_data[i] = max(y_data)
+        # y_data[0] = y_data[-1] = 0
+        # COLOR = ColorGenerator()
+        # color = COLOR.get_color()
+        # self.color_xy_data(x_data, y_data, color=color, inner=True)
+        # self.emit(QtCore.SIGNAL("MIN_MAX_COLOR"), [MIN, MAX, color])
         if not table2:
             self.table1_5.lines[buffer][4].setText(str(Theta_min))
             self.table1_5.lines[buffer][5].setText(str(Theta_max))
@@ -347,7 +369,7 @@ class Preview(QtGui.QWidget):
     def dis_hkl_but(self):
         self.add_hkl_button.setEnabled(False)
 
-    def create_hkl_list(self, swap = True):
+    def create_hkl_list(self, swap=True):
         hkl_setting = []
         table2 = False
         buffer = self.table1_5.get_last_1()
@@ -358,13 +380,13 @@ class Preview(QtGui.QWidget):
         if not table2:
             for i in xrange(0, buffer):
                 l = []
-                for j in xrange(1, 6):
+                for j in xrange(1, 8):
                     l.append(float(self.table1_5.lines[i][j].text()))
                 hkl_setting.append(l)
         else:
             for i in xrange(0, len(self.table1_5.lines)):
                 l = []
-                for j in xrange(1, 6):
+                for j in xrange(1, 8):
                     l.append(float(self.table1_5.lines[i][j].text()))
                 hkl_setting.append(l)
             if buffer == -1:
@@ -372,7 +394,7 @@ class Preview(QtGui.QWidget):
 
             for i in xrange(0, buffer):
                 l = []
-                for j in xrange(1, 6):
+                for j in xrange(1, 8):
                     l.append(float(self.table6_10.lines[i][j].text()))
                 hkl_setting.append(l)
         for i in xrange(len(hkl_setting)):
@@ -403,7 +425,7 @@ class Preview(QtGui.QWidget):
 
     def roi(self):
 
-        self.oscillation_Button.setEnabled(False)
+        # self.oscillation_Button.setEnabled(False)
         self.add_hkl_button.setEnabled(False)
 
         if self.roi_Button.isChecked() == True:
@@ -411,21 +433,7 @@ class Preview(QtGui.QWidget):
             plt.set_cmap('gray')
             self.ax.hold(False)
             self.ax.plot(self.data_x, self.data_y)
-            # if self.typeCombo.currentText() == "Data Images":
-            #     ax.imshow(self.data_list[1][self.data_list[0].index(str(self.imgCombo.currentText()))],
-            #               vmin=self.vminSpinBox.value(), vmax=self.vmaxSpinBox.value())
-            #
-            # elif self.typeCombo.currentText() == "OB Images":
-            #     ax.imshow(self.ob_list[1][self.ob_list[0].index(str(self.imgCombo.currentText()))],
-            #               vmin=self.vminSpinBox.value(), vmax=self.vmaxSpinBox.value())
-            #
-            # elif self.typeCombo.currentText() == "DC Images":
-            #     ax.imshow(self.dc_list[1][self.dc_list[0].index(str(self.imgCombo.currentText()))],
-            #               vmin=self.vminSpinBox.value(), vmax=self.vmaxSpinBox.value())
-
             self.roi_create = ROI(ax)
-            # self.typeCombo.setEnabled(False)
-            # self.imgCombo.setEnabled(False)
 
         else:
             roi_x0, roi_x1, roi_y0, roi_y1 = self.roi_create._exit()
@@ -433,178 +441,24 @@ class Preview(QtGui.QWidget):
             len_data_l = len(self.data_list)
             len_ob_l = len(self.ob_list)
             roi_size = roi_x1 - roi_x0
-            # if len_data_l is not 0 and len_ob_l is not 0 and roi_size is not 0 and self.roi_Button.isChecked() == False:
-            #     self.oscillation_Button.setEnabled(True)
-            # region_data = np.array(self.data_list[1][0][roi_y0:roi_y1, roi_x0:roi_x1])
-            # print region_data
-            # print np.median(region_data), type(np.median(region_data))
             self.roi_list = [roi_y0, roi_y1, roi_x0, roi_x1]
-            # self.vmaxSpinBox.setValue(int(1.2 * int(np.max(region_data))))
-
-            # self.roiSignal.emit(roi_list)
             self.emit(QtCore.SIGNAL('roi'), self.roi_list)
             self.add_hkl_button.setEnabled(True)
-            # self.typeCombo.setEnabled(True)
-            # self.imgCombo.setEnabled(True)
 
-    def oscillation(self):
-
-        len_data_l = len(self.data_list)
-        len_ob_l = len(self.ob_list)
-        file_number = 0
-        oscillation_list = [[], [], []]
-        if len_data_l is not 0 and len_ob_l is not 0:
-            len_data = len(self.data_list[1])
-            len_ob = len(self.ob_list[1])
-            while (file_number < len_data):
-                if (file_number < len_data):
-                    region_data = np.array(self.data_list[1][file_number][self.roi_list[0]:self.roi_list[1],
-                                           self.roi_list[2]:self.roi_list[3]])
-                    region_ob = np.array(self.ob_list[1][file_number][self.roi_list[0]:self.roi_list[1],
-                                         self.roi_list[2]:self.roi_list[3]])
-                    av_counts_data = np.median(region_data)
-                    av_counts_ob = np.median(region_ob)
-                    oscillation_list[0].append(file_number)
-                    oscillation_list[1].append(av_counts_data)
-                    oscillation_list[2].append(av_counts_ob)
-                    file_number += 1
-            # print oscillation_list
-            rcParams['toolbar'] = 'None'
-            ax1 = plt.figure("Oscillation")
-            ax2 = ax1.add_subplot(111)
-            # ax2.hold(False)
-            ax2.plot(oscillation_list[0], oscillation_list[1], 'r*-', label='Data oscillation')
-            ax2.plot(oscillation_list[0], oscillation_list[2], 'b*-', label='OB oscillation')
-            ax2.legend()
-            # self.canvas.draw()
-            ax1.show()
-
-            ax1.canvas.manager.window.activateWindow()
-            ax1.canvas.manager.window.raise_()
-
-            # plt.close(ax1)
-            # rcParams['toolbar']='None'
-        else:
-            self.dialog = QMessageBox(self)
-            self.dialog.setStandardButtons(QMessageBox.Ok)
-            self.dialog.setIcon(QMessageBox.Warning)
-            self.dialog.setText("Pleas load both data files and OB files to plot the oscillation")
-            self.dialog.exec_()
-
-    def choose_type(self):
-
-        if self.typeCombo.currentText() == "Data Images":
-            self.imgCombo.clear()
-            self.imgCombo.addItems(self.data_list[0])
-
-        elif self.typeCombo.currentText() == "OB Images":
-            self.imgCombo.clear()
-            self.imgCombo.addItems(self.ob_list[0])
-        elif self.typeCombo.currentText() == "DC Images":
-            self.imgCombo.clear()
-            self.imgCombo.addItems(self.dc_list[0])
-        elif self.typeCombo.currentText() == "Filtered Images":
-            self.imgCombo.clear()
-            self.imgCombo.addItems(self.filter_list[0])
-        # self.choose_img()
-        len_data_l = len(self.data_list)
-        len_ob_l = len(self.ob_list)
-
-        # roi_size=roi_x1-roi_x0
-        if len_data_l is not 0 and len_ob_l is not 0 and self.roi_Button.isChecked() == False:
-            self.oscillation_Button.setEnabled(True)
-
-    def choose_img(self):
-
-        ax = self.figure.add_subplot(111)
-        plt.set_cmap('gray')
-        ax.hold(False)
-
-        if self.typeCombo.currentText() == "Data Images":
-            ax.imshow(self.data_list[1][self.data_list[0].index(str(self.imgCombo.currentText()))],
-                      vmin=self.vminSpinBox.value(), vmax=self.vmaxSpinBox.value())
-
-        elif self.typeCombo.currentText() == "OB Images":
-            ax.imshow(self.ob_list[1][self.ob_list[0].index(str(self.imgCombo.currentText()))],
-                      vmin=self.vminSpinBox.value(), vmax=self.vmaxSpinBox.value())
-
-        elif self.typeCombo.currentText() == "DC Images":
-            ax.imshow(self.dc_list[1][self.dc_list[0].index(str(self.imgCombo.currentText()))],
-                      vmin=self.vminSpinBox.value(), vmax=self.vmaxSpinBox.value())
-
-        elif self.typeCombo.currentText() == "Filtered Images":
-            ax.imshow(self.filter_list[1][self.filter_list[0].index(str(self.imgCombo.currentText()))],
-                      vmin=self.vminSpinBox.value(), vmax=self.vmaxSpinBox.value())
-        self.rect = Rectangle((0, 0), 1, 1, facecolor='None', edgecolor='green')
-        self.rect.set_width(self.roi_list[3] - self.roi_list[2])
-        self.rect.set_height(self.roi_list[1] - self.roi_list[0])
-        self.rect.set_xy((self.roi_list[2], self.roi_list[0]))
-        self.rect.set_linestyle('solid')
-        ax.add_patch(self.rect)
-
-        # refresh canvas
-        self.canvas.draw()
-
-    def add_data(self, load_data_list, data_img_list, roi_list):
-        self.roi_list = roi_list
-        self.imgCombo.clear()
-        load_data_list_temp = []
-        for i in range(0, len(load_data_list)):
-            temp_ind = load_data_list[i].rfind(str(os.path.sep))
-            load_data_list_temp.append(load_data_list[i][temp_ind:])
-        self.data_list = [load_data_list_temp, data_img_list]
-        self.imgCombo.addItems(load_data_list_temp)
-        self.typeCombo.removeItem(self.typeCombo.findText("Data Images"))
-        self.typeCombo.addItem("Data Images")
-        self.vminSpinBox.setValue(0.75 * data_img_list[0].min())
-        self.vmaxSpinBox.setValue(1.25 * data_img_list[0].max())
-        self.choose_type()
-
-    def add_xy_data(self, data_x, data_y):
+    def add_xy_data(self, data_x, data_y, color = 'b-'):
         self.roi_list = [0, 0, 0, 0]
         self.data_x = data_x
         self.data_y = data_y
+        self.ax.cla()
+        self.ax1.cla()
         # ax = self.figure.add_subplot(111)
-        self.ax.plot(self.data_x, self.data_y)
+        self.ax.plot(self.data_x, self.data_y, color)
 
-    def add_ob(self, load_ob_list, ob_img_list):
-        self.imgCombo.clear()
-        load_ob_list_temp = []
-        for i in range(0, len(load_ob_list)):
-            temp_ind = load_ob_list[i].rfind(str(os.path.sep))
-            load_ob_list_temp.append(load_ob_list[i][temp_ind:])
-        self.ob_list = [load_ob_list_temp, ob_img_list]
-        self.imgCombo.addItems(load_ob_list_temp)
-        self.typeCombo.removeItem(self.typeCombo.findText("OB Images"))
-        self.typeCombo.addItem("OB Images")
-        self.choose_type()
-
-    def add_dc(self, load_dc_list, dc_img_list, dc_median):
-        self.imgCombo.clear()
-        load_dc_list_temp = []
-        for i in range(0, len(load_dc_list)):
-            temp_ind = load_dc_list[i].rfind(str(os.path.sep))
-            load_dc_list_temp.append(load_dc_list[i][temp_ind:])
-        if dc_median is not None:
-            load_dc_list_temp.append("Median of DC")
-            dc_img_list.append(dc_median)
-        self.dc_list = [load_dc_list_temp, dc_img_list]
-        self.imgCombo.addItems(load_dc_list_temp)
-        self.typeCombo.removeItem(self.typeCombo.findText("DC Images"))
-        self.typeCombo.addItem("DC Images")
-        self.choose_type()
-
-    def add_filtered(self, test_img, img):
-        self.imgCombo.clear()
-        temp_ind = test_img.rfind(str(os.path.sep))
-        self.load_filter_list.append(test_img[temp_ind:])
-        print self.load_filter_list
-        self.img_filter_list.append(img)
-        self.filter_list = [self.load_filter_list, self.img_filter_list]
-        self.imgCombo.addItems(self.load_filter_list)
-        self.typeCombo.removeItem(self.typeCombo.findText("Filtered Images"))
-        self.typeCombo.addItem("Filtered Images")
-        self.choose_type()
+    def color_xy_data(self, data_x, data_y, color='black', inner=False):
+        # ax = self.figure.add_subplot(111)
+        # if inner:
+        #     self.ax.plot(self.data_x, self.data_y)
+        self.ax.fill(data_x, data_y, facecolor=color, alpha=0.5)
 
 
 class ROI(object):
@@ -891,8 +745,8 @@ class Filter_Preview(QtGui.QWidget):
         len_ob_l = len(self.ob_list)
 
         # roi_size=roi_x1-roi_x0
-        if len_data_l is not 0 and len_ob_l is not 0 and self.roi_Button.isChecked() == False:
-            self.oscillation_Button.setEnabled(True)
+        # if len_data_l is not 0 and len_ob_l is not 0 and self.roi_Button.isChecked() == False:
+        #     self.oscillation_Button.setEnabled(True)
 
     def choose_img(self):
 
@@ -978,3 +832,18 @@ class Filter_Preview(QtGui.QWidget):
         self.typeCombo.removeItem(self.typeCombo.findText("Filtered Images"))
         self.typeCombo.addItem("Filtered Images")
         self.choose_type()
+
+
+class ColorGenerator(object):
+    def __init__(self):
+        self.__color =['red', 'green', 'magenta', 'cyan']
+        self.__current = 0
+        self.__next = self.__current+1
+
+    def get_color(self):
+        current = self.__current
+        if self.__current + 1 < len(self.__color):
+            self.__current += 1
+        else:
+            self.__current = 0
+        return self.__color[current]
