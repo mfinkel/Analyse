@@ -441,6 +441,9 @@ class CentralWidget(QWidget):
 
         try:
             self.phase_peak_region = self.region.load()
+            for i in xrange(len(self.phase_peak_region)):
+                phasenr, phase, dat = self.phase_peak_region[i]
+                self.name_of_phase_dic[phasenr] = phase
             self.loaded_peak_region = True
         except IOError:
             self.loaded_peak_region = False
@@ -592,9 +595,17 @@ class CentralWidget(QWidget):
 
     def change_name_of_phase(self):
         self.name_of_phase_dic[int(str(self.fit_phase_combbox.currentText()))] = str(self.name_of_phase.text())
+        self.phase_peak_region[int(str(self.fit_phase_combbox.currentText()))-1][1] = str(self.name_of_phase.text())
+
 
     def change_outputfile_name(self):
         text = "Result_" + str(self.material.text()) + "_" + str(self.modi.currentText())
+        try:
+            self.fit_object.material = str(self.material)
+            self.fit_object_gh.material = str(self.material)
+            self.fit_object_TT.material = str(self.material)
+        except AttributeError:
+            pass
         self.output_filename.setText(text)
 
     def connect_read_scattering_data(self):
@@ -705,8 +716,8 @@ class CentralWidget(QWidget):
         self.path_of_unstraind_data = Data
         # self.path_of_data_under_strain = data_dir_list
         self.data_object = handle_data.SPODIData(sample_diameter=int(str(self.diameter.text())),
-                                                     odf_phase_1_file=self.path_of_odf_phase1,
-                                                     odf_phase_2_file=self.path_of_odf_phase2)
+                                                 odf_phase_1_file=self.path_of_odf_phase1,
+                                                 odf_phase_2_file=self.path_of_odf_phase2)
         self.data_object.load_data(self.path_of_unstraind_data)
         self.select_hkl_SPODI_Data()  # plot the data
         if self.loaded_peak_region:
@@ -730,7 +741,8 @@ class CentralWidget(QWidget):
             self.central_plot.roi_Button.setEnabled(True)
         else:
             self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region,
-                                          plot=self.checkBoxPlotFits.isChecked())
+                                          plot=self.checkBoxPlotFits.isChecked(),
+                                          material=str(self.material.text()))
             self.do_the_fit_button.setEnabled(True)
             self.do_the_fit_gh_button.setEnabled(True)
             self.do_the_fit_tt_button.setEnabled(True)
@@ -738,8 +750,8 @@ class CentralWidget(QWidget):
             self.plot_polefig_button.setEnabled(True)
             self.plot_data_button.setEnabled(True)
             # self.Data_Iron.fit_all_peaks()
-        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material="iron")
-        self.fit_object_gh = Modells.FitGneupelHerold(data_object=self.data_object, material="iron")
+        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material=self.material.text())
+        self.fit_object_gh = Modells.FitGneupelHerold(data_object=self.data_object, material=self.material.text())
         self.fit_object_TT = Modells.TensileTest(data_object=self.data_object, material=self.material.text())
         # self.connect(self, SIGNAL('1'), self.fit_object.set_params_phase_1)
         # self.connect(self, SIGNAL('2'), self.fit_object.set_params_phase_2)
@@ -762,7 +774,7 @@ class CentralWidget(QWidget):
 
     def color_peakregion(self):
         color = matplotlibwidget.ColorGenerator()
-        for phasenr, hkl_region in self.phase_peak_region:
+        for phasenr, phase, hkl_region in self.phase_peak_region:
             for h, k, l, MIN, MAX, double, peak in hkl_region:
                 self.color_peaks(MIN, MAX, color.get_color())
 
@@ -808,7 +820,7 @@ class CentralWidget(QWidget):
         # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
 
         result = self.fit_object.do_the_fitting(filename=str(self.output_filename.text()),
-                                                material="iron",
+                                                material=self.material.text(),
                                                 method=str(self.modi.currentText()),
                                                 phase=int(str(self.fit_phase_combbox.currentText())),
                                                 phase_name=self.name_of_phase_dic[
@@ -837,7 +849,7 @@ class CentralWidget(QWidget):
         # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
 
         result = self.fit_object_gh.do_the_fitting_gneupel_herold(filename=str(self.output_filename.text()),
-                                                material="iron",
+                                                material=self.material.text(),
                                                 method=str(self.modi.currentText()),
                                                 phase=int(str(self.fit_phase_combbox.currentText())),
                                                 phase_name=self.name_of_phase_dic[
@@ -851,18 +863,22 @@ class CentralWidget(QWidget):
     def cos2psi_plot(self, plots_dic):
         for figname, data in plots_dic.iteritems():
             xdata, ydata, yerr = data[0]
-            Psi, val, s1, s2 = data[1]
+            Psi, val, s1, s1err, s2, s2err = data[1]
             plt.figure(figname)
             plt.errorbar(xdata, ydata, yerr=yerr, fmt='bo', label="Data")
             plots_dic[figname].append([xdata, ydata, yerr])
 
-            plt.plot(Psi, val, 'r-', label="fit, \ns1 = {}\ns2 = {}".format(s1, s2))
+            plt.plot(Psi, val, 'r-',
+                     label="s1 = {:.3g} $\pm$ {:.3g}\ns2 = {:.3g} $\pm$ {:.3g}".format(s1, s1err, s2, s2err))
 
             plt.xlabel('$\cos^2(\Psi)$')
             plt.ylabel('$\epsilon/\sigma$')
-            plt.legend()
+            plt.legend(loc='upper left')
             plt.xlim([0, 1])
             print ("savefig, ", figname, ".svg")
+            filename = ".\\sin2psi-plots\\"+figname+".svg"
+            if not os.path.exists(os.path.dirname(filename)):
+                os.makedirs(os.path.dirname(filename))
             plt.savefig(".\\sin2psi-plots\\"+figname+".svg", format="svg")
             plt.savefig(".\\sin2psi-plots\\"+figname+".pdf", format="pdf")
             plt.savefig(".\\sin2psi-plots\\"+figname+".png", format="png")
@@ -912,7 +928,7 @@ class CentralWidget(QWidget):
         # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
 
         result = self.fit_object_TT.do_the_fitting_gneupel_herold(filename=str(self.output_filename.text()),
-                                                material="iron",
+                                                material=self.material.text(),
                                                 method=str(self.modi.currentText()),
                                                 phase=int(str(self.fit_phase_combbox.currentText())),
                                                 phase_name=self.name_of_phase_dic[
@@ -1372,7 +1388,7 @@ class LOAD_STANDARD_DATA(QWidget):
 
 class phase_region_class(object):
     def __init__(self):
-        self.region = [[1, []], [2, []]]  # phase_region_list, [[phase, [[h, k, l, Tmin, Tmax, double, peak]],...], ...]
+        self.region = [[1, 'alpha', []], [2, 'betha', []]]  # phase_region_list, [[phase, [[h, k, l, Tmin, Tmax, double, peak]],...], ...]
         # double=0 if single peak
         # double=1 else
         # if double = 1 peak in [1,2]
@@ -1384,15 +1400,15 @@ class phase_region_class(object):
         for i in phase_region_list:
             f.write("phase: " + str(i[0]))
             f.write("\nhkl:    2Theta_min_pos:          2Theta_max_pos:            double:        peak:\n")
-            print("i: ", i)
+            # print("i: ", i)
             for j in i[1]:
-                print("hkl: ", j)
-                print(j[0], j[1], j[2], j[3], j[4], j[5], j[6])
+                # print("hkl: ", j)
+                # print(j[0], j[1], j[2], j[3], j[4], j[5], j[6])
                 try:
                     string = "{} {} {} {} {} {} {}".format(int(j[0]), int(j[1]), int(j[2]), j[3], j[4],
                                                            int(float(j[5])), int(float(j[6])))
                     f.write(string + "\n")
-                    print("string: ", string)
+                    # print("string: ", string)
                 except IndexError:
                     pass
             f.write("########\n")
@@ -1407,20 +1423,23 @@ class phase_region_class(object):
             i.strip()
             split = i.split(" ")
 
-            print(split)
+            # print(split)
             if split[0] == "phase:":
                 phase = int(split[1])
+                # self.region[phase-1][0]
+                self.region[phase-1][1] = str(split[2])[0:-1]
+                # test = (str(split[2][0:-1])=="BCC")
 
             elif split[0] == "hkl:":
-                print("hkl: ")
+                # print("hkl: ")
                 pass
 
             elif split[0] == "########\n":
-                self.region[phase - 1][1] = hkl_2_theta
+                self.region[phase - 1][2] = hkl_2_theta
                 hkl_2_theta = []
 
             else:
-                print("else_case: ", split)
+                # print("else_case: ", split)
                 h = int(split[0])
                 k = int(split[1])
                 l = int(split[2])

@@ -150,7 +150,7 @@ class SPODIData(Data):
 
     @staticmethod
     def fit_the_peaks_for_on_diffraction_pattern(data, peak_regions, plot=False, datanumber=False, force=False,
-                                                 Chi=False, phase=False):
+                                                 Chi=False, phase=False, material=False):
         """
         fitting the individual peaks of each diffraction pattern
         :param plot: plot each fit.
@@ -174,10 +174,10 @@ class SPODIData(Data):
             day_err = data[2][x:y]
             if double == 1:
                 gauss = Fittingtools.pseudo_voigt_single_peak_fit(dax, day, day_err, plot=plot, dataset=datanumber,
-                                                                  force=force, Chi=Chi, phase=phase)
+                                                                  force=force, Chi=Chi, phase=phase, material=material)
             if double == 2:
                 gauss = Fittingtools.pseudo_voigt_double_peak_fit(dax, day, day_err, plot=plot, dataset=datanumber,
-                                                                  force=force, Chi=Chi, phase=phase)
+                                                                  force=force, Chi=Chi, phase=phase, material=material)
                 if peak == 1:
                     gauss = gauss[0:2]
                 if peak == 2:
@@ -187,16 +187,16 @@ class SPODIData(Data):
             hkl_2_theta[j][4] = gauss[1]
         return hkl_2_theta
 
-    def fit_all_data(self, peak_regions_phase, plot=False):
+    def fit_all_data(self, peak_regions_phase, plot=False, material=False):
         """
         Fit all data and 
-        :param peak_regions_phase: is a list: [[phase_1, peak_region], [phase_2, peak_region]]
+        :param peak_regions_phase: is a list: [[phase_1_nr, phase , peak_region], [phase_2_nr, phase, peak_region]]
         :param plot:
         :return:
         """
         print "called fit_all_data method", peak_regions_phase
         for i in peak_regions_phase:  # loop over all phases
-            phase, peak_regions = i
+            phasenr, phase, peak_regions = i
             print "phase, peak_regin: ", phase, peak_regions
             # self.data_dic_phases[phase] = list()
             force_dic = {}
@@ -208,7 +208,8 @@ class SPODIData(Data):
                     data = [two_theta, intens, error]
                     hkl_2_theta = self.fit_the_peaks_for_on_diffraction_pattern(data=data, peak_regions=peak_regions,
                                                                                 plot=plot, datanumber=number,
-                                                                                force=force, Chi=chi, phase=phase)
+                                                                                force=force, Chi=chi, phase=phase,
+                                                                                material=material)
                     hkl_2_theta = hkl_2_theta.tolist()
                     number += 1
                     print hkl_2_theta
@@ -216,7 +217,7 @@ class SPODIData(Data):
                         help_list.append([phase, force, omega, chi, m])
                 force_dic[j] = help_list  # [[phase, force, omega, chi, h, k, l, 2theta, 2theta_error], ...]
             print "force dict: ", force_dic
-            self.data_dic_phases[phase] = force_dic
+            self.data_dic_phases[phasenr] = force_dic
 
         # calculate phi, psi, strain and stress and store it in
         self.calc_phi_psi_epsilon()

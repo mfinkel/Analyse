@@ -2257,7 +2257,7 @@ class FitGneupelHerold(FitStrainWithTexture):
 
         self.hkl_data_dict = hkl_data_dict
 
-    def fit_all_hkl(self, phase):
+    def fit_all_hkl(self, phase, phase_name, material):
         fit_object = LinFit()
         s1l = []
         s1errl = []
@@ -2275,20 +2275,20 @@ class FitGneupelHerold(FitStrainWithTexture):
                 s2l.append(s2)
                 s2errl.append(s2err)
                 hkl_l.append(hkl)
-                name = "fit_s1_s2_hkl_{}_phase_{}".format(hkl, phase)
+                name = "{}\\fit_s1_s2_phase_{}_hkl_{}".format(material, phase_name, hkl)
                 plots_dic[name] = []
                 # plt.figure(name)
                 # plt.errorbar(xdata, ydata, yerr=yerr, fmt='bo', label="Data")
                 plots_dic[name].append([xdata, ydata, yerr])
-                Psi = np.arange(0, np.pi /2, 0.01)
-                Psi = np.cos(Psi)**2
+                Psi = np.arange(0, np.pi / 2, 0.01)
+                Psi = np.cos(Psi) ** 2
                 params = lm.Parameters()
                 params.add('a', value=s1)
                 params.add('b', value=s2)
                 val = fit_object.residual(params=params, xdata=Psi)
 
 
-                plots_dic[name].append([Psi, val, s1, s2])
+                plots_dic[name].append([Psi, val, s1, s1err, s2, s2err])
                 # plt.plot(Psi, val, 'r-', label="fit, \ns1 = {}\ns2 = {}".format(s1, s2))
                 #
                 # plt.xlabel('$\cos^2(\Psi)$')
@@ -2309,7 +2309,7 @@ class FitGneupelHerold(FitStrainWithTexture):
                        phase_name=""):
         self.hkl_list_dict = self.create_list_of_all_existiing_hkl()
         self.create_hkl_data_dict()
-        plots_dic = self.fit_all_hkl(phase)
+        plots_dic = self.fit_all_hkl(phase, phase_name, material)
 
         Gamma = []
         hkl = self.Data.data['hkl']
