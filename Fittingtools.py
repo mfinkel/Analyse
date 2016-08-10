@@ -9,7 +9,8 @@ from scipy.optimize import curve_fit
 import scipy.odr.odrpack as odr
 import matplotlib.pyplot as plt
 from lmfit.models import PseudoVoigtConstModel, PseudoVoigtDoublePeakModel, PseudoVoigtModel, LinearModel, \
-                         GaussianModel, SkewedGaussianModel, PseudoVoigtConstAsymModel, ConstantModel, LorentzianModel
+                         GaussianModel, SkewedGaussianModel, PseudoVoigtConstAsymModel, ConstantModel, LorentzianModel,\
+                         SkewedGaussianFracModel, LorentzianFracModel
 from lmfit.parameter import Parameters
 
 import os
@@ -213,22 +214,25 @@ def pseudo_voigt_asym_single_peak_fit(x_list, y_list, weights=None, params=False
     :param plot:
     :return:
     """
-    pars = Parameters()
-                   # name                value=None          vary  min   max   expr
-    pars.add_many(  ('amplitude', params['amplitude'].value, True, None, None, None),
-                    ('center', params['center'].value, True,  None, None, None),
-                    ('sigma', params['sigma'].value, True,  None, None, None),
-                    ('gamma', 0, True,  None, None, None),
-                    ('slope', params['a'].value, True,  None, None, None),
-                    ('intercept', params['const'].value, True,  None, None, None),
-                    ('fraction', params['fraction'].value, True,  None, None, None))
+    # pars = Parameters()
+    #                # name                value=None          vary  min   max   expr
+    # pars.add_many(  ('amplitude', params['amplitude'].value, True, None, None, None),
+    #                 ('center', params['center'].value, True,  None, None, None),
+    #                 ('sigma', params['sigma'].value, True,  None, None, None),
+    #                 ('gamma', 0, True,  None, None, None),
+    #                 ('slope', params['a'].value, True,  None, None, None),
+    #                 ('intercept', params['const'].value, True,  None, None, None),
+    #                 ('fraction', params['fraction'].value, True,  None, None, None))
 
-    mod_gaus = SkewedGaussianModel()  # amplitude=1.0, center=0.0, sigma=1.0, gamma=0.0
-    mod_lorenz = LorentzianModel()  # amplitude=1.0, center=0.0, sigma=1.0
+    mod_gaus = SkewedGaussianFracModel()  # amplitude=1.0, center=0.0, sigma=1.0, gamma=0.0, fraction
+    mod_lorenz = LorentzianFracModel()  # amplitude=1.0, center=0.0, sigma=1.0, fraction
     mod_lin = LinearModel()  # slope, intercept
-    mod  = (1-pars['fraction'].value)*mod_gaus + pars['fraction']*mod_lorenz + mod_lin
-    p_guess = guesspara(x_list, y_list)
-    # pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2], const=p_guess[3], fraction=0.15)
+    mod  = SkewedGaussianFracModel() + LorentzianFracModel() + LinearModel()
+    # p_guess = guesspara(x_list, y_list)
+    hallo=0
+    pars = mod.make_params(amplitude=params['amplitude'].value, center=params['center'].value,
+                           sigma=params['sigma'].value, slope=params['a'].value, intersept=params['const'].value,
+                           fraction=params['fraction'].value)
     # pars['const'].set(min=0, max=max(y_list))
     # pars['center'].set(min=min(x_list), max=max(x_list))
     # pars['a'].vary = False
@@ -246,13 +250,15 @@ def pseudo_voigt_asym_single_peak_fit(x_list, y_list, weights=None, params=False
         res = [out.params["center"].value, out.params["center"].stderr]  # p_final[2]
     # print "hallo", res
     x_new_list = np.arange(min(x_list), max(x_list), abs(max(x_list) - min(x_list)) / (len(x_list) * 20))
-    y_result_list = (1-out.params['fraction'])*mod_gaus.func(x_new_list, amplitude=out.params['amplitude'].value,
-                             center=out.params['center'].value,
-                             sigma=out.params['sigma'].value,
-                             gamma=out.params['gamma'].value) + \
-                    out.params['fraction']*mod_lorenz.func(x_new_list, amplitude=out.params['amplitude'].value,
-                             center=out.params['center'].value,
-                             sigma=out.params['sigma'].value) + \
+    y_result_list = mod_gaus.func(x_new_list, amplitude=out.params['amplitude'].value,
+                                  center=out.params['center'].value,
+                                  sigma=out.params['sigma'].value,
+                                  gamma=out.params['gamma'].value,
+                                  fraction=out.params['fraction'].value) + \
+                    mod_lorenz.func(x_new_list, amplitude=out.params['amplitude'].value,
+                                    center=out.params['center'].value,
+                                    sigma=out.params['sigma'].value,
+                                    fraction=out.params['fraction'].value) + \
                     mod_lin.func(x_new_list, slope=out.params['slope'].value,
                                  intercept=out.params['intercept'].value)
 
