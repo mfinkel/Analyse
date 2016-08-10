@@ -9,7 +9,8 @@ from scipy.optimize import curve_fit
 import scipy.odr.odrpack as odr
 import matplotlib.pyplot as plt
 from lmfit.models import PseudoVoigtConstModel, PseudoVoigtDoublePeakModel, PseudoVoigtModel, LinearModel, \
-                         GaussianModel, SkewedGaussianModel, PseudoVoigtConstAsymModel
+                         GaussianModel, SkewedGaussianModel, PseudoVoigtConstAsymModel, ConstantModel, LorentzianModel
+from lmfit.parameter import Parameters
 
 import os
 
@@ -158,13 +159,79 @@ def pseudo_voigt_single_peak_fit(x_list, y_list, weights=None, plot=False, datas
     :return:
     """
     save=False
-    mod = PseudoVoigtConstAsymModel()
-    # mod = SkewedGaussianModel() +  # amplitude=1.0, center=0.0, sigma=1.0, gamma=0.0
+    mod = PseudoVoigtConstModel()
+    # mod1 = SkewedGaussianModel()
+    # mod2 = ConstantModel()  # amplitude=1.0, center=0.0, sigma=1.0, gamma=0.0
+    # mod  = mod1 + mod2
     p_guess = guesspara(x_list, y_list)
-    pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2], const=p_guess[3], fraction=0.15) #
+    pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2], const=p_guess[3], fraction=0.15)
     # pars['const'].set(min=0, max=max(y_list))
     pars['center'].set(min=min(x_list), max=max(x_list))
-    pars['a'].vary = False
+    # pars['a'].vary = False
+    out = mod.fit(y_list, pars, x=x_list, weights=weights)  #
+    y_ = out.best_fit
+    # chisqr = out.redchi
+    chis = out.redchi / y_.max() ** 2
+    # chiss = out.chisqr
+    x_new_list = np.arange(min(x_list), max(x_list), abs(max(x_list) - min(x_list)) / (len(x_list) * 20))
+    y_result_list = mod.func(x_new_list, amplitude=out.params['amplitude'].value,
+                             center=out.params['center'].value,
+                             sigma=out.params['sigma'].value,
+                             fraction=out.params['fraction'].value,
+                             const=out.params['const'].value,
+                             a=out.params['a'])
+    compare = max(y_list) - background(x_list, y_list, out.params['center'], out.params['fwhm'])  #
+    if max(y_list) < 150. or max(y_list - y_) / max(y_list) > 0.2 or compare < 500 or chis > 0.8:
+        res, x_new_list, y_result_list = pseudo_voigt_asym_single_peak_fit(x_list, y_list, weights, pars)
+        res = ['nan', 'nan']
+    else:
+        # print out.params["center"].value, out.params["center"].stderr
+        res = [out.params["center"].value, out.params["center"].stderr]  # p_final[2]
+    # print "hallo", res
+
+
+    if plot:
+        filename = ".\\PeakFits\\{}\\Dataset_{},Phase_{},force_{},Chi{}.svg".format(material, dataset, phase, force,
+                                                                                    Chi)
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+        filename = ".\\{}\\Dataset_{},Phase_{},force_{},Chi{}".format(material, dataset, phase, force, Chi)
+        delta = y_list - out.best_fit
+        figname = "Material: {}, Dataset: {}, Phase: {}, force: {}, Chi: {}".format(material, dataset, phase, force,
+                                                                                    Chi)
+        plot_data(figname, filename, x_list, y_list, x_new_list, y_result_list, delta, color, res, save=save)
+
+    return res
+
+
+def pseudo_voigt_asym_single_peak_fit(x_list, y_list, weights=None, params=False):
+    """
+    fitting one peak with a psoido voigt function
+    :param x_list:
+    :param y_list:
+    :param weights:
+    :param plot:
+    :return:
+    """
+    pars = Parameters()
+                   # name                value=None          vary  min   max   expr
+    pars.add_many(  ('amplitude', params['amplitude'].value, True, None, None, None),
+                    ('center', params['center'].value, True,  None, None, None),
+                    ('sigma', params['sigma'].value, True,  None, None, None),
+                    ('gamma', 0, True,  None, None, None),
+                    ('slope', params['a'].value, True,  None, None, None),
+                    ('intercept', params['const'].value, True,  None, None, None),
+                    ('fraction', params['fraction'].value, True,  None, None, None))
+
+    mod_gaus = SkewedGaussianModel()  # amplitude=1.0, center=0.0, sigma=1.0, gamma=0.0
+    mod_lorenz = LorentzianModel()  # amplitude=1.0, center=0.0, sigma=1.0
+    mod_lin = LinearModel()  # slope, intercept
+    mod  = (1-pars['fraction'].value)*mod_gaus + pars['fraction']*mod_lorenz + mod_lin
+    p_guess = guesspara(x_list, y_list)
+    # pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2], const=p_guess[3], fraction=0.15)
+    # pars['const'].set(min=0, max=max(y_list))
+    # pars['center'].set(min=min(x_list), max=max(x_list))
+    # pars['a'].vary = False
     out = mod.fit(y_list, pars, x=x_list, weights=weights)  #
     y_ = out.best_fit
     # chisqr = out.redchi
@@ -179,25 +246,18 @@ def pseudo_voigt_single_peak_fit(x_list, y_list, weights=None, plot=False, datas
         res = [out.params["center"].value, out.params["center"].stderr]  # p_final[2]
     # print "hallo", res
     x_new_list = np.arange(min(x_list), max(x_list), abs(max(x_list) - min(x_list)) / (len(x_list) * 20))
-    y_result_list = mod.func(x_new_list, amplitude=out.params['amplitude'].value,
+    y_result_list = (1-out.params['fraction'])*mod_gaus.func(x_new_list, amplitude=out.params['amplitude'].value,
                              center=out.params['center'].value,
                              sigma=out.params['sigma'].value,
-                             gamma=out.params['gamma'].value)
-                             # fraction=out.params['fraction'].value,
-                             # const=out.params['const'].value,
-                             # a=out.params['a'].value)
-    if plot:
-        filename = ".\\PeakFits\\{}\\Dataset_{},Phase_{},force_{},Chi{}.svg".format(material, dataset, phase, force,
-                                                                                    Chi)
-        if not os.path.exists(os.path.dirname(filename)):
-            os.makedirs(os.path.dirname(filename))
-        filename = ".\\{}\\Dataset_{},Phase_{},force_{},Chi{}".format(material, dataset, phase, force, Chi)
-        delta = y_list - out.best_fit
-        figname = "Material: {}, Dataset: {}, Phase: {}, force: {}, Chi: {}".format(material, dataset, phase, force,
-                                                                                    Chi)
-        plot_data(figname, filename, x_list, y_list, x_new_list, y_result_list, delta, color, res, save=save)
+                             gamma=out.params['gamma'].value) + \
+                    out.params['fraction']*mod_lorenz.func(x_new_list, amplitude=out.params['amplitude'].value,
+                             center=out.params['center'].value,
+                             sigma=out.params['sigma'].value) + \
+                    mod_lin.func(x_new_list, slope=out.params['slope'].value,
+                                 intercept=out.params['intercept'].value)
 
-    return res
+
+    return res, x_new_list, y_result_list
 
 
 def plot_data(figname, filename, x_list, y_list, x_new_list, y_result_list, delta, color, res, save=False):
@@ -327,7 +387,10 @@ def background(x_list, y_list, center, fwhm):
         if not center - fwhm < x_list[i] < center + fwhm:
             back += y_list[i]
             count += 1
-    return back / count
+    try:
+        return back/count
+    except ZeroDivisionError:
+        return 0
 
 
 def gauss_fitting_neu(x_list, av_count_l):
