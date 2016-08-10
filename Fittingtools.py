@@ -9,7 +9,7 @@ from scipy.optimize import curve_fit
 import scipy.odr.odrpack as odr
 import matplotlib.pyplot as plt
 from lmfit.models import PseudoVoigtConstModel, PseudoVoigtDoublePeakModel, PseudoVoigtModel, LinearModel, \
-                         GaussianModel, SkewedGaussianModel
+                         GaussianModel, SkewedGaussianModel, PseudoVoigtConstAsymModel
 
 import os
 
@@ -157,20 +157,21 @@ def pseudo_voigt_single_peak_fit(x_list, y_list, weights=None, plot=False, datas
     :param plot:
     :return:
     """
-    mod = PseudoVoigtConstModel()
-    mod = SkewedGaussianModel() +  # amplitude=1.0, center=0.0, sigma=1.0, gamma=0.0
+    save=False
+    mod = PseudoVoigtConstAsymModel()
+    # mod = SkewedGaussianModel() +  # amplitude=1.0, center=0.0, sigma=1.0, gamma=0.0
     p_guess = guesspara(x_list, y_list)
-    pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2])  # , const=p_guess[3], fraction=0.15)
+    pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2], const=p_guess[3], fraction=0.15) #
     # pars['const'].set(min=0, max=max(y_list))
     pars['center'].set(min=min(x_list), max=max(x_list))
-    # pars['a'].vary = False
+    pars['a'].vary = False
     out = mod.fit(y_list, pars, x=x_list, weights=weights)  #
     y_ = out.best_fit
     # chisqr = out.redchi
     chis = out.redchi / y_.max() ** 2
     # chiss = out.chisqr
 
-    compare = max(y_list) - background(x_list, y_list, out.params['center'], out.params['sigma'])  # fwhm
+    compare = max(y_list) - background(x_list, y_list, out.params['center'], out.params['fwhm'])  #
     if max(y_list) < 150. or max(y_list - y_) / max(y_list) > 0.2 or compare < 500 or chis > 0.8:
         res = ['nan', 'nan']
     else:
