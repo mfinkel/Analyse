@@ -161,6 +161,8 @@ class SPODIData(Data):
         """
         # hkl_2_theta = [[h, k, l, 2Theta, 2Theta_error], [], ...
         hkl_2_theta = np.zeros((len(peak_regions), 5))
+        COLOR = Fittingtools.ColorGenerator()
+        COLOR.reset()
         for j in xrange(len(peak_regions)):
             hkl_2_theta[j][0] = peak_regions[j][0]
             hkl_2_theta[j][1] = peak_regions[j][1]
@@ -172,12 +174,19 @@ class SPODIData(Data):
             dax = data[0][x:y]
             day = data[1][x:y]
             day_err = data[2][x:y]
+            color = COLOR.get_color()
+            save = False
+
+            if j == (len(peak_regions) - 1):
+                save = True
             if double == 1:
                 gauss = Fittingtools.pseudo_voigt_single_peak_fit(dax, day, day_err, plot=plot, dataset=datanumber,
-                                                                  force=force, Chi=Chi, phase=phase, material=material)
+                                                                  force=force, Chi=Chi, phase=phase, material=material,
+                                                                  color=color, save=save)
             if double == 2:
                 gauss = Fittingtools.pseudo_voigt_double_peak_fit(dax, day, day_err, plot=plot, dataset=datanumber,
-                                                                  force=force, Chi=Chi, phase=phase, material=material)
+                                                                  force=force, Chi=Chi, phase=phase, material=material,
+                                                                  color=color)
                 if peak == 1:
                     gauss = gauss[0:2]
                 if peak == 2:

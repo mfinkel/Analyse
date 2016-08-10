@@ -438,9 +438,14 @@ class CentralWidget(QWidget):
         self.cancel_button = QPushButton("Cancel")
         self.region = phase_region_class()
         self.checkBoxPlotFits = QCheckBox("Plot fit's ")
+        self.material = QLineEdit("iron")
+        self.modi = self.create_modi_comb_box()
+        self.output_filename = QLineEdit("Result_" + str(self.material.text()) + "_" + str(self.modi.currentText()))
 
         try:
             self.phase_peak_region = self.region.load()
+            self.material.setText(self.region.material)
+            self.change_outputfile_name()
             for i in xrange(len(self.phase_peak_region)):
                 phasenr, phase, dat = self.phase_peak_region[i]
                 self.name_of_phase_dic[phasenr] = phase
@@ -479,7 +484,7 @@ class CentralWidget(QWidget):
         self.name_of_phase.returnPressed.connect(self.change_name_of_phase)
         self.fit_phase_combbox.currentIndexChanged.connect(self.change_name_of_phase_qlineedit)
         self.modi_text = QLabel("Theory")
-        self.modi = self.create_modi_comb_box()
+
 
         self.ODF_text = QLabel("Texture?")
         self.text_jn = self.create_jn_combbox()
@@ -496,8 +501,8 @@ class CentralWidget(QWidget):
         self.do_the_fit_tt_button.setEnabled(False)
         self.do_the_fit_tt_button.clicked.connect(self.do_the_fit_tensile_test)
 
-        self.material = QLineEdit("iron")
-        self.output_filename = QLineEdit("Result_" + str(self.material.text()) + "_" + str(self.modi.currentText()))
+
+
         self.material.returnPressed.connect(self.change_outputfile_name)
         self.modi.currentIndexChanged.connect(self.change_outputfile_name)
         # self.connect(self, SIGNAL("data"), self.central_plot.add_data)
@@ -1429,6 +1434,9 @@ class phase_region_class(object):
                 # self.region[phase-1][0]
                 self.region[phase-1][1] = str(split[2])[0:-1]
                 # test = (str(split[2][0:-1])=="BCC")
+
+            elif split[0]== 'Material:':
+                self.material = split[1].strip()
 
             elif split[0] == "hkl:":
                 # print("hkl: ")

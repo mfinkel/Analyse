@@ -8,8 +8,29 @@ import numpy as np
 from scipy.optimize import curve_fit
 import scipy.odr.odrpack as odr
 import matplotlib.pyplot as plt
-from lmfit.models import PseudoVoigtConstModel, PseudoVoigtDoublePeakModel, PseudoVoigtModel, LinearModel, GaussianModel
+from lmfit.models import PseudoVoigtConstModel, PseudoVoigtDoublePeakModel, PseudoVoigtModel, LinearModel, \
+                         GaussianModel, SkewedGaussianModel
+
 import os
+
+
+class ColorGenerator(object):
+    def __init__(self):
+        self.__color = ['brown', 'red', 'green', 'lime', 'cyan', 'turquoise', 'darkviolet', 'saddlebrown', 'magenta']
+        self.__current = 0
+        self.__next = self.__current + 1
+
+    def reset(self):
+        self.__current = 0
+        self.__next = self.__current + 1
+
+    def get_color(self):
+        current = self.__current
+        if self.__current + 1 < len(self.__color):
+            self.__current += 1
+        else:
+            self.__current = 0
+        return self.__color[current]
 
 
 def breite(x, y):
@@ -127,7 +148,7 @@ def gauss_lin_fitting(x_list, av_count_l, plot=False):
 
 
 def pseudo_voigt_single_peak_fit(x_list, y_list, weights=None, plot=False, dataset=False, force=False, Chi=False,
-                                 phase=False, material=False):
+                                 phase=False, material=False, color=False, save=False):
     """
     fitting one peak with a psoido voigt function
     :param x_list:
@@ -137,56 +158,79 @@ def pseudo_voigt_single_peak_fit(x_list, y_list, weights=None, plot=False, datas
     :return:
     """
     mod = PseudoVoigtConstModel()
+    mod = SkewedGaussianModel() +  # amplitude=1.0, center=0.0, sigma=1.0, gamma=0.0
     p_guess = guesspara(x_list, y_list)
-    pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2], const=p_guess[3])
+    pars = mod.make_params(amplitude=p_guess[0], center=p_guess[1], sigma=p_guess[2])  # , const=p_guess[3], fraction=0.15)
     # pars['const'].set(min=0, max=max(y_list))
     pars['center'].set(min=min(x_list), max=max(x_list))
+    # pars['a'].vary = False
     out = mod.fit(y_list, pars, x=x_list, weights=weights)  #
     y_ = out.best_fit
-    chisqr = out.redchi
+    # chisqr = out.redchi
     chis = out.redchi / y_.max() ** 2
-    chiss = out.chisqr
+    # chiss = out.chisqr
 
-    compare = max(y_list) - background(x_list, y_list, out.params['center'], out.params['fwhm'])
+    compare = max(y_list) - background(x_list, y_list, out.params['center'], out.params['sigma'])  # fwhm
     if max(y_list) < 150. or max(y_list - y_) / max(y_list) > 0.2 or compare < 500 or chis > 0.8:
         res = ['nan', 'nan']
     else:
         # print out.params["center"].value, out.params["center"].stderr
         res = [out.params["center"].value, out.params["center"].stderr]  # p_final[2]
     # print "hallo", res
-    x_new_list = np.arange(min(x_list), max(x_list), abs(max(x_list)-min(x_list))/(len(x_list)*20))
+    x_new_list = np.arange(min(x_list), max(x_list), abs(max(x_list) - min(x_list)) / (len(x_list) * 20))
     y_result_list = mod.func(x_new_list, amplitude=out.params['amplitude'].value,
                              center=out.params['center'].value,
                              sigma=out.params['sigma'].value,
-                             fraction=out.params['fraction'].value,
-                             const=out.params['const'].value,
-                             a=out.params['a'].value)
+                             gamma=out.params['gamma'].value)
+                             # fraction=out.params['fraction'].value,
+                             # const=out.params['const'].value,
+                             # a=out.params['a'].value)
     if plot:
-        filename = ".\\PeakFits\\{}\\Dataset_{},Phase_{},force_{},Chi{}.svg".format(material, dataset, phase, force, Chi)
+        filename = ".\\PeakFits\\{}\\Dataset_{},Phase_{},force_{},Chi{}.svg".format(material, dataset, phase, force,
+                                                                                    Chi)
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
         filename = ".\\{}\\Dataset_{},Phase_{},force_{},Chi{}".format(material, dataset, phase, force, Chi)
-        plt.figure(
-            "Material: {}, Dataset: {}, Phase: {}, force: {}, Chi: {}".format(material, dataset, phase, force, Chi))
-        plt.plot(x_list, y_list, "bo")
-        plt.plot(x_list, out.init_fit, "k--")
+        delta = y_list - out.best_fit
+        figname = "Material: {}, Dataset: {}, Phase: {}, force: {}, Chi: {}".format(material, dataset, phase, force,
+                                                                                    Chi)
+        plot_data(figname, filename, x_list, y_list, x_new_list, y_result_list, delta, color, res, save=save)
 
-        # try:
-        #     plt.plot(x_new_list, y_result_list, 'r-', label="T: %.3f\nerr: %.5f, chisqr: %.2f\nchiout: %.1f, chiss: %.1f" % (
-        #     float(res[0]), float(res[1]), chisqr, chis, chiss))
-        # except TypeError:
-        plt.plot(x_new_list, y_result_list, 'r-', label="$2\Theta$: %.3f $\pm$ : %.3g" % (float(res[0]), float(res[1])))
-        plt.legend(loc='upper right', numpoints=1)
-        plt.savefig(".\\PeakFits\\" +filename + ".svg", format="svg")
-        plt.show()
-
-    plot_options = [x_list, ]
-    # print (out.fit_report(min_correl=0.75))
     return res
 
 
+def plot_data(figname, filename, x_list, y_list, x_new_list, y_result_list, delta, color, res, save=False):
+    fig = plt.figure(figname)
+    ax1 = fig.add_subplot(211)
+    ax2 = fig.add_subplot(212, sharex=ax1)
+    ax1.plot(x_list, y_list, 'b.')
+    ax1.plot(x_new_list, y_result_list, '-', color=color,
+             label="$2\Theta$: %.3f $\pm$ %.3g" % (float(res[0]), float(res[1])))
+
+    ax2.plot(x_list, delta, 'b.')
+
+    ax1.legend(loc='best')  # loc='upper right', numpoints=1)bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.
+    ax2.set_xlabel("$2\Theta$")
+    ax1.set_ylabel("I")
+    ax2.set_ylabel("$\Delta I$")
+    ax1.set_title("Daten und Fit")
+    ax2.set_title("Differenz zwischen Messung und Fit")
+
+    def cm_to_inch(cm):
+        return cm / 2.54  # conv cm to inch
+
+    # DefaultSize = fig.get_size_inches()
+    fig.set_size_inches(cm_to_inch(30), cm_to_inch(20), forward=True)  # (DefaultSize[0]*3, DefaultSize[1]*2)
+    if save:
+        fig.savefig(".\\PeakFits\\" + filename + ".eps", format='eps')
+        fig.savefig(".\\PeakFits\\" + filename + ".svg", format="svg")
+        fig.savefig(".\\PeakFits\\" + filename + ".pdf", format="pdf")
+        fig.savefig(".\\PeakFits\\" + filename + ".png", format="png")
+    fig.show()
+
+
 def pseudo_voigt_double_peak_fit(x_list, y_list, weights=None, plot=False, dataset=False, force=False, Chi=False,
-                                 phase=False, material=False):
+                                 phase=False, material=False, color=False):
     """
     fitting one peak with a psoido voigt function
     :param x_list:
@@ -249,7 +293,7 @@ def pseudo_voigt_double_peak_fit(x_list, y_list, weights=None, plot=False, datas
         res = [out.params["center1"].value, out.params["center1"].stderr,
                out.params["center2"].value, out.params["center2"].stderr]  # p_final[2]
     # print "hallo", res
-    x_new_list = np.arange(min(x_list), max(x_list), abs(max(x_list)-min(x_list))/(len(x_list)*20))
+    x_new_list = np.arange(min(x_list), max(x_list), abs(max(x_list) - min(x_list)) / (len(x_list) * 20))
     y_result_list = mod.func(x_new_list, amplitude1=out.params['amplitude1'].value,
                              center1=out.params['center1'].value,
                              sigma1=out.params['sigma1'].value,
@@ -262,22 +306,16 @@ def pseudo_voigt_double_peak_fit(x_list, y_list, weights=None, plot=False, datas
                              a=out.params['a'].value)
 
     if plot:
-        filename = ".\\PeakFits\\{}\\Dataset_{},Phase_{},force_{},Chi{}.svg".format(material, dataset, phase, force, Chi)
+        filename = ".\\PeakFits\\{}\\Dataset_{},Phase_{},force_{},Chi{}.svg".format(material, dataset, phase, force,
+                                                                                    Chi)
         if not os.path.exists(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
         filename = ".\\{}\\Dataset_{},Phase_{},force_{},Chi{}".format(material, dataset, phase, force, Chi)
-        plt.figure(
-            "Material: {}, Dataset: {}, Phase: {}, force: {}, Chi: {}".format(material, dataset, phase, force, Chi))
+        figname = "Material: {}, Dataset: {}, Phase: {}, force: {}, Chi: {}".format(material, dataset, phase, force,
+                                                                                    Chi)
+        delta = y_list - out.best_fit
+        plot_data(figname, filename, x_list, y_list, x_new_list, y_result_list, delta, color, res)
 
-        plt.plot(x_list, y_list, "bo")
-        plt.plot(x_list, out.init_fit, "k--")
-        # plt.plot(x_new_list, y_result_list, 'r-',
-        #          label="T: %.3f\nerr: %.5f, chisqr: %.2f" % (float(res[0]), float(res[1]), chisqr))
-        plt.plot(x_new_list, y_result_list, 'r-', label="$2\Theta$: %.3f $\pm$ : %.3g" % (float(res[0]), float(res[1])))
-        plt.legend(loc='upper right', numpoints=1)
-        plt.savefig(".\\PeakFits\\" +filename + ".svg", format="svg")
-        plt.show()
-    # print (out.fit_report(min_correl=0.75))
     return res
 
 
