@@ -167,6 +167,7 @@ class SPODIData(Data):
             hkl_2_theta[j][0] = peak_regions[j][0]
             hkl_2_theta[j][1] = peak_regions[j][1]
             hkl_2_theta[j][2] = peak_regions[j][2]
+            hkl = str(peak_regions[j][0]) + str(peak_regions[j][1]) + str(peak_regions[j][2])
             x = int(peak_regions[j][3])
             y = int(peak_regions[j][4])
             double = int(peak_regions[j][5])
@@ -176,17 +177,23 @@ class SPODIData(Data):
             day_err = data[2][x:y]
             color = COLOR.get_color()
             save = False
-
+            p_f_p = False
+            full_pattern = [data[0], data[1]]
+            if j == 0:
+                p_f_p = True
             if j == (len(peak_regions) - 1):
                 save = True
+
+
             if double == 1:
                 gauss = Fittingtools.pseudo_voigt_single_peak_fit(dax, day, day_err, plot=plot, dataset=datanumber,
                                                                   force=force, Chi=Chi, phase=phase, material=material,
-                                                                  color=color, save=save)
+                                                                  color=color, save=save, full_pattern=full_pattern,
+                                                                  p_f_p=p_f_p, hkl=hkl)
             if double == 2:
                 gauss = Fittingtools.pseudo_voigt_double_peak_fit(dax, day, day_err, plot=plot, dataset=datanumber,
                                                                   force=force, Chi=Chi, phase=phase, material=material,
-                                                                  color=color)
+                                                                  color=color, hkl=hkl)
                 if peak == 1:
                     gauss = gauss[0:2]
                 if peak == 2:
@@ -194,6 +201,7 @@ class SPODIData(Data):
 
             hkl_2_theta[j][3] = gauss[0]
             hkl_2_theta[j][4] = gauss[1]
+        plt.show()
         return hkl_2_theta
 
     def fit_all_data(self, peak_regions_phase, plot=False, material=False):

@@ -639,6 +639,7 @@ class CentralWidget(QWidget):
             self.connect(self.widget_set_data_path, SIGNAL("data_dir_list"), self.receve_the_pathes_SPODI_case)
             try:
                 self.phase_peak_region = self.region.load()
+                self.material.setText(self.region.material)
                 self.loaded_peak_region = True
             except IOError:
                 self.loaded_peak_region = False
