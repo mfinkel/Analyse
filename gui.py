@@ -27,6 +27,8 @@ from functools import partial
 import handle_data
 import Modells
 import thread
+from multiprocessing import Process, Queue  # processing ,freezeSupport
+from time import sleep
 
 
 class insert_const_widget(QWidget):
@@ -1105,6 +1107,30 @@ class CentralWidget(QWidget):
         self.connect(self.insert_params, SIGNAL("2"), self.set_params_phase_2)
         self.fit_object.print_params()
 
+    def generate
+
+
+class HandleCVals(object):
+    def __init__(self, number, center):
+        self.vals = np.zeros((number, number, number))  # index of [c44, c12, c11]
+        self.c440, self.c120, self.c110 = center
+        self.lookupc11 = self.generate_lookup(number, self.c110)
+        self.lookupc12 = self.generate_lookup(number, self.c120)
+        self.lookupc44 = self.generate_lookup(number, self.c440)
+
+    def generate_lookup(self, number, center):
+        diff = abs(center*(1-0.15) - center*(1+0.15))/number
+        return np.arange(center*(1-0.15),center*(1+0.15), diff)
+
+    def get_val(self, ic44, ic12, ic11):
+        return self.lookupc44[ic44], self.lookupc44[ic12], self.lookupc44[ic11], self.vals[ic44, ic12, ic11]
+
+    def iterator(self):
+        ic44, ic12, ic11 = 0,0,0
+        while ic44<len(self.lookupc44):
+            while ic12<len(self.lookupc12):
+                while ic11<len(self.lookupc11):
+                    yield self.lookupc44[ic44], self.lookupc44[ic12], self.lookupc44[ic11], self.vals[ic44, ic12, ic11]
 
 class LOAD_SPODI_DATA(QWidget):
     def __init__(self, name, number_of_phases=1, number_of_straind_datasets=1):

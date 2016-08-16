@@ -16,6 +16,7 @@ import Fittingtools
 import Modells
 import os
 from glob import glob
+import matplotlib.pyplot as plt
 
 
 class Data(object):
@@ -193,7 +194,8 @@ class SPODIData(Data):
             if double == 2:
                 gauss = Fittingtools.pseudo_voigt_double_peak_fit(dax, day, day_err, plot=plot, dataset=datanumber,
                                                                   force=force, Chi=Chi, phase=phase, material=material,
-                                                                  color=color, hkl=hkl)
+                                                                  color=color, hkl=hkl, full_pattern=full_pattern,
+                                                                  p_f_p=p_f_p)
                 if peak == 1:
                     gauss = gauss[0:2]
                 if peak == 2:

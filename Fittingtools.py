@@ -419,7 +419,7 @@ def plot_data(figname, filename, x_list, y_list, x_new_list, y_result_list, delt
 
 
 def pseudo_voigt_double_peak_fit(x_list, y_list, weights=None, plot=False, dataset=False, force=False, Chi=False,
-                                 phase=False, material=False, color=False, hkl=''):
+                                 phase=False, material=False, color=False, hkl='', full_pattern=False, p_f_p=False):
     """
     fitting one peak with a psoido voigt function
     :param x_list:
@@ -504,7 +504,8 @@ def pseudo_voigt_double_peak_fit(x_list, y_list, weights=None, plot=False, datas
                                                                                     Chi)
         delta = y_list - out.best_fit
         init = out.init_fit
-        plot_data(figname, filename, x_list, y_list, x_new_list, y_result_list, delta, init, color, res, hkl=hkl)
+        plot_data(figname, filename, x_list, y_list, x_new_list, y_result_list, delta, init, color, res, hkl=hkl,
+                  full_pattern=full_pattern, p_f_p=p_f_p)
 
     return res
 
