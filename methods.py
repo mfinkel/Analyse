@@ -117,7 +117,8 @@ class dataset:
         '''
         number_o_peaks = 0
         # if select_hkl_token == True:
-        #     number_o_peaks = self.select_peaks()
+        #     number_o_peaks = self.select_peaks():
+
         # elif select_hkl_token == False:
         #     number_o_peaks = len(rang)
 
@@ -128,7 +129,7 @@ class dataset:
         # Widget.central_plot.add_xy_data(data_x=self.data[0], data_y=self.data[1])
         # Widget.update()
         #
-        # rang = Widget.hkl_setting
+        # rang = Widget.phase_peak_region
         # self.emit(QtCore.SIGNAL("data"), gui.gui.centralWidget)
         print "hallo das war zu schnell"
 
@@ -198,7 +199,7 @@ class dataset:
             y = int(peak_regions[j][4])
             dax = self.data[0][x:y]
             day = self.data[1][x:y]
-            gauss = Fittingtools.gauss_lin_fitting_2(dax, day, plot=False)
+            gauss = Fittingtools.pseudo_voigt_single_peak_fit(dax, day, plot=False)
             self.hkl_TTheta[j][3] = gauss[0]
             self.hkl_TTheta[j][4] = gauss[1]
 
@@ -534,7 +535,7 @@ class one_HKL:
         return self.sigma * np.cos(self.psi) ** 2
 
 
-class Data:
+class Data_old:
     def __init__(self, odf_path, diameter):
         self.__path_of_odf_phase_1 = odf_path
         self.__path_of_odf_phase_1 = os.path.normpath(self.__path_of_odf_phase_1)
@@ -554,7 +555,7 @@ class Data:
         # Data of the measurment
         self.__epsilon_list = []
         self.__epsilon_weight_list = []
-        self.__phi_psi_hkl_list = []  # hkl, phi, psi
+        self.__phi_psi_hkl_list = []  # phi, psihkl,
 
     """
     Deal with the ODF
@@ -617,12 +618,12 @@ class Data:
 
     def Fit_the_data_with_texture(self, method, filename, number_of_datapoints = None, texture=False):
         print "Number of datapoints: ", len(self.__epsilon_list), method
-        fit = Modells.Fit_strain_with_texture_single_phase(odf_Matrix=self.__odf,
-                                                           force=self.__sample_spezifikations["force"],
-                                                           diameter=self.__sample_spezifikations["diameter"],
-                                                           strains_data=self.__epsilon_list[0:number_of_datapoints],
-                                                           xvals=self.__phi_psi_hkl_list[0:number_of_datapoints],
-                                                           weights=self.__epsilon_weight_list[0:number_of_datapoints])
+        fit = Modells.FitStrainWithTexture(odf_Matrix=self.__odf,
+                                           force=self.__sample_spezifikations["force"],
+                                           diameter=self.__sample_spezifikations["diameter"],
+                                           strains_data=self.__epsilon_list[0:number_of_datapoints],
+                                           xvals=self.__phi_psi_hkl_list[0:number_of_datapoints],
+                                           weights=self.__epsilon_weight_list[0:number_of_datapoints])
         filename = filename + method
         # for i in range(len(self.__epsilon_list)):
         #     print "phi, psi, hkl: ", self.__phi_psi_hkl_list[i], " eps: ", self.__epsilon_list[i], \
@@ -671,11 +672,11 @@ class Data:
         '''
         -------------------------------------------------------------------------------------------
         select the peaks and calculate 2Theta
-        hkl_setting is a list of lists. The elements of hkl_setting contain
+        phase_peak_region is a list of lists. The elements of phase_peak_region contain
         - the hkl (first three indiices)
         - the index of the minimal and maximal value of the respectiv peak.
 
-        with hkl_setting = unstraind[0].select_hkl() it is possible to select the peaks
+        with phase_peak_region = unstraind[0].select_hkl() it is possible to select the peaks
         with some kinde of user interface
         stand 08.12.2015:
         the user interface is not vary sophisticated
@@ -683,7 +684,7 @@ class Data:
         '''
         # 'normal' Iron
         # hkl setting 3 peaks [[1.0, 1.0, 0.0, 780, 980], [2.0, 0.0, 0.0, 1180, 1400], [2.0, 1.0, 1.0, 1540, 1740]]
-        # hkl_setting 5 peaks [[1.0, 1.0, 0.0, 852, 904], [2.0, 0.0, 0.0, 1260, 1314], [2.0, 1.0, 1.0, 1600, 1676], [2.0, 2.0, 0.0, 1926, 2020], [3.0, 1.0, 0.0, 2266, 2380]]
+        # phase_peak_region 5 peaks [[1.0, 1.0, 0.0, 852, 904], [2.0, 0.0, 0.0, 1260, 1314], [2.0, 1.0, 1.0, 1600, 1676], [2.0, 2.0, 0.0, 1926, 2020], [3.0, 1.0, 0.0, 2266, 2380]]
         hkl_setting = [[1.0, 1.0, 0.0, 852, 904], [2.0, 0.0, 0.0, 1260, 1314], [2.0, 1.0, 1.0, 1600, 1676],
                        [2.0, 2.0, 0.0, 1926, 2020], [3.0, 1.0, 0.0, 2266, 2380]]
 
@@ -692,19 +693,19 @@ class Data:
         self.hkl_setting = unstraind[0].select_hkl(rang=[])
 
         hkl_setting_np_array = np.array(self.hkl_setting)
-        np.save(".\\hkl_setting", hkl_setting_np_array)
+        np.save(".\\phase_peak_region", hkl_setting_np_array)
 
     def set_hkl_setting(self, hkl_setting):
         self.hkl_setting = hkl_setting
         hkl_setting_np_array = np.array(self.hkl_setting)
-        np.save(".\\hkl_setting", hkl_setting_np_array)
+        np.save(".\\phase_peak_region", hkl_setting_np_array)
 
 
 
     def fit_all_peaks(self):
         # do it for the rest automatically:
         try:
-            self.hkl_setting = np.load(".\\hkl_setting.npy")
+            self.hkl_setting = np.load(".\\phase_peak_region.npy")
         except IOError:
            print "using default hkl_list"
         print self.hkl_setting
@@ -753,7 +754,7 @@ class Data:
                 if math.isnan(TTheta_0) or math.isnan(TTheta):
                     pass
                 else:
-                    b = one_HKL(h, k, l, TTheta_0,TTheta_0_weight, TTheta,TTheta_weight, chi, chi_, Omega, phi, sigma,
+                    b = one_HKL(h, k, l, TTheta_0, TTheta_0_weight, TTheta,TTheta_weight, chi, chi_, Omega, phi, sigma,
                                 lam)
                     if math.isnan(b.psi) != True and math.isnan(b.PHI) != True:
                         print  "%i%i%i\tTheta: %.3f\tchi: %.0f\tomega: %.0f\tPsi: %.3f\tPhi: %.3f"% \

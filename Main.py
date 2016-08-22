@@ -29,9 +29,10 @@ import methods
 #import lgs
 import Fittingtools
 import gui
-
+import Queue
 if __name__=="__main__":
-    gui.main()
+    Thread_queue = Queue.Queue()
+    gui.main(Thread_queue)
 
 quit()
 def linfunk(x, m, b):
@@ -43,7 +44,7 @@ def linfunk(x, m, b):
 path_to_data  =  "..\\Daten-bearbeitet\\Stahl ST37\\"
 odf_name = "ST37_MTODF.txt"  # "AL_textur_complet.txt"
 
-Data_Iron = methods.Data(path_to_data+odf_name, 6)
+Data_Iron = methods.Data_old(path_to_data + odf_name, 6)
 Data_Iron.read_scattering_SPODI_data(path_of_unstraind_data="Euler-Scans ohne Last\\",
                                      path_of_straind_data="Euler-Scans unter 5kN\\")
 modi = ["reus", "voigt", "hill", "eshelby"]
@@ -94,11 +95,11 @@ for i in filelist2:
 '''
 -------------------------------------------------------------------------------------------
 select the peaks and calculate 2Theta
-hkl_setting is a list of lists. The elements of hkl_setting contain
+phase_peak_region is a list of lists. The elements of phase_peak_region contain
 - the hkl (first three indiices)
 - the index of the minimal and maximal value of the respectiv peak.
 
-with hkl_setting = unstraind[0].select_hkl() it is possible to select the peaks
+with phase_peak_region = unstraind[0].select_hkl() it is possible to select the peaks
 with some kinde of user interface
 stand 08.12.2015:
 the userinterface is not vary sophisticated
@@ -106,7 +107,7 @@ the userinterface is not vary sophisticated
 '''
 #'normal' Iron
 #hkl setting 3 peaks [[1.0, 1.0, 0.0, 780, 980], [2.0, 0.0, 0.0, 1180, 1400], [2.0, 1.0, 1.0, 1540, 1740]]
-#hkl_setting 5 peaks [[1.0, 1.0, 0.0, 852, 904], [2.0, 0.0, 0.0, 1260, 1314], [2.0, 1.0, 1.0, 1600, 1676], [2.0, 2.0, 0.0, 1926, 2020], [3.0, 1.0, 0.0, 2266, 2380]]
+#phase_peak_region 5 peaks [[1.0, 1.0, 0.0, 852, 904], [2.0, 0.0, 0.0, 1260, 1314], [2.0, 1.0, 1.0, 1600, 1676], [2.0, 2.0, 0.0, 1926, 2020], [3.0, 1.0, 0.0, 2266, 2380]]
 hkl_setting = [[1.0, 1.0, 0.0, 852, 904], [2.0, 0.0, 0.0, 1260, 1314], [2.0, 1.0, 1.0, 1600, 1676], [2.0, 2.0, 0.0, 1926, 2020], [3.0, 1.0, 0.0, 2266, 2380]]
 print hkl_setting
 #do it for the rest automaticaly
