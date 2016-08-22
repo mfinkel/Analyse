@@ -297,18 +297,18 @@ class SPODIData(Data):
                         psi = self.psii(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta_0 / 2,
                                         chi=chi, omega=omega)
                         if not (np.isnan(phi) or np.isnan(psi)):
-                            # if chi != 90:
-                            phi_psi_hkl.append([phi, psi, h, k, l])
-                            print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
-                                format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
+                            if chi != 90:
+                                phi_psi_hkl.append([phi, psi, h, k, l])
+                                print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
+                                    format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
 
-                            strain, strain_error = self.delta_epsilon(two_theta=two_theta,
-                                                                      two_theta_0=two_theta_0,
-                                                                      two_theta_err=two_theta_error,
-                                                                      two_theta_0_err=two_theta_error_0)
+                                strain, strain_error = self.delta_epsilon(two_theta=two_theta,
+                                                                          two_theta_0=two_theta_0,
+                                                                          two_theta_err=two_theta_error,
+                                                                          two_theta_0_err=two_theta_error_0)
 
-                            stress, stress_err = self.calc_applied_stress(force=force)
-                            strain_stress.append([strain, strain_error, stress, stress_err])
+                                stress, stress_err = self.calc_applied_stress(force=force)
+                                strain_stress.append([strain, strain_error, stress, stress_err])
                     force_stress_dict[v] = [phi_psi_hkl, strain_stress]
 
             self.fitted_data.data_dict[i] = force_stress_dict
@@ -391,14 +391,14 @@ class SPODIData(Data):
         return e1, weight
 
     @staticmethod
-    def transformation_L_from_I_to_P(chi, omega):
+    def transformation_L_from_I_to_P(chi, omega, phi=-90):
         """
            define transformation from lab.frame I to specimen frame P
            according to Graesslin
         """
-        chi = -deg_to_rad(chi)
-        omega = -deg_to_rad(omega)
-        phi = 0
+        chi = deg_to_rad(chi + 180)
+        omega = deg_to_rad(omega)
+        phi = deg_to_rad(phi)
 
         # rot around z_L'
         O = np.array([[np.cos(phi), np.sin(phi), 0.],
@@ -413,11 +413,11 @@ class SPODIData(Data):
                       ]
                      )
         # rotation around x_L' axis (lefthanded if chi<0)
-        X = np.array([[1., 0., 0.],
-                      [0., np.cos(chi), np.sin(chi)],
-                      [0., -np.sin(chi), np.cos(chi)]
-                      ]
-                     )
+        # X = np.array([[1., 0., 0.],
+        #               [0., np.cos(chi), np.sin(chi)],
+        #               [0., -np.sin(chi), np.cos(chi)]
+        #               ]
+        #              )
         # rot around z_L
         W = np.array([[np.cos(omega), np.sin(omega), 0.],
                       [-np.sin(omega), np.cos(omega), 0.],
@@ -653,9 +653,10 @@ if __name__ == "__main__":
     data = SPODIData(6)
     theta = 40
     omega = 45
-    CHI = [0, 15, 30, 45, 60, 75, 90]
+    CHI = np.array([0, 15, 30, 45, 60, 75, 90])
     PHI = []
     PSI = []
+    offset = 180
     for chi in CHI:
         phi = data.PHII(chi=chi,
                         omega=omega,

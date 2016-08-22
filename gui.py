@@ -1107,7 +1107,7 @@ class CentralWidget(QWidget):
         self.connect(self.insert_params, SIGNAL("2"), self.set_params_phase_2)
         self.fit_object.print_params()
 
-    def generate
+    # def generate
 
 
 class HandleCVals(object):
@@ -1126,7 +1126,7 @@ class HandleCVals(object):
         return self.lookupc44[ic44], self.lookupc44[ic12], self.lookupc44[ic11], self.vals[ic44, ic12, ic11]
 
     def iterator(self):
-        ic44, ic12, ic11 = 0,0,0
+        ic44, ic12, ic11 = 0, 0, 0
         while ic44<len(self.lookupc44):
             while ic12<len(self.lookupc12):
                 while ic11<len(self.lookupc11):

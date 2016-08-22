@@ -675,9 +675,9 @@ class FitStrainWithTexture(object):
         elif sym == "m-3m":
             params.add('c_11_p1', value=240 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
             params.add('c_12_p1', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('z_p1', value=3.18, min=1.5, max=3.5)
-            params.add('c_44_p1', value=115 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9),
-                       expr='(z_p1 / 2) * (c_11_p1 - c_12_p1)')
+            # params.add('z_p1', value=3.18, min=1.5, max=3.5)
+            params.add('c_44_p1', value=115 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))  # ,
+                       # expr='(z_p1 / 2) * (c_11_p1 - c_12_p1)')
         elif sym == "hexagonal":
             params.add('c_11_p1', value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
             params.add('c_12_p1', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
@@ -693,9 +693,9 @@ class FitStrainWithTexture(object):
         elif sym == "m-3m":
             params.add('c_11_p2', value=230 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
             params.add('c_12_p2', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('z_p2', value=2.45, min=1.5, max=3.5)
-            params.add('c_44_p2', value=115 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9),
-                       expr='(z_p2 / 2) * (c_11_p2 - c_12_p2)')
+            # params.add('z_p2', value=2.45, min=1.5, max=3.5)
+            params.add('c_44_p2', value=115 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))  # ,
+                       # expr='(z_p2 / 2) * (c_11_p2 - c_12_p2)')
 
         elif sym == "hexagonal":
             params.add('c_11_p2', value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
@@ -1324,15 +1324,15 @@ class FitStrainWithTexture(object):
                 for k in key_words:
                     if k in key:
                         pars.add(k, params[key].value)
-            if param_vary and 'p1' in key and 'c_44' not in pars.keys() and 'c_12' in pars.keys() and 'c_11' in pars.keys():
-                pars.add('z', value=2., min=1.5, max=3.5)
-                pars.add('c_44', value=params['c_44_p1'].value, min=params['c_44_p1'].min, max=params['c_44_p1'].max,
-                         expr='(z / 2) * (c_11 - c_12)')
-
-            if param_vary and 'p2' in key and 'c_44' not in pars.keys() and 'c_12' in pars.keys() and 'c_11' in pars.keys():
-                pars.add('z', value=2., min=1.5, max=3.5)
-                pars.add('c_44', value=params['c_44_p2'].value, min=params['c_44_p2'].min, max=params['c_44_p2'].max,
-                         expr='(z / 2) * (c_11 - c_12)')
+            # if param_vary and 'p1' in key and 'c_44' not in pars.keys() and 'c_12' in pars.keys() and 'c_11' in pars.keys():
+            #     pars.add('z', value=2., min=1.5, max=3.5)
+            #     pars.add('c_44', value=params['c_44_p1'].value, min=params['c_44_p1'].min, max=params['c_44_p1'].max,
+            #              expr='(z / 2) * (c_11 - c_12)')
+            #
+            # if param_vary and 'p2' in key and 'c_44' not in pars.keys() and 'c_12' in pars.keys() and 'c_11' in pars.keys():
+            #     pars.add('z', value=2., min=1.5, max=3.5)
+            #     pars.add('c_44', value=params['c_44_p2'].value, min=params['c_44_p2'].min, max=params['c_44_p2'].max,
+            #              expr='(z / 2) * (c_11 - c_12)')
         return pars
 
     def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture=False, phase=1,
@@ -2251,7 +2251,8 @@ class FitGneupelHerold(FitStrainWithTexture):
                     phi, psi_, h, k, l = phi_psi_hkl_1[i]
                     for j in xrange(len(phi_psi_hkl_2)):
                         phi_2, psi__2, h_2, k_2, l_2 = phi_psi_hkl_2[j]
-                        if abs(phi - phi_2)<0.001 and abs(psi_ - psi__2)<0.001 and h == h_2 and k == k_2 and l == l_2:
+                        if abs(phi - phi_2) < 0.001 and abs(
+                                        psi_ - psi__2) < 0.001 and h == h_2 and k == k_2 and l == l_2:
                             eps_1, eps_err_1, stress_1, stress_err_1 = eps_strain_1[i]
                             eps_2, eps_err_2, stress_2, stress_err_2 = eps_strain_2[j]
                             hkl_ = str(int(h)) + str(int(k)) + str(int(l))
@@ -2294,7 +2295,7 @@ class FitGneupelHerold(FitStrainWithTexture):
                 # plt.figure(name)
                 # plt.errorbar(xdata, ydata, yerr=yerr, fmt='bo', label="Data")
                 plots_dic[name].append([xdata, ydata, yerr])
-                Psi = np.arange(0, np.pi / 2, 0.01)
+                Psi = np.arange(0, np.pi / 2 + 0.01, 0.01)
                 Psi = np.cos(Psi) ** 2
                 params = lm.Parameters()
                 params.add('a', value=s1)
