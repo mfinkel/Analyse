@@ -487,7 +487,6 @@ class CentralWidget(QWidget):
         self.fit_phase_combbox.currentIndexChanged.connect(self.change_name_of_phase_qlineedit)
         self.modi_text = QLabel("Theory")
 
-
         self.ODF_text = QLabel("Texture?")
         self.text_jn = self.create_jn_combbox()
 
@@ -503,8 +502,6 @@ class CentralWidget(QWidget):
         self.do_the_fit_tt_button.setEnabled(False)
         self.do_the_fit_tt_button.clicked.connect(self.do_the_fit_tensile_test)
 
-
-
         self.material.returnPressed.connect(self.change_outputfile_name)
         self.modi.currentIndexChanged.connect(self.change_outputfile_name)
         # self.connect(self, SIGNAL("data"), self.central_plot.add_data)
@@ -515,6 +512,8 @@ class CentralWidget(QWidget):
 
         self.plot_polefig_button = QPushButton("plot pole figure")
         self.plot_polefig_button.setEnabled(False)
+        self.pfmaxval = QLineEdit('None')
+        self.pfminval = QLineEdit('None')
         self.plot_data_button = QPushButton("plot data")
         self.plot_data_button.setEnabled(False)
         self.miller_h = QLineEdit("h")
@@ -574,22 +573,69 @@ class CentralWidget(QWidget):
         thread.exit()
 
     def show_pole_figure(self, *args):
-        print (args)
+        # print(args)
         h, k, l, theta, r, VAL = args[0]
         self.do_the_fit_button.setEnabled(True)
         self.do_the_fit_gh_button.setEnabled(True)
         self.do_the_fit_tt_button.setEnabled(True)
+
+
+        # print(r)
+        if self.pfmaxval.text() == 'None' or self.pfminval.text() == 'None':
+            v = np.linspace(VAL.min(), VAL.max(), 100, endpoint=True)
+        else:
+            v = np.linspace(float(str(self.pfminval.text())), float(str(self.pfmaxval.text())), 100, endpoint=True)
+
+        # set ticks for the colorbar
+        ticks = []
+        dmaxmin = max(v) - min(v)
+        number = 10
+        step = float("{:.1f}".format(dmaxmin / 10))
+        i = 0
+        ii = []
+        while min(v) < 1 - i * step:
+            ii.append(-i)
+            i += 1
+        lll = []
+        for m in ii:
+            lll.insert(0, m)
+        i = 1
+        while len(lll) <= number:
+            lll.append(i)
+            i += 1
+        ticks = 1+np.array(lll)*step
+
+        # set ticks for psi
+        ticklables = np.rad2deg(r[0])
+
+        print('min: {}, max: {}'.format(VAL.min(), VAL.max()))
+
+        def mapr(r):
+            """
+            remap the radial axis
+            :param r: radial value
+            """
+            return np.rad2deg(np.arctan(r)*2)
+
+        # make the plot
         fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
-        print(r)
 
-        v = np.linspace(VAL.min(), VAL.max(), 23, endpoint=True)
-        p1 = axs.contourf(theta, r, VAL, v)  # 100,,  vmin=0.7, vmax=1.8
         axs.grid(True)
-
-        cbar = plt.colorbar(p1, ax=axs, ticks=v)  # norm=mpl.colors.Normalize(vmin=0.7, vmax=1.8))
-        # cbar.set_clim(0.7, 1.8)
+        print("yticks: ", axs.get_yticks())
+        ticklables = []
+        for i in mapr(axs.get_yticks()):
+            ticklables.append(float('{:.1f}'.format(i)))
+        axs.yaxis.set_ticklabels(ticklables)
+        # p1.ax.set_tichlabels(ticklables)
+        # axs.set_yticks(ticklabels=ticklables)
         axs.set_title("pole figure {}{}{}\n".format(h, k, l))
-        axs.set_theta_zero_location("S")
+
+        # draw the contourplot
+        p1 = axs.contourf(theta, r, VAL, v)  # 100,,  vmin=0.7, vmax=1.8
+        cbar = plt.colorbar(p1, ax=axs, ticks=ticks)  # , ticks=v)  # norm=mpl.colors.Normalize(vmin=0.7, vmax=1.8))
+        # cbar.set_clim(0.7, 1.8)
+
+        # axs.set_theta_zero_location("S")
         # axs.set_theta_offset(pi)
 
         plt.show()
@@ -602,8 +648,7 @@ class CentralWidget(QWidget):
 
     def change_name_of_phase(self):
         self.name_of_phase_dic[int(str(self.fit_phase_combbox.currentText()))] = str(self.name_of_phase.text())
-        self.phase_peak_region[int(str(self.fit_phase_combbox.currentText()))-1][1] = str(self.name_of_phase.text())
-
+        self.phase_peak_region[int(str(self.fit_phase_combbox.currentText())) - 1][1] = str(self.name_of_phase.text())
 
     def change_outputfile_name(self):
         text = "Result_" + str(self.material.text()) + "_" + str(self.modi.currentText())
@@ -776,7 +821,7 @@ class CentralWidget(QWidget):
         y_data = y_data[MIN:MAX]
         for i in xrange(len(x_data)):
             y_data[i] = max(y_data)
-        y_data[0]=y_data[-1]=0
+        y_data[0] = y_data[-1] = 0
         # print("data_x:", x_data)
         self.central_plot.color_xy_data(x_data, y_data, color=color)
 
@@ -857,12 +902,12 @@ class CentralWidget(QWidget):
         # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
 
         result = self.fit_object_gh.do_the_fitting_gneupel_herold(filename=str(self.output_filename.text()),
-                                                material=self.material.text(),
-                                                method=str(self.modi.currentText()),
-                                                phase=int(str(self.fit_phase_combbox.currentText())),
-                                                phase_name=self.name_of_phase_dic[
-                                                    int(str(self.fit_phase_combbox.currentText()))],
-                                                texture=Bool)
+                                                                  material=self.material.text(),
+                                                                  method=str(self.modi.currentText()),
+                                                                  phase=int(str(self.fit_phase_combbox.currentText())),
+                                                                  phase_name=self.name_of_phase_dic[
+                                                                      int(str(self.fit_phase_combbox.currentText()))],
+                                                                  texture=Bool)
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
         plot_dic = result[2]
         self.show_result_of_fit(text, result, plot_dic)
@@ -883,13 +928,13 @@ class CentralWidget(QWidget):
             plt.ylabel('$\epsilon/\sigma$')
             plt.legend(loc='upper left')
             plt.xlim([0, 1])
-            print ("savefig, ", figname, ".svg")
-            filename = ".\\sin2psi-plots\\"+figname+".svg"
+            print("savefig, ", figname, ".svg")
+            filename = ".\\sin2psi-plots\\" + figname + ".svg"
             if not os.path.exists(os.path.dirname(filename)):
                 os.makedirs(os.path.dirname(filename))
-            plt.savefig(".\\sin2psi-plots\\"+figname+".svg", format="svg")
-            plt.savefig(".\\sin2psi-plots\\"+figname+".pdf", format="pdf")
-            plt.savefig(".\\sin2psi-plots\\"+figname+".png", format="png")
+            plt.savefig(".\\sin2psi-plots\\" + figname + ".svg", format="svg")
+            plt.savefig(".\\sin2psi-plots\\" + figname + ".pdf", format="pdf")
+            plt.savefig(".\\sin2psi-plots\\" + figname + ".png", format="png")
         plt.show()
 
     def show_result_of_fit(self, *args):
@@ -897,14 +942,14 @@ class CentralWidget(QWidget):
             try:
                 text, result = args[0]
             except ValueError:
-                print (len(args))
+                print(len(args))
                 text, result = args
 
         except ValueError:
             try:
                 text, result, plots_dic = args[0]
             except ValueError:
-                print (len(args))
+                print(len(args))
                 text, result, plots_dic = args
             print(text)
             self.cos2psi_plot(plots_dic=plots_dic)
@@ -936,12 +981,12 @@ class CentralWidget(QWidget):
         # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
 
         result = self.fit_object_TT.do_the_fitting_gneupel_herold(filename=str(self.output_filename.text()),
-                                                material=self.material.text(),
-                                                method=str(self.modi.currentText()),
-                                                phase=int(str(self.fit_phase_combbox.currentText())),
-                                                phase_name=self.name_of_phase_dic[
-                                                    int(str(self.fit_phase_combbox.currentText()))],
-                                                texture=Bool)
+                                                                  material=self.material.text(),
+                                                                  method=str(self.modi.currentText()),
+                                                                  phase=int(str(self.fit_phase_combbox.currentText())),
+                                                                  phase_name=self.name_of_phase_dic[
+                                                                      int(str(self.fit_phase_combbox.currentText()))],
+                                                                  texture=Bool)
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
         plot_dic = result[2]
         self.show_result_of_fit(text, result, plot_dic)
@@ -1011,6 +1056,10 @@ class CentralWidget(QWidget):
         layout_fitting_2.addWidget(self.miller_k)
         layout_fitting_2.addWidget(self.label('l:'))
         layout_fitting_2.addWidget(self.miller_l)
+        layout_fitting_2.addWidget(self.label('pfminval:'))
+        layout_fitting_2.addWidget(self.pfminval)
+        layout_fitting_2.addWidget(self.label('pfmsxval:'))
+        layout_fitting_2.addWidget(self.pfmaxval)
         layout_fitting_2.addWidget(self.plot_polefig_button)
         layout_fitting_2.addWidget(self.label('with_fit:'))
         layout_fitting_2.addWidget(self.with_fit_combbox)
@@ -1107,7 +1156,7 @@ class CentralWidget(QWidget):
         self.connect(self.insert_params, SIGNAL("2"), self.set_params_phase_2)
         self.fit_object.print_params()
 
-    # def generate
+        # def generate
 
 
 class HandleCVals(object):
@@ -1119,18 +1168,19 @@ class HandleCVals(object):
         self.lookupc44 = self.generate_lookup(number, self.c440)
 
     def generate_lookup(self, number, center):
-        diff = abs(center*(1-0.15) - center*(1+0.15))/number
-        return np.arange(center*(1-0.15),center*(1+0.15), diff)
+        diff = abs(center * (1 - 0.15) - center * (1 + 0.15)) / number
+        return np.arange(center * (1 - 0.15), center * (1 + 0.15), diff)
 
     def get_val(self, ic44, ic12, ic11):
         return self.lookupc44[ic44], self.lookupc44[ic12], self.lookupc44[ic11], self.vals[ic44, ic12, ic11]
 
     def iterator(self):
         ic44, ic12, ic11 = 0, 0, 0
-        while ic44<len(self.lookupc44):
-            while ic12<len(self.lookupc12):
-                while ic11<len(self.lookupc11):
+        while ic44 < len(self.lookupc44):
+            while ic12 < len(self.lookupc12):
+                while ic11 < len(self.lookupc11):
                     yield self.lookupc44[ic44], self.lookupc44[ic12], self.lookupc44[ic11], self.vals[ic44, ic12, ic11]
+
 
 class LOAD_SPODI_DATA(QWidget):
     def __init__(self, name, number_of_phases=1, number_of_straind_datasets=1):
@@ -1148,7 +1198,8 @@ class LOAD_SPODI_DATA(QWidget):
         self.odf_phase_1_path = QLineEdit(
             "H:\Masterarbeit STRESS-SPEC\Daten\Daten-bearbeitet\Daten\ODF_Daten\Duplex gezogen\DUBNA_pol\FE_ODF_compleat.txt")
         self.odf_phase_2_path = QLineEdit("None")  # "AL_textur_complet.txt"
-        self.path_of_unstraind_data = QLineEdit("H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Daten\\Duplex_Stahl_gezogen\\200N\\")
+        self.path_of_unstraind_data = QLineEdit(
+            "H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Daten\\Duplex_Stahl_gezogen\\200N\\")
 
         self.straind_data = []
         self.straind_data_lable = []
@@ -1395,7 +1446,6 @@ class LOAD_STANDARD_DATA(QWidget):
             self.select_odf_phase_2.setText('select odf phase 2 (= {}): '.format(self.phase_keys[1]))
             self.phase_key_dict[2] = self.phase_keys[1]
 
-
         if len(self.phase_keys) == 1:
             self.odf_phase_1_path.setReadOnly(False)
             self.odf_phase_1_button.setEnabled(True)
@@ -1420,7 +1470,8 @@ class LOAD_STANDARD_DATA(QWidget):
 
 class phase_region_class(object):
     def __init__(self):
-        self.region = [[1, 'alpha', []], [2, 'betha', []]]  # phase_region_list, [[phase, [[h, k, l, Tmin, Tmax, double, peak]],...], ...]
+        self.region = [[1, 'alpha', []],
+                       [2, 'betha', []]]  # phase_region_list, [[phase, [[h, k, l, Tmin, Tmax, double, peak]],...], ...]
         # double=0 if single peak
         # double=1 else
         # if double = 1 peak in [1,2]
@@ -1459,10 +1510,10 @@ class phase_region_class(object):
             if split[0] == "phase:":
                 phase = int(split[1])
                 # self.region[phase-1][0]
-                self.region[phase-1][1] = str(split[2])[0:-1]
+                self.region[phase - 1][1] = str(split[2])[0:-1]
                 # test = (str(split[2][0:-1])=="BCC")
 
-            elif split[0]== 'Material:':
+            elif split[0] == 'Material:':
                 self.material = split[1].strip()
 
             elif split[0] == "hkl:":
