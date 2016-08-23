@@ -65,6 +65,7 @@ class SPODIData(Data):
         # are lists of all measured orientation angles with the measured two_theta, intens, error data
         self.data_dic_phases = {}  # dictionary containing dictionaries of all peaks of the different phases
         # data_dic_phases key=phase, val=dic containing all reflexes (key = force)
+        self.wavelength = 1.548*np.power(10., -10.)
 
     def load_data(self, list_of_dirs):
         """
@@ -315,6 +316,59 @@ class SPODIData(Data):
             print "calculation of phi and psi finished\n--------------------------------------------------------------"
             print self.fitted_data.data_dict
 
+    def calc_phi_psi_d(self):
+        """
+        calculate phi and psi angles of the scattering direction with respect to the specimen frame using the
+        angles chi and omega, and calculating the strain
+        :return: None
+        """
+        print "call calc_phi_psi_epsilon: ", self.data_dic_phases
+        print "key list: ", self.data_dic_phases.keys()
+        key_list_data_dic_phases = sorted(self.data_dic_phases.keys())
+
+        for i in key_list_data_dic_phases:  # loop over all phases, i is the key of the dic
+            force_dict = self.data_dic_phases[i]  # is a dictionary containing the forces
+            print "key: ", i
+            key_list = sorted(force_dict.keys())  # key list of the force dict
+            self.fitted_data.data_dict_D[i] = []
+            # self.data_dict[i] = []
+
+            force_stress_dict = {}
+            for j, v in enumerate(key_list):
+                # loop over all forces, v is the key of the force dic (it is equal to the force)
+                # j is the position of the key, j+1 is the next force, j-1 is the previous force
+                phi_psi_hkl = []
+                D_stress = []
+                for n in xrange(len(force_dict[v])):  # loop over all data of each force
+                    # read values from dictionary
+                    phase, force, omega, chi, hkl_2_theta = force_dict[v][n]
+                    h, k, l, two_theta, two_theta_error = hkl_2_theta
+
+                    # calc phi and psi of the scattering vector in the Specimen frame
+                    phi = self.PHII(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta / 2,
+                                    chi=chi, omega=omega)
+
+                    psi = self.psii(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta / 2,
+                                    chi=chi, omega=omega)
+
+                    if not (np.isnan(phi) or np.isnan(psi)):
+                        if chi != 90:
+                            phi_psi_hkl.append([phi, psi, h, k, l])
+                            print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
+                                format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
+
+                            D, D_error = self.calc_D(two_theta=two_theta,
+                                                     two_theta_err=two_theta_error)
+
+                            stress, stress_err = self.calc_applied_stress(force=force)
+                            D_stress.append([D, D_error, stress, stress_err])
+                force_stress_dict[v] = [phi_psi_hkl, D_stress]
+
+            self.fitted_data.data_dict_D[i] = force_stress_dict
+            print "calculation of phi, psi, D and stress finished\n------------------------------------------------" \
+                  "--------------"
+            print self.fitted_data.data_dict_D
+
     def calc_phi_psi_epsilon_slow(self):
         keys = sorted(self.data_dic_phases.keys())
 
@@ -508,6 +562,14 @@ class SPODIData(Data):
                     pass
         return self.data_dic_raw[0][0][3], sum_intens
 
+    def calc_D(self, two_theta, two_theta_err):
+        D = self.wavelength/(2*np.sin(np.deg2rad(two_theta/2.)))
+        theta = two_theta/2
+        theta_error = two_theta_err/2
+        wavelength_error = self.wavelength*0.1
+        D_error = D*(wavelength_error/self.wavelength-(1/np.tan(theta))*theta_error)
+        return D, D_error
+
 
 class AllData(Data):
     def __init__(self, odf_phase_1_file=None, odf_phase_2_file=None):
@@ -621,17 +683,29 @@ class DataContainer(object):
     def __init__(self):
         self.data_dict = {}  # dictionary of the data. Key is the phase. val is the force dictionary. This has the force
         # as key and the list [phi_psi_hkl, epsilon_sigma] as val's.
+        self.data_dict_D = {}   # dictionary of the data. Key is the phase. val is the force dictionary.
+        # This has the force as key and the list [phi_psi_hkl, D_sigma] as val's.
+        # phi_psi_hkl looks like [[phi, psi, h, k, l], ...]
+        # D_sigma looks like [[D, D_err, sigma, sigma_err], ...]
 
-    def get_data_phase_1_force(self, force):
+    def get_data_phase_1_force(self, force, D=False):
+        if D:
+            return self.data_dict_D[1][force]
         return self.data_dict[1][force]
 
-    def get_data_phase_2_force(self, force):
+    def get_data_phase_2_force(self, force, D=False):
+        if D:
+            return self.data_dict_D[2][force]
         return self.data_dict[2][force]
 
-    def get_force_dict_phase_1(self):
+    def get_force_dict_phase_1(self, D=False):
+        if D:
+            return self.data_dict_D[1]
         return self.data_dict[1]
 
-    def get_force_dict_phase_2(self):
+    def get_force_dict_phase_2(self, D=False):
+        if D:
+            return self.data_dict_D[2]
         return self.data_dict[2]
 
 
