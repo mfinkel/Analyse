@@ -2935,7 +2935,7 @@ class ODF(object):
         :param phi2: arbitrary angle
         :return: rotation matrix
         """
-        phi += np.pi / 2
+        # phi += np.pi / 2
 
         res = np.array([[-np.cos(psi) * np.cos(phi) * np.sin(phi2) - np.sin(phi) * np.cos(phi2),
                          -np.cos(psi) * np.sin(phi) * np.sin(phi2) + np.cos(phi) * np.cos(phi2),
@@ -3282,21 +3282,28 @@ class ODF(object):
         PSI = np.arange(0, np.pi / 2 + step, step)
         VAL = np.zeros((PHI.size, PSI.size))
         endval = len(PHI) * len(PSI)
+        value = 0
         i = 0
         t1 = tm.clock()
-        print self.calc_al_symetrical_identical_hkl(h, k, l)
+        symls = self.calc_al_symetrical_identical_hkl(h, k, l)
+        print symls
         for m in range(len(PHI)):
             for n in range(len(PSI)):
                 phi = PHI[m]
                 psi = PSI[n]
                 val = self.integrate_(phi, psi, h, k, l)
                 VAL[m, n] = val
+                value += val*np.cos(n)*step*step
                 cli_progress_test(i=i, end_val=endval)
                 i += 1
         t2 = tm.clock()
 
         dt = t2 - t1
         print "time: h: {}, m: {}, s: {}".format(int(dt / 3600), int((dt % 3600) / 60), (dt % 3600) % 60)
+        print '###############################\n',\
+              '###############################\n', value,\
+              '###############################\n',\
+              '###############################\n'
         # r, theta = np.meshgrid(PSI, PHI)
         # print r, PSI
         # print theta, PHI
@@ -3306,7 +3313,7 @@ class ODF(object):
         # ----------
         PSI_neu=[]
         for i in PSI:  # stereographic LAMBERT projection
-            x = np.sin(i)/(np.cos(i)+1)
+            x = np.tan(i/2.)  # np.sin(i)/(np.cos(i)+1)
             print x
             PSI_neu.append(x)
         PSI_neu = np.array(PSI_neu)
@@ -3376,17 +3383,14 @@ class ODF(object):
         res = 0
         # hkls = self.calc_al_symetrical_identical_hkl(h, k, l)
         # for h, k, l in hkls:
-
         for i in range(0, 360, step):
             r = deg_to_rad(i)
             phi1, phi, phi2 = self.calc_eulerangles(r % (2 * np.pi), h, k, l)
             euler = (rad_to_deg(phi1), rad_to_deg(phi), rad_to_deg(phi2))
             phi1, phi, phi2 = euler
             # dphi1, dphi, dphi2 = self.calc_delta_vals(h, k, l, rad_to_deg(psi), rad_to_deg(phi), i, step)  # [0]
-
             res += self.f(phi1, phi, phi2) * deg_to_rad(step)
             # \ * np.sin(deg_to_rad(phi)) * dphi1 * dphi * dphi2  # / (2 * np.pi)  # ** 2
-
         return res / (2 * np.pi)
 
 
