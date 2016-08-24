@@ -22,7 +22,7 @@ if use_pyside:
 else:
     from PyQt4.QtCore import *
     from PyQt4.QtGui import *
-
+from Fittingtools import ColorGenerator
 from functools import partial
 import handle_data
 import Modells
@@ -468,6 +468,14 @@ class CentralWidget(QWidget):
         self.load_data_button = QPushButton('load Data')
         self.load_data_button.setEnabled(False)
 
+        self.D_0_1 = QLineEdit('0')
+        self.D_0_2 = QLineEdit('None')
+        self.save_D_0_sin2psi_plots_checkbox = QCheckBox('save d-sin2psi')
+        self.D_0_set_button = QPushButton('set D_0')
+        self.D_0_set_button.setEnabled(False)
+        self.D_0_set_button.clicked.connect(self.calc_strain_with_const_D_0)
+        self.D_0_const_checkBox = QCheckBox('D_0 const')
+
         self.open_data_folders.clicked.connect(self.set_data_path_func)
 
         # select the experimental setup (SPODI, POLDI, ....)
@@ -527,9 +535,6 @@ class CentralWidget(QWidget):
         self.layout_handling()
 
     def plot_data_fuc(self):
-        h = int(str(self.miller_h.text()))
-        k = int(str(self.miller_k.text()))
-        l = int(str(self.miller_l.text()))
         method = str(self.modi.currentText())
         with_fit_t = str(self.with_fit_combbox.currentText())
         if with_fit_t == "Yes":
@@ -542,7 +547,8 @@ class CentralWidget(QWidget):
             texture = False
 
         phase = int(str(self.fit_phase_combbox.currentText()))
-        self.fit_object.plot_data(h, k, l, phase=phase, with_fit=with_fit, method=method, texture=texture)
+        self.fit_object.plot_data(phase=phase, with_fit=with_fit, method=method, texture=texture,
+                                  D_0_const=self.D_0_const_checkBox.isChecked())
 
     def set_params_phase_1(self, params):
         self.fit_object.set_params_phase_1(params)
@@ -796,6 +802,10 @@ class CentralWidget(QWidget):
             self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region,
                                           plot=self.checkBoxPlotFits.isChecked(),
                                           material=str(self.material.text()))
+            self.plot_list_D_cospsi = self.data_object.plot_D_cos2psi()
+            self.plot_D_cospsi(self.plot_list_D_cospsi, save=self.save_D_0_sin2psi_plots_checkbox.isChecked())
+            self.D_0_set_button.setEnabled(True)
+
             self.do_the_fit_button.setEnabled(True)
             self.do_the_fit_gh_button.setEnabled(True)
             self.do_the_fit_tt_button.setEnabled(True)
@@ -844,16 +854,23 @@ class CentralWidget(QWidget):
         self.select_hkl_SPODI_Data()
         self.color_peakregion()
         self.data_object.fit_all_data(peak_regions_phase=self.phase_peak_region)
-        # self.Data_Iron.set_hkl_setting(self.phase_peak_region)
-        # self.Data_Iron.fit_all_peaks()
+        self.plot_list_D_cosphi = self.data_object.plot_D_cos2psi()
+        self.plot_D_cospsi(self.plot_list_D_cospsi, save=self.save_D_0_sin2psi_plots_checkbox.isChecked())
 
+        self.D_0_set_button.setEnabled(True)
         self.do_the_fit_button.setEnabled(True)
         self.do_the_fit_gh_button.setEnabled(True)
         self.do_the_fit_tt_button.setEnabled(True)
         self.insert_startvals_button.setEnabled(True)
         self.plot_polefig_button.setEnabled(True)
         self.plot_data_button.setEnabled(True)
-        # print("coming from other class:", "\n", self.phase_peak_region)
+
+    def calc_strain_with_const_D_0(self):
+        D_0_dict = {1: float(str(self.D_0_1.text())) * np.power(10., -10.), 2: None}
+        if str(self.D_0_2.text()) != 'None' and str(self.D_0_2.text()) != 'none':
+            D_0_dict[2] = float(str(self.D_0_2.text())) * np.power(10., -10.)
+
+        self.data_object.calc_phi_psi_epsilon_with_const_D_0(D_0_dict=D_0_dict)
 
     def do_the_fit(self):
         self.plot_polefig_button.setEnabled(False)
@@ -878,7 +895,7 @@ class CentralWidget(QWidget):
                                                 phase=int(str(self.fit_phase_combbox.currentText())),
                                                 phase_name=self.name_of_phase_dic[
                                                     int(str(self.fit_phase_combbox.currentText()))],
-                                                texture=Bool)
+                                                texture=Bool, D_const=self.D_0_const_checkBox.isChecked())
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
         self.plot_polefig_button.setEnabled(True)
         self.emit(SIGNAL('result_of_fit'), (text, result))
@@ -919,7 +936,7 @@ class CentralWidget(QWidget):
             Psi, val, s1, s1err, s2, s2err = data[1]
             plt.figure(figname)
             plt.errorbar(xdata, ydata, yerr=yerr, fmt='bo', label="Data")
-            plots_dic[figname].append([xdata, ydata, yerr])
+            # plots_dic[figname].append([xdata, ydata, yerr])
 
             plt.plot(Psi, val, 'r-',
                      label="s1 = {:.3g} $\pm$ {:.3g}\ns2 = {:.3g} $\pm$ {:.3g}".format(s1, s1err, s2, s2err))
@@ -935,6 +952,64 @@ class CentralWidget(QWidget):
             plt.savefig(".\\sin2psi-plots\\" + figname + ".svg", format="svg")
             plt.savefig(".\\sin2psi-plots\\" + figname + ".pdf", format="pdf")
             plt.savefig(".\\sin2psi-plots\\" + figname + ".png", format="png")
+        plt.show()
+
+    def plot_D_cospsi(self, plot_list, save=False):
+        material = str(self.material.text())
+
+        def calc_D_0(D_hkl, hkl):
+            '''
+            calc D_0 for cubic systems
+            :param D_hkl:
+            :param h:
+            :param k:
+            :param l:
+            :return:
+            '''
+            h = float(hkl[0])
+            k = float(hkl[1])
+            l = float(hkl[2])
+            return D_hkl*np.sqrt(h**2 + k**2 + l**2)
+
+        for plot_dict in plot_list:
+            phase = plot_dict['Phase']
+            hkl = plot_dict['hkl']
+            phase = self.name_of_phase_dic[int(phase)]
+            figname = '{}, {}, hkl {}'.format(material, phase, hkl)
+            force_dict = plot_dict['data']
+            plt.figure(figname)
+
+            force_list = sorted(force_dict.keys())
+            for force in force_list:
+                data = force_dict[force]
+                # color = ColorGenerator()
+                plt.errorbar(data[0], calc_D_0(np.array(data[1]) * np.power(10., 10), hkl),
+                             yerr=calc_D_0(np.array(data[2]) * np.power(10., 10), hkl),
+                             fmt='-o',  # ecolor=color.get_color(),
+                             label="Kraft = {}kN".format(force))
+
+
+                # plt.plot(Psi, val, 'r-',
+                #          label="s1 = {:.3g} $\pm$ {:.3g}\ns2 = {:.3g} $\pm$ {:.3g}".format(s1, s1err, s2, s2err))
+
+            plt.xlabel('$\cos^2(\Psi)$')
+            plt.ylabel('$D_{0}\ [\AA]$')
+            ax = plt.gca()
+            ax.get_yaxis().get_major_formatter().set_useOffset(False)  # shutt of the Offset
+            # ax.get_yaxis().get_major_formatter().set_scientific(False)  # shut of scientific notation
+            # plt.yscale('log')  # set log scale, not good for small values
+            plt.legend(loc='upper left')
+            plt.xlim([0, 1])
+
+            if save:
+                print("savefig, ", figname, ".svg")
+                filename = ".\\sin2psi-D-plots\\" + material + '\\' + figname + ".svg"
+                if not os.path.exists(os.path.dirname(filename)):
+                    os.makedirs(os.path.dirname(filename))
+                filename = ".\\sin2psi-D-plots\\" + material + '\\' + figname
+                plt.savefig(filename + ".svg", format="svg")
+                plt.savefig(filename + ".pdf", format="pdf")
+                plt.savefig(filename + ".png", format="png")
         plt.show()
 
     def show_result_of_fit(self, *args):
@@ -1019,18 +1094,21 @@ class CentralWidget(QWidget):
         layout_load_data_h2.addWidget(self.choose_experiment_comb_box)
         layout_load_data_h2.addWidget(self.label("# of phases: "))
         layout_load_data_h2.addWidget(self.number_of_phases_selecttion)
-        # layout_load_data_h2.addWidget(self.label("# of dataset's under strain: "))
-        # layout_load_data_h2.addWidget(self.number_of_datasets_under_strain)
         layout_load_data_h2.addWidget(self.open_data_folders)
         layout_load_data_h2.addWidget(self.label("set diameter in mm: "))
         layout_load_data_h2.addWidget(self.diameter)
-        # layout_load_data_h3.addWidget(self.automate)
         layout_load_data_h2.addWidget(self.select_hkl_setting_manualy_coice)
         layout_load_data_h2.addWidget(self.checkBoxPlotFits)
+        layout_load_data_h2.addWidget(self.save_D_0_sin2psi_plots_checkbox)
         layout_load_data_h2.addWidget(self.load_data_button)
+        layout_load_data_h3.addWidget(self.label('D_0 [Angstroem] phase 1:'))
+        layout_load_data_h3.addWidget(self.D_0_1)
+        layout_load_data_h3.addWidget(self.label('D_0 [Angstroem] phase 2:'))
+        layout_load_data_h3.addWidget(self.D_0_2)
+        layout_load_data_h3.addWidget(self.D_0_set_button)
         layout.addLayout(layout_load_data_h1)
         layout.addLayout(layout_load_data_h2)
-        # layout.addLayout(layout_load_data_h3)
+        layout.addLayout(layout_load_data_h3)
         layout.addWidget(HLine[2])
 
         # handel the fitting process
@@ -1048,6 +1126,7 @@ class CentralWidget(QWidget):
         layout_fitting.addWidget(self.material)
         layout_fitting.addWidget(self.label("output filename:"))
         layout_fitting.addWidget(self.output_filename)
+        layout_fitting.addWidget(self.D_0_const_checkBox)
         layout_fitting.addWidget(self.do_the_fit_button)
 
         layout_fitting_2.addWidget(self.label('h:'))
@@ -1199,7 +1278,7 @@ class LOAD_SPODI_DATA(QWidget):
             "H:\Masterarbeit STRESS-SPEC\Daten\Daten-bearbeitet\Daten\ODF_Daten\Duplex gezogen\DUBNA_pol\FE_ODF_compleat.txt")
         self.odf_phase_2_path = QLineEdit("None")  # "AL_textur_complet.txt"
         self.path_of_unstraind_data = QLineEdit(
-            "H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Daten\\Duplex_Stahl_gezogen\\200N\\")
+            "H:\\Masterarbeit STRESS-SPEC\\Daten\\Daten-bearbeitet\\Daten\\Duplex_Stahl_gezogen\\AllData_ohneZugversuch\\")
 
         self.straind_data = []
         self.straind_data_lable = []

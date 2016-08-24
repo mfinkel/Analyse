@@ -1336,7 +1336,7 @@ class FitStrainWithTexture(object):
         return pars
 
     def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture=False, phase=1,
-                       phase_name=""):
+                       phase_name="", D=False, D_const=False):
         """
         :param phase: phase to fit
         :param filename: name of the outputfile
@@ -1357,11 +1357,13 @@ class FitStrainWithTexture(object):
         fit_method = 'leastsq'  # the optons are:
         # leastsq, nelder, lbfgsb, powell, cg, newton, cobyla, tnc, dogleg, slsqp,
         # differential_evolution
-        data_phase_1 = self.data_object.fitted_data.get_force_dict_phase_1()
+
+        data_phase_1 = self.data_object.fitted_data.get_force_dict_phase_1(D=D, D_const=D_const)
         if self.phase_flag:
-            data_phase_2 = self.data_object.fitted_data.get_force_dict_phase_2()
+            data_phase_2 = self.data_object.fitted_data.get_force_dict_phase_2(D=D, D_const=D_const)
         else:
             data_phase_2 = None
+
         # print "Texture: ", texture
         params_keys = params.keys()
         for key in params_keys:
@@ -2040,91 +2042,60 @@ class FitStrainWithTexture(object):
         res = 1
         return res
 
-    def plot_data(self, h, k, l, phase, params = None, with_fit=False, method='hill', texture=False):
+    def plot_data(self, phase, params=None, with_fit=False, method='hill', texture=False, D_0_const=False):
         data = []
-        h = int(h)
-        k = int(k)
-        l = int(l)
         if phase == 1:
-            data = self.data_object.fitted_data.get_force_dict_phase_1()
+            data = self.data_object.fitted_data.get_force_dict_phase_1(D_const=D_0_const)
 
         if phase == 2:
-            data = self.data_object.fitted_data.get_force_dict_phase_2()
+            data = self.data_object.fitted_data.get_force_dict_phase_2(D_const=D_0_const)
+        hkl_dict = self.data_object.create_list_of_all_existiing_hkl()
+        hkl_list = hkl_dict[phase]
 
         if params is None:
             params = self.params
         else:
             params = params
-        # params.pretty_print()
-        Psi = []
-        Psi2 = []
-        epsilon = []
-        epsilon2 = []
-        epsilon2err = []
-        epsilonerr = []
-        # for i in data.keys():
-        print sorted(data.keys())
-        i = sorted(data.keys())[0]
-        dat = data[i]
-        #
-        name = "sin2psi_mat-{}_ph-{}_hkl-{}{}{}".format(self.material, phase, h, k, l)
-        plt.figure(name)
-        for j in xrange(len(dat[0])):
-            phi, psi, hh, kk, ll = dat[0][j]
-            hh, kk, ll = int(hh), int(kk), int(ll)
-            eps, epserr, stress, stresserr = 0, 0, 0, 0  # dat[1][j]
-            eps2, epserr2, stress2, stresserr2 = dat[1][j]
-            if h == hh and k == kk and l == ll:
-                print psi
-                Psi.append(np.sin(psi) ** 2)
-                epsilon.append((eps2 - eps) / (stress2 - stress))  #
-                # epsilonerr.append(abs(eps2 / stress2) * (abs(epserr2 / eps2) +
-                #                                          abs(stresserr2 / stress2)))
-                epsilonerr.append(np.sqrt((epserr2 / stress2) ** 2 + ((eps2 / stress2 ** 2) * stresserr2) ** 2))
 
-        try:
-            dat2 = data[sorted(data.keys())[1]]
-            for j in xrange(len(dat2[0])):
-                phi, psi, hh, kk, ll = dat2[0][j]
-                eps, epserr, stress, stresserr = 0, 0, 0, 0  # dat[1][j]
-                eps2, epserr2, stress2, stresserr2 = dat2[1][j]
-                if h == hh and k == kk and l == ll:
-                    print psi
-                    Psi2.append(np.sin(psi) ** 2)
-                    epsilon2.append((eps2 - eps) / (stress2 - stress))  #
-                    # data_fit_err.append(np.sqrt(
-                    # (strain_fit_err / stress_fit) ** 2 + ((strain_fit / stress_fit ** 2) * stress_fit_err) ** 2))
-                    epsilon2err.append(np.sqrt((epserr2 / stress2) ** 2 + ((eps2 / stress2 ** 2) * stresserr2) ** 2))
-                    # epsilon2err.append(abs(eps2 / stress2) * (abs(epserr2 / eps2) +
-                    #                                           abs(stresserr2 / stress2)))
+        for hkl in hkl_list:  # loop over all hkl's
+            name = "sin2psi_mat-{}_ph-{}_hkl-{}".format(self.material, phase, hkl)
+            plt.figure(name)
+            h = int(hkl[0])
+            k = int(hkl[1])
+            l = int(hkl[2])
 
-            plt.errorbar(Psi2, epsilon2, yerr=epsilon2err, fmt='go', label="Data {} kN".format(sorted(data.keys())[1]))
-            # plt.plot(Psi2, epsilon2, 'go', label="Data {} kN".format(sorted(data.keys())[1]))
+            for force, data in data.iteritems():
+                Psi = []
+                strain = []
+                strain_err = []
+                phi_psi_hkl_list, strain_stress_list = data
+                for j in xrange(len(phi_psi_hkl_list)):
+                    phi, psi, hh, kk, ll = phi_psi_hkl_list[j]
+                    hh, kk, ll = int(hh), int(kk), int(ll)
 
-        except IndexError:
-            pass
+                    eps, epserr, stress, stresserr = strain_stress_list[j]
+                    if h == hh and k == kk and l == ll:
+                        print psi
+                        Psi.append(np.cos(psi) ** 2)
+                        strain.append(eps / stress)  #
+                        # epsilonerr.append(abs(eps2 / stress2) * (abs(epserr2 / eps2) +
+                        #                                          abs(stresserr2 / stress2)))
+                        strain_err.append(np.sqrt((epserr / stress) ** 2 + ((eps / stress ** 2) * stresserr) ** 2))
+                plt.errorbar(Psi, strain, yerr=strain_err, fmt='go', label="Data {}kN".format(force))
+            if with_fit:
+                if texture:
+                    x, y = self.func_text(h, k, l, params, phase, method=method)
+                else:
+                    x, y = self.func_untext(h, k, l, params, phase, method=method)
+                plt.plot(x, y, 'r-', label="fit {}".format(method))
 
-        if with_fit:
-            if texture:
-                x, y = self.func_text(h, k, l, params, phase, method=method)
-            else:
-                x, y = self.func_untext(h, k, l, params, phase, method=method)
-        plt.errorbar(Psi, epsilon, yerr=epsilonerr, fmt='bo', label="Data {} kN".format(sorted(data.keys())[0]))
-        # plt.plot(Psi, epsilon, 'bo', label="Data {} kN".format(sorted(data.keys())[0]))
-
-        if with_fit:
-            plt.plot(x, y, 'r-', label="fit {}".format(method))
-        plt.xlabel('$\sin^2(\Psi)$')
-        plt.ylabel('$\epsilon/\sigma$')
-        try:
-            plt.legend()
-        except IndexError:
-            pass
-        plt.xlim([0, 1])
-        print name
-        # plt.savefig(name, "svg")
-        # plt.savefig(".\\sin2psi-plots\\{}.png".format(name), "png")
-        # plt.savefig(".\\sin2psi-plots\\{}.pdf".format(name), "pdf")
+            plt.xlabel('$\sin^2(\Psi)$')
+            plt.ylabel('$\epsilon/\sigma$')
+            try:
+                plt.legend()
+            except IndexError:
+                pass
+            plt.xlim([0, 1])
         plt.show()
 
     def func_untext(self, h, k, l, params, phase, method='hill'):
@@ -2154,9 +2125,9 @@ class FitStrainWithTexture(object):
             s1, s2 = Reus(Gamma=Gama(h, k, l), c_11=pars["c_11"].value, c_12=pars["c_12"].value,
                           c_44=pars["c_44"].value)
         psi = np.arange(0, np.pi / 2, 0.01)
-        print "s1 ", s1, "s2 ", s2
-        eps = s1 + s2 - s2 * (np.sin(psi) ** 2)
-        return np.sin(psi) ** 2, eps
+        # print "s1 ", s1, "s2 ", s2
+        eps = s1 + s2 * (np.cos(psi) ** 2)
+        return np.cos(psi) ** 2, eps
 
     def func_text(self, h, k, l, params, phase, method='hill'):
         params_keys = params.keys()
@@ -2186,15 +2157,29 @@ class FitStrainWithTexture(object):
         F_33_list = []
         for b in xrange(len(psi)):
             a = psi[b]
-            phi = np.pi
+            phi = -np.pi/2
             F_33_list.append(self.F(phi=phi, psi=a, h=h, k=k, l=l, i=2, j=2, method=method, use_in_fit=False))
             cli_progress_test(b, len(psi))
-        return np.sin(psi) ** 2, F_33_list
+        return np.cos(psi) ** 2, F_33_list
 
     @staticmethod
     def calc_error_of_strain_over_stress(strain, stress, strain_err, stress_err):
         error = np.sqrt((strain_err / stress) ** 2 + ((strain / stress ** 2) * stress_err) ** 2)
         return error
+
+    def calc_epsilon_dict(self, force_dict):
+        """
+        calculate epsilon from the D values. Use the equation (D-D_0hkl)/D_0hkl, where D_0hkl is a constant.
+        D_0hkl depends on the hkl plane and can be calculated from D_0 with D_0hkl = D_0*sqrt(h**2 + k**2 + l**2)
+        :param force_dict:
+        :return:
+        """
+        if self.data_object.D_0<np.power(10., -13):
+            self.data_object.plot_D_cos2psi()
+        D_0=self.data_object.D_0
+
+        pass
+
 
 class FitGneupelHerold(FitStrainWithTexture):
     def __init__(self, data_object, material):
