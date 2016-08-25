@@ -895,7 +895,8 @@ class CentralWidget(QWidget):
                                                 phase=int(str(self.fit_phase_combbox.currentText())),
                                                 phase_name=self.name_of_phase_dic[
                                                     int(str(self.fit_phase_combbox.currentText()))],
-                                                texture=Bool, D_const=self.D_0_const_checkBox.isChecked())
+                                                texture=Bool, D_const=self.D_0_const_checkBox.isChecked(),
+                                                instrument=str(self.choose_experiment_comb_box.currentText()))
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
         self.plot_polefig_button.setEnabled(True)
         self.emit(SIGNAL('result_of_fit'), (text, result))
@@ -924,7 +925,8 @@ class CentralWidget(QWidget):
                                                                   phase=int(str(self.fit_phase_combbox.currentText())),
                                                                   phase_name=self.name_of_phase_dic[
                                                                       int(str(self.fit_phase_combbox.currentText()))],
-                                                                  texture=Bool)
+                                                                  texture=Bool,
+                                                                  instrument=str(self.choose_experiment_comb_box.currentText()))
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
         plot_dic = result[2]
         self.show_result_of_fit(text, result, plot_dic)
@@ -1061,7 +1063,8 @@ class CentralWidget(QWidget):
                                                                   phase=int(str(self.fit_phase_combbox.currentText())),
                                                                   phase_name=self.name_of_phase_dic[
                                                                       int(str(self.fit_phase_combbox.currentText()))],
-                                                                  texture=Bool)
+                                                                  texture=Bool,
+                                                                  instrument=str(self.choose_experiment_comb_box.currentText()))
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
         plot_dic = result[2]
         self.show_result_of_fit(text, result, plot_dic)

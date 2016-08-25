@@ -1086,7 +1086,7 @@ class FitStrainWithTexture(object):
         strain_stress_data_fitted = []
         strain_stress_data_fixed = []
 
-        print data_phase_1
+        # print data_phase_1
         applied_forces = data_phase_1.keys()
 
         for n in xrange(len(applied_forces)):  # Loop over all forces
@@ -1111,15 +1111,20 @@ class FitStrainWithTexture(object):
                 strain_stress_data_fixed.append(strain_stre_data_fixed)
                 xvals_fixed.append(xvals_fixed_)
 
-        data_fix = []
+        # data_fix = []
         data_fit = []
         data_fit_err = []
-        data_fix_err = []
+        # data_fix_err = []
         theory_fit = []
-        theory_fix = []
-
+        # theory_fix = []
+        number_of_forces = len(applied_forces)
+        if 0 in applied_forces:
+            number_of_forces = len(applied_forces)-1
         for n in xrange(len(applied_forces)):  # Loop over all forces
             xvals_fit = xvals_fitted[n]
+            force = applied_forces[n]
+            if force == 0:
+                continue
             # st_st_1 = strain_stress_data_fitted[n]
             # st_st_2 = strain_stress_data_fitted[n+1]
             # print xvals_mat
@@ -1147,15 +1152,15 @@ class FitStrainWithTexture(object):
                     theory_val += self.F(phi, psi, h, k, l, 2, 2, method)
 
                 theory_fit.append(theory_val)
-                cli_progress_test(co, len(xvals_fitted[n]))
+                cli_progress_test(co, len(xvals_fitted[n]*number_of_forces))
                 co += 1
 
         t2 = tm.clock()
         dt = t2 - t1
-        print "\nresult: ", (np.array(theory_fit) - np.array(data_fit)) / (np.array(data_fit_err))
+        print "\nresult:  ", (np.array(theory_fit) - np.array(data_fit)) / (np.array(data_fit_err))
         print "theory: ", theory_fit
-        print "data: ", data_fit
-        print "err: ", data_fit_err
+        print "data:   ", data_fit
+        print "err:    ", data_fit_err
         print "shape: ", np.shape((np.array(theory_fit) - np.array(data_fit)) / (np.array(data_fit_err)))
         print "time for iteration #%i: %i min %i sec" % (self.__counter, int(dt / 60), int(dt % 60))
 
@@ -1235,6 +1240,9 @@ class FitStrainWithTexture(object):
 
         for n in xrange(len(applied_forces)):  # Loop over all forces
             xvals_fit = xvals_fitted[n]
+            force = applied_forces[n]
+            if force == 0:
+                continue
             print 'xvals: ', xvals_fit
             # print xvals_mat
             # print "applied_force: ", applied_forces
@@ -1279,7 +1287,7 @@ class FitStrainWithTexture(object):
 
                 # eps = s1 + s2 * np.cos(psi) ** 2
 
-                theory_fit.append(eps)
+                theory_fit.append(eps / sigma_33)
 
         # strain_fit1, strain_fit_err1, stress_fit1, stress_fit_err1 = strain_stress_data_fitted[0][m]
         #             strain_fit2, strain_fit_err2, stress_fit2, stress_fit_err2 = strain_stress_data_fitted[1][m]
@@ -1336,7 +1344,7 @@ class FitStrainWithTexture(object):
         return pars
 
     def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture=False, phase=1,
-                       phase_name="", D=False, D_const=False):
+                       phase_name="", D=False, D_const=False, instrument='SPODI'):
         """
         :param phase: phase to fit
         :param filename: name of the outputfile
@@ -1399,14 +1407,14 @@ class FitStrainWithTexture(object):
         nice_result = self.__print_result_nicely(result, fitting_time=dt, date_of_fit=date, method=fit_method)
 
         filename = path + filename
-        filename = self.save_data(filename, material, phase_name, nice_result)
+        filename = self.save_data(filename, material, phase_name, nice_result, instrument)
         # print "over all compliance Matrix:"
         # print self.calc_the_over_all_constant_c_tensor(self.__constant_c_tensor_extended_notation_fitted_phase,
         #                                                fitted_phase=phase)
         return result, filename
 
     def do_the_fitting_self_consistent_sigma_and_el_const(self, filename, material, method="reus", path=".\\results\\",
-                                                          texture=False, phase=1, phase_name=""):
+                                                          texture=False, phase=1, phase_name="", instrument='SPODI'):
         self.__counter = 0
         params = self.params
         data = self.__strains_data
@@ -1507,7 +1515,7 @@ class FitStrainWithTexture(object):
         nice_result = self.__print_result_nicely(result, fitting_time=dt, date_of_fit=date, method=fit_method)
         Material = material
         filename = path + filename
-        self.save_data(filename, Material, nice_result)
+        self.save_data(filename, Material, nice_result, instrument)
         return result
 
     def __print_result_nicely(self, res, **kwargs):
@@ -1580,12 +1588,12 @@ class FitStrainWithTexture(object):
             tempfile._name_sequence = orig
         return filename
 
-    def save_data(self, filename, material, phase, data):
-        filename = u'{0:s}.txt'.format(filename)
+    def save_data(self, filename, material, phase, data, instrument):
+        filename = u'{0:s}.txt'.format(instrument+'_'+filename)
         # filename = self.__test_if_file_exists(filename)
         filename = self.uniquify(filename)
         result = open(filename, "w")
-        string_to_write = "Material: %s\nFitted phase: %s\n" % (material, phase) + data
+        string_to_write = "Material: %s\nFitted phase: %s\nInstrument: %s\n" % (material, phase, instrument) + data
         result.write(string_to_write)
         result.close()
         return filename
@@ -2043,12 +2051,12 @@ class FitStrainWithTexture(object):
         return res
 
     def plot_data(self, phase, params=None, with_fit=False, method='hill', texture=False, D_0_const=False):
-        data = []
+        force_dict = []
         if phase == 1:
-            data = self.data_object.fitted_data.get_force_dict_phase_1(D_const=D_0_const)
+            force_dict = self.data_object.fitted_data.get_force_dict_phase_1(D_const=D_0_const)
 
         if phase == 2:
-            data = self.data_object.fitted_data.get_force_dict_phase_2(D_const=D_0_const)
+            force_dict = self.data_object.fitted_data.get_force_dict_phase_2(D_const=D_0_const)
         hkl_dict = self.data_object.create_list_of_all_existiing_hkl()
         hkl_list = hkl_dict[phase]
 
@@ -2064,7 +2072,9 @@ class FitStrainWithTexture(object):
             k = int(hkl[1])
             l = int(hkl[2])
 
-            for force, data in data.iteritems():
+            for force, data in force_dict.iteritems():
+                if force==0:
+                    continue
                 Psi = []
                 strain = []
                 strain_err = []
@@ -2081,7 +2091,7 @@ class FitStrainWithTexture(object):
                         # epsilonerr.append(abs(eps2 / stress2) * (abs(epserr2 / eps2) +
                         #                                          abs(stresserr2 / stress2)))
                         strain_err.append(np.sqrt((epserr / stress) ** 2 + ((eps / stress ** 2) * stresserr) ** 2))
-                plt.errorbar(Psi, strain, yerr=strain_err, fmt='go', label="Data {}kN".format(force))
+                plt.errorbar(Psi, strain, yerr=strain_err, fmt='o', label="Data {}kN".format(force))
             if with_fit:
                 if texture:
                     x, y = self.func_text(h, k, l, params, phase, method=method)
@@ -2306,7 +2316,7 @@ class FitGneupelHerold(FitStrainWithTexture):
         return plots_dic
 
     def do_the_fitting_gneupel_herold(self, filename, material, method="reus", path=".\\results\\", texture=False, phase=1,
-                       phase_name=""):
+                       phase_name="", instrument='SPODI'):
         self.hkl_list_dict = self.create_list_of_all_existiing_hkl()
         self.create_hkl_data_dict()
         plots_dic = self.fit_all_hkl(phase, phase_name, material)
@@ -2345,7 +2355,7 @@ class FitGneupelHerold(FitStrainWithTexture):
         nice_result = self.__print_result(result,  date_of_fit=date, method=fit_method)
 
         filename = path + filename
-        filename = self.save_data(filename, material, phase_name, nice_result)
+        filename = self.save_data(filename, material, phase_name, nice_result, instrument)
         return result, filename, plots_dic
 
     def func_untext(self, h, k, l, params, phase, method='hill'):
