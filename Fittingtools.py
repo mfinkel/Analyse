@@ -150,7 +150,7 @@ def gauss_lin_fitting(x_list, av_count_l, plot=False):
     return res
 
 
-def pseudo_voigt_single_peak_fit(x_list, y_list, weights=None, plot=False, dataset=False, force=False, Chi=False,
+def pseudo_voigt_single_peak_fit(x_list, y_list, weights=None, plot=False, dataset=False, force=None, Chi=False,
                                  phase=False, material=False, color=False, save=False, full_pattern=False, p_f_p=False,
                                  hkl=''):
     """

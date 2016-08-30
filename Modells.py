@@ -348,7 +348,7 @@ def residual_Hill(params, gam, data1=None, data2=None, weight1=None, weight2=Non
     return mde
 
 
-def fitting_Hill(gam, data1, data2, weight1, weight2):
+def fitting_Hill(gam, data1, data2, weight1, weight2, fit_method='leastsq'):
     '''
     -----------------------------------------------------------------------------
     fitting the Hill Moddel:
@@ -361,7 +361,7 @@ def fitting_Hill(gam, data1, data2, weight1, weight2):
     params.add('c_12', value=125.8 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
     params.add('c_44', value=126.4 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
 
-    result = lm.minimize(residual_Hill, params, method='leastsq', args=(gam,), \
+    result = lm.minimize(residual_Hill, params, method=fit_method, args=(gam,), \
                          kws={'data1': data1, 'data2': data2, 'weight1': weight1, 'weight2': weight2})
     pars = result
     print '#datapoints: ', pars.ndata
@@ -400,7 +400,7 @@ def residual_Voigt(params, gam, data1=None, data2=None, weight1=None, weight2=No
     mde = np.array(mde)
     return mde
 
-def fitting_Voigt(gam, data1, data2, weight1, weight2):
+def fitting_Voigt(gam, data1, data2, weight1, weight2, fit_method='leastsq'):
     '''
     -----------------------------------------------------------------------------
     fitting the Hill Moddel:
@@ -413,7 +413,7 @@ def fitting_Voigt(gam, data1, data2, weight1, weight2):
     params.add('c_12', value=125.8 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
     params.add('c_44', value=126.4 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
 
-    result = lm.minimize(residual_Voigt, params, method='leastsq', args=(gam,), \
+    result = lm.minimize(residual_Voigt, params, method=fit_method, args=(gam,), \
                          kws={'data1': data1, 'data2': data2, 'weight1': weight1, 'weight2': weight2})
     pars = result
     print '#datapoints: ', pars.ndata
@@ -452,7 +452,7 @@ def residual_Reus(params, gam, data1=None, data2=None, weight1=None, weight2=Non
     mde = np.array(mde)
     return mde
 
-def fitting_Reus(gam, data1, data2, weight1, weight2):
+def fitting_Reus(gam, data1, data2, weight1, weight2, fit_method='leastsq'):
     '''
     -----------------------------------------------------------------------------
     fitting the Hill Moddel:
@@ -465,7 +465,7 @@ def fitting_Reus(gam, data1, data2, weight1, weight2):
     params.add('c_12', value=125.8 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
     params.add('c_44', value=126.4 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
 
-    result = lm.minimize(residual_Reus, params, method='leastsq', args=(gam,), \
+    result = lm.minimize(residual_Reus, params, method=fit_method, args=(gam,), \
                          kws={'data1': data1, 'data2': data2, 'weight1': weight1, 'weight2': weight2})
     pars = result
     print '#datapoints: ', pars.ndata
@@ -566,7 +566,7 @@ def residual_deWit(params, gam, data1=None, data2=None, weight1=None, weight2=No
     return mde
 
 
-def fitting_deWit(gam, data1, data2, weight1, weight2):
+def fitting_deWit(gam, data1, data2, weight1, weight2, fit_method='leastsq'):
     # create a set of parameters
     params = lm.Parameters()
     #          name,   value                           Min,                      Max
@@ -574,7 +574,7 @@ def fitting_deWit(gam, data1, data2, weight1, weight2):
     params.add('c_12', value=125.8 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
     params.add('c_44', value=126.4 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
 
-    result = lm.minimize(residual_deWit, params, method='leastsq', args=(gam,), \
+    result = lm.minimize(residual_deWit, params, method=fit_method, args=(gam,), \
                          kws={'data1': data1, 'data2': data2, 'weight1': weight1, 'weight2': weight2})
     return result
 
@@ -602,9 +602,10 @@ Methods:
 
 
 class FitStrainWithTexture(object):
-    def __init__(self, data_object, material):
+    def __init__(self, data_object, material, instrument='SPODI'):
         self.data_object = data_object
         self.material = material
+        self.instrument = instrument
         # self.xvals =
         # self.force = force
         # self.diameter = diameter
@@ -1241,7 +1242,7 @@ class FitStrainWithTexture(object):
         for n in xrange(len(applied_forces)):  # Loop over all forces
             xvals_fit = xvals_fitted[n]
             force = applied_forces[n]
-            if force == 0:
+            if int(float(force)) == 0:
                 continue
             print 'xvals: ', xvals_fit
             # print xvals_mat
@@ -1344,7 +1345,7 @@ class FitStrainWithTexture(object):
         return pars
 
     def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture=False, phase=1,
-                       phase_name="", D=False, D_const=False, instrument='SPODI'):
+                       phase_name="", D=False, D_const=False, instrument='SPODI', fit_method='leastsq'):
         """
         :param phase: phase to fit
         :param filename: name of the outputfile
@@ -1362,7 +1363,7 @@ class FitStrainWithTexture(object):
         xvals = []  # self.xvals
         t1 = tm.clock()
         date = tm.localtime()
-        fit_method = 'leastsq'  # the optons are:
+        fit_method = fit_method  # 'leastsq'  # the optons are:
         # leastsq, nelder, lbfgsb, powell, cg, newton, cobyla, tnc, dogleg, slsqp,
         # differential_evolution
 
@@ -1515,7 +1516,8 @@ class FitStrainWithTexture(object):
         nice_result = self.__print_result_nicely(result, fitting_time=dt, date_of_fit=date, method=fit_method)
         Material = material
         filename = path + filename
-        self.save_data(filename, Material, nice_result, instrument)
+        # filename, material, phase_name, nice_result, instrument
+        self.save_data(filename, Material, phase, nice_result, instrument)
         return result
 
     def __print_result_nicely(self, res, **kwargs):
@@ -1529,7 +1531,7 @@ class FitStrainWithTexture(object):
         h = int(fit_time / 3600)
         m = int((fit_time % 3600) / 60)
         s = int(fit_time % 60)
-        comment = "selfconsistent calculation of sigma tensor and elastic constants"
+        comment = "No comment"
         # "Using an other definition for the reus model (wreite s(g) =(g_im * g_jn * g_ko * g_lp * c^0_mnop)^-1"  # add some comment here
         time = "%ih %i min %i sec" % (h, m, s)
         date = kwargs["date_of_fit"]
@@ -1539,13 +1541,37 @@ class FitStrainWithTexture(object):
         sym_inclusion = "None"
         if self.phase_flag:
             sym_inclusion = self.symmetry_phase_2 + " " + self.__odf_phase_2.crystal_symmetry
+        try:
+            covar = res.covar
+        except AttributeError:
+            covar = ''
+
+        try:
+            success = res.success
+        except AttributeError:
+            success = ''
+
+        try:
+            chisqr = res.chisqr
+        except AttributeError:
+            chisqr = ''
+
+        try:
+            redchi = res.redchi
+        except AttributeError:
+            redchi = ''
+
+        # try:
+        #     redchi = res.redchi
+        # except AttributeError:
+        #     success = ''
+        #
         out = \
             "\nMethod:         %s\
            \nSymmetry:       %s\
            \nDate:           %s\
            \nFitting time    %s\
            \nComment:        %s\
-           \nMessage:        %s\
            \nCovar matrix:   \n%s\
            \nSuccess:        %s\
            \nChisqr:         %f\
@@ -1554,8 +1580,8 @@ class FitStrainWithTexture(object):
            \n# of datapoint: %i\
            \nnfev:           %i\
            \nParameters:\n%s " \
-            % (kwargs["method"], sym_matrix, da, time, comment, res.message, str(res.covar), res.success, res.chisqr,
-               res.redchi, res.nfree, res.ndata, res.nfev, pars)
+            % (kwargs["method"], sym_matrix, da, time, comment, str(covar), success, chisqr,
+               redchi, res.nfree, res.ndata, res.nfev, pars)
         return out
 
     def __test_if_file_exists(self, filename):
@@ -1589,8 +1615,10 @@ class FitStrainWithTexture(object):
         return filename
 
     def save_data(self, filename, material, phase, data, instrument):
-        filename = u'{0:s}.txt'.format(instrument+'_'+filename)
+        filename = u'{0:s}.txt'.format(os.path.split(filename)[0] + '\\' + instrument + '\\' + os.path.basename(filename))
         # filename = self.__test_if_file_exists(filename)
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
         filename = self.uniquify(filename)
         result = open(filename, "w")
         string_to_write = "Material: %s\nFitted phase: %s\nInstrument: %s\n" % (material, phase, instrument) + data
@@ -2066,14 +2094,14 @@ class FitStrainWithTexture(object):
             params = params
 
         for hkl in hkl_list:  # loop over all hkl's
-            name = "sin2psi_mat-{}_ph-{}_hkl-{}".format(self.material, phase, hkl)
+            name = "cos2psi_mat-{}_ph-{}_hkl-{}".format(self.material, phase, hkl)
             plt.figure(name)
             h = int(hkl[0])
             k = int(hkl[1])
             l = int(hkl[2])
 
             for force, data in force_dict.iteritems():
-                if force==0:
+                if int(float(force))==0:
                     continue
                 Psi = []
                 strain = []
@@ -2099,10 +2127,10 @@ class FitStrainWithTexture(object):
                     x, y = self.func_untext(h, k, l, params, phase, method=method)
                 plt.plot(x, y, 'r-', label="fit {}".format(method))
 
-            plt.xlabel('$\sin^2(\Psi)$')
+            plt.xlabel('$\cos^2(\Psi)$')
             plt.ylabel('$\epsilon/\sigma$')
             try:
-                plt.legend()
+                plt.legend(loc='best')
             except IndexError:
                 pass
             plt.xlim([0, 1])
@@ -2177,23 +2205,23 @@ class FitStrainWithTexture(object):
         error = np.sqrt((strain_err / stress) ** 2 + ((strain / stress ** 2) * stress_err) ** 2)
         return error
 
-    def calc_epsilon_dict(self, force_dict):
-        """
-        calculate epsilon from the D values. Use the equation (D-D_0hkl)/D_0hkl, where D_0hkl is a constant.
-        D_0hkl depends on the hkl plane and can be calculated from D_0 with D_0hkl = D_0*sqrt(h**2 + k**2 + l**2)
-        :param force_dict:
-        :return:
-        """
-        if self.data_object.D_0<np.power(10., -13):
-            self.data_object.plot_D_cos2psi()
-        D_0=self.data_object.D_0
-
-        pass
+    # def calc_epsilon_dict(self, force_dict):
+    #     """
+    #     calculate epsilon from the D values. Use the equation (D-D_0hkl)/D_0hkl, where D_0hkl is a constant.
+    #     D_0hkl depends on the hkl plane and can be calculated from D_0 with D_0hkl = D_0*sqrt(h**2 + k**2 + l**2)
+    #     :param force_dict:
+    #     :return:
+    #     """
+    #     if self.data_object.D_0<np.power(10., -13):
+    #         self.data_object.plot_D_cos2psi()
+    #     D_0=self.data_object.D_0
+    #
+    #     pass
 
 
 class FitGneupelHerold(FitStrainWithTexture):
-    def __init__(self, data_object, material):
-        super(FitGneupelHerold, self).__init__(data_object, material)
+    def __init__(self, data_object, material, instrument):
+        super(FitGneupelHerold, self).__init__(data_object, material, instrument)
         self.hkl_list_dict = self.create_list_of_all_existiing_hkl()
         self.create_hkl_data_dict()
         self.Data = InParams()
@@ -2240,6 +2268,10 @@ class FitGneupelHerold(FitStrainWithTexture):
                 else:
                     force_1 = force_keys[0]
                     force_2 = force_keys[1]
+                    if float(force_1) > float(force_2):
+                        force_1_temp = force_1
+                        force_1 = force_2
+                        force_2 = force_1_temp
                     phi_psi_hkl_1, eps_strain_1 = force_dict[force_1]
                     phi_psi_hkl_2, eps_strain_2 = force_dict[force_2]
                 for i in xrange(len(phi_psi_hkl_1)):
@@ -2274,49 +2306,61 @@ class FitGneupelHerold(FitStrainWithTexture):
         s2l = []
         s2errl = []
         hkl_l = []
+        s1l_fit = []
+        s1errl_fit = []
+        s2l_fit = []
+        s2errl_fit = []
+        hkl_l_fit = []
         plots_dic = {}  # key = figname, val = [[xdata, ydata, yerr],[psi, val, s1, s2]]
         for hkl in self.hkl_data_dict[phase]:
             xdata, ydata, yerr = self.hkl_data_dict[phase][hkl]
             print 'hkl: ', hkl
-            try:
-                s1, s1err, s2, s2err = fit_object.lin_fit(xdata, ydata, yerr)
-                s1l.append(s1)
-                s1errl.append(s1err)
-                s2l.append(s2)
-                s2errl.append(s2err)
-                hkl_l.append(hkl)
-                name = "{}\\fit_s1_s2_phase_{}_hkl_{}".format(material, phase_name, hkl)
-                plots_dic[name] = []
-                # plt.figure(name)
-                # plt.errorbar(xdata, ydata, yerr=yerr, fmt='bo', label="Data")
-                plots_dic[name].append([xdata, ydata, yerr])
-                Psi = np.arange(0, np.pi / 2 + 0.01, 0.01)
-                Psi = np.cos(Psi) ** 2
-                params = lm.Parameters()
-                params.add('a', value=s1)
-                params.add('b', value=s2)
-                val = fit_object.residual(params=params, xdata=Psi)
+            # try:
+            s1, s1err, s2, s2err = fit_object.lin_fit(xdata, ydata, yerr)
+            if not (np.isnan(s1) or np.isinf(s1) or np.isnan(s2) or np.isinf(s2) or
+                np.isnan(s1err) or np.isinf(s1err) or np.isnan(s2err) or np.isinf(s2err)):
+                s1l_fit.append(s1)
+                s1errl_fit.append(s1err)
+                s2l_fit.append(s2)
+                s2errl_fit.append(s2err)
+                hkl_l_fit.append(hkl)
+            s1l.append(s1)
+            s1errl.append(s1err)
+            s2l.append(s2)
+            s2errl.append(s2err)
+            hkl_l.append(hkl)
+            name = "{}\\fit_s1_s2_phase_{}_hkl_{}".format(material, phase_name, hkl)
+            plots_dic[name] = []
+            # plt.figure(name)
+            # plt.errorbar(xdata, ydata, yerr=yerr, fmt='bo', label="Data")
+            plots_dic[name].append([xdata, ydata, yerr])
+            Psi = np.arange(0, np.pi / 2 + 0.01, 0.01)
+            Psi = np.cos(Psi) ** 2
+            params = lm.Parameters()
+            params.add('a', value=s1)
+            params.add('b', value=s2)
+            val = fit_object.residual(params=params, xdata=Psi)
 
 
-                plots_dic[name].append([Psi, val, s1, s1err, s2, s2err])
-                # plt.plot(Psi, val, 'r-', label="fit, \ns1 = {}\ns2 = {}".format(s1, s2))
-                #
-                # plt.xlabel('$\cos^2(\Psi)$')
-                # plt.ylabel('$\epsilon/\sigma$')
-                # plt.legend()
-                # plt.xlim([0, 1])
+            plots_dic[name].append([Psi, val, s1, s1err, s2, s2err])
+            # plt.plot(Psi, val, 'r-', label="fit, \ns1 = {}\ns2 = {}".format(s1, s2))
+            #
+            # plt.xlabel('$\cos^2(\Psi)$')
+            # plt.ylabel('$\epsilon/\sigma$')
+            # plt.legend()
+            # plt.xlim([0, 1])
 
-            except TypeError:
-                pass
+            # except TypeError:
+            #     pass
 
             # print "savefig, ", name, ".svg"
             # plt.savefig(name+".svg", "svg")
         # plt.show()
-        self.Data.set_data(hkl=hkl_l, s1=s1l, s2=s2l, s1_err=s1errl, s2_err=s2errl)
+        self.Data.set_data(hkl=hkl_l_fit, s1=s1l_fit, s2=s2l_fit, s1_err=s1errl_fit, s2_err=s2errl_fit)
         return plots_dic
 
     def do_the_fitting_gneupel_herold(self, filename, material, method="reus", path=".\\results\\", texture=False, phase=1,
-                       phase_name="", instrument='SPODI'):
+                       phase_name="", instrument='SPODI', fit_method='leastsq'):
         self.hkl_list_dict = self.create_list_of_all_existiing_hkl()
         self.create_hkl_data_dict()
         plots_dic = self.fit_all_hkl(phase, phase_name, material)
@@ -2337,15 +2381,15 @@ class FitGneupelHerold(FitStrainWithTexture):
         print s2
         print s1_err
         print s2_err
-        fit_method = 'leastsq'
+        fit_method = fit_method
         if method == "hill":
-            result = fitting_Hill(Gamma, s1, s2, s1_err, s2_err)
+            result = fitting_Hill(Gamma, s1, s2, s1_err, s2_err, fit_method=fit_method)
         if method == "voigt":
-            result = fitting_Voigt(Gamma, s1, s2, s1_err, s2_err)
+            result = fitting_Voigt(Gamma, s1, s2, s1_err, s2_err, fit_method=fit_method)
         if method == "eshelby":
-            result = fitting_deWit(Gamma, s1, s2, s1_err, s2_err)
+            result = fitting_deWit(Gamma, s1, s2, s1_err, s2_err, fit_method=fit_method)
         if method == "reus":
-            result = fitting_Reus(Gamma, s1, s2, s1_err, s2_err)
+            result = fitting_Reus(Gamma, s1, s2, s1_err, s2_err, fit_method=fit_method)
 
         date = tm.localtime()
         # for hkl in self.hkl_list_dict[phase]:
@@ -2481,8 +2525,8 @@ class FitGneupelHerold(FitStrainWithTexture):
 
 
 class TensileTest(FitGneupelHerold):
-    def __init__(self, data_object, material):
-        FitGneupelHerold.__init__(self, data_object, material)
+    def __init__(self, data_object, material, instrument):
+        FitGneupelHerold.__init__(self, data_object, material, instrument)
 
     def create_hkl_data_dict(self):
         hkl_data_dict = {}  # hkl_data_dict={phase:{hkl:[cos^2psi, strain, strain_err, stress, stress_err]}}

@@ -443,6 +443,7 @@ class CentralWidget(QWidget):
         self.material = QLineEdit("iron")
         self.modi = self.create_modi_comb_box()
         self.output_filename = QLineEdit("Result_" + str(self.material.text()) + "_" + str(self.modi.currentText()))
+        self.fit_method = self.create_fit_method_comb_box()
 
         try:
             self.phase_peak_region = self.region.load()
@@ -518,8 +519,10 @@ class CentralWidget(QWidget):
         self.insert_startvals_button.setEnabled(False)
         self.insert_startvals_button.clicked.connect(self.set_const_vals)
 
-        self.plot_polefig_button = QPushButton("plot pole figure")
+        self.plot_polefig_button = QPushButton("plot hkl PF")
         self.plot_polefig_button.setEnabled(False)
+        self.plot_all_polefig_button = QPushButton('plot all PF\'s')
+        self.plot_all_polefig_button.setEnabled(False)
         self.pfmaxval = QLineEdit('None')
         self.pfminval = QLineEdit('None')
         self.plot_data_button = QPushButton("plot data")
@@ -529,6 +532,7 @@ class CentralWidget(QWidget):
         self.miller_l = QLineEdit("l")
         self.with_fit_combbox = self.create_jn_combbox()
         self.plot_polefig_button.clicked.connect(self.plot_pole_figure)
+        self.plot_all_polefig_button.clicked.connect(self.plot_all_pole_figure)
         self.plot_data_button.clicked.connect(self.plot_data_fuc)
         self.connect(self, SIGNAL('polefigurevals'), self.show_pole_figure)
         self.connect(self, SIGNAL('result_of_fit'), self.show_result_of_fit)
@@ -560,6 +564,8 @@ class CentralWidget(QWidget):
         self.do_the_fit_button.setEnabled(False)
         self.do_the_fit_gh_button.setEnabled(False)
         self.do_the_fit_tt_button.setEnabled(False)
+        self.plot_polefig_button.setEnabled(False)
+        self.plot_all_polefig_button.setEnabled(False)
         h = int(str(self.miller_h.text()))
         k = int(str(self.miller_k.text()))
         l = int(str(self.miller_l.text()))
@@ -576,6 +582,45 @@ class CentralWidget(QWidget):
         # axs.set_title("pole figure {}{}{}\n".format(h, k, l))
         #
         # plt.show()
+        self.plot_polefig_button.setEnabled(True)
+        self.plot_all_polefig_button.setEnabled(True)
+        thread.exit()
+
+    def plot_all_polfigures_of_a_phase(self):
+        BCC_HKL_LIST_FORE_PF_PLOTING = ['110', '200', '211', '220', '310', '222']
+        FCC_HKL_LIST_FORE_PF_PLOTING = ['111', '200', '220', '311', '222', '400', '331', '420']
+        if 'BCC' in self.name_of_phase.text():
+            HKL_List = BCC_HKL_LIST_FORE_PF_PLOTING
+        if 'FCC' in self.name_of_phase.text():
+            HKL_List = FCC_HKL_LIST_FORE_PF_PLOTING
+        self.do_the_fit_button.setEnabled(False)
+        self.do_the_fit_gh_button.setEnabled(False)
+        self.do_the_fit_tt_button.setEnabled(False)
+        self.plot_polefig_button.setEnabled(False)
+        self.plot_all_polefig_button.setEnabled(False)
+        for hkl in HKL_List:
+
+            h = int(hkl[0])
+            k = int(hkl[0])
+            l = int(hkl[0])
+            if str(self.fit_phase_combbox.currentText()) == "1":
+                theta, r, VAL = self.data_object.odf_phase_1.plot_polfigure(h, k, l)
+            if str(self.fit_phase_combbox.currentText()) == "2":
+                theta, r, VAL = self.data_object.odf_phase_2.plot_polfigure(h, k, l)
+            self.emit(SIGNAL('polefigurevals'), (h, k, l, theta, r, VAL))
+
+        # fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
+        # p1 = axs.contourf(theta, r, VAL, 100)
+        #
+        # cbar = plt.colorbar(p1, ax=axs)
+        # axs.set_title("pole figure {}{}{}\n".format(h, k, l))
+        #
+        # plt.show()
+        self.plot_polefig_button.setEnabled(True)
+        self.do_the_fit_button.setEnabled(True)
+        self.do_the_fit_gh_button.setEnabled(True)
+        self.do_the_fit_tt_button.setEnabled(True)
+        self.plot_all_polefig_button.setEnabled(True)
         thread.exit()
 
     def show_pole_figure(self, *args):
@@ -643,11 +688,18 @@ class CentralWidget(QWidget):
 
         # axs.set_theta_zero_location("S")
         # axs.set_theta_offset(pi)
+        filename = '.\\PF' + str(self.material.text()) + '\\' + str(self.name_of_phase.text())+'_'+str(h)+str(k)+str(l) + ".svg"
+        if not os.path.exists(os.path.dirname(filename)):
+                os.makedirs(os.path.dirname(filename))
+        plt.savefig(filename, format="svg")
 
         plt.show()
 
     def plot_pole_figure(self):
         thread.start_new_thread(self.plot_pole_figure_thread, ())
+
+    def plot_all_pole_figure(self):
+        thread.start_new(self.plot_all_polfigures_of_a_phase, ())
 
     def change_name_of_phase_qlineedit(self):
         self.name_of_phase.setText(self.name_of_phase_dic[int(str(self.fit_phase_combbox.currentText()))])
@@ -659,9 +711,9 @@ class CentralWidget(QWidget):
     def change_outputfile_name(self):
         text = "Result_" + str(self.material.text()) + "_" + str(self.modi.currentText())
         try:
-            self.fit_object.material = str(self.material)
-            self.fit_object_gh.material = str(self.material)
-            self.fit_object_TT.material = str(self.material)
+            self.fit_object.material = str(self.material.text())
+            self.fit_object_gh.material = str(self.material.text())
+            self.fit_object_TT.material = str(self.material.text())
         except AttributeError:
             pass
         self.output_filename.setText(text)
@@ -692,7 +744,7 @@ class CentralWidget(QWidget):
             self.connect(self.widget_set_data_path, SIGNAL("data_dir_list"), self.receve_the_pathes_SPODI_case)
             try:
                 self.phase_peak_region = self.region.load()
-                self.material.setText(self.region.material)
+                self.material.setText(str(self.region.material))
                 self.loaded_peak_region = True
             except IOError:
                 self.loaded_peak_region = False
@@ -745,11 +797,20 @@ class CentralWidget(QWidget):
         self.do_the_fit_tt_button.setEnabled(True)
         self.insert_startvals_button.setEnabled(True)
         self.plot_polefig_button.setEnabled(True)
+        self.plot_all_polefig_button.setEnabled(True)
         self.plot_data_button.setEnabled(True)
 
-        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material=self.material.text())
-        self.fit_object_gh = Modells.FitGneupelHerold(data_object=self.data_object, material=self.material.text())
-        self.fit_object_TT = Modells.TensileTest(data_object=self.data_object, material=self.material.text())
+        self.plot_list_D_cospsi = self.data_object.plot_D_cos2psi()
+        self.plot_D_cospsi(self.plot_list_D_cospsi, save=self.save_D_0_sin2psi_plots_checkbox.isChecked())
+        self.D_0_set_button.setEnabled(True)
+
+        instrument = str(self.choose_experiment_comb_box.currentText())
+        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material=str(self.material.text()),
+                                                       instrument=instrument)
+        self.fit_object_gh = Modells.FitGneupelHerold(data_object=self.data_object, material=str(self.material.text()),
+                                                      instrument=instrument)
+        self.fit_object_TT = Modells.TensileTest(data_object=self.data_object, material=str(self.material.text()),
+                                                 instrument=instrument)
         self.fit_object.print_params()
 
     def receve_the_pathes_SPODI_case(self, *args):
@@ -811,11 +872,16 @@ class CentralWidget(QWidget):
             self.do_the_fit_tt_button.setEnabled(True)
             self.insert_startvals_button.setEnabled(True)
             self.plot_polefig_button.setEnabled(True)
+            self.plot_all_polefig_button.setEnabled(True)
             self.plot_data_button.setEnabled(True)
             # self.Data_Iron.fit_all_peaks()
-        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material=self.material.text())
-        self.fit_object_gh = Modells.FitGneupelHerold(data_object=self.data_object, material=self.material.text())
-        self.fit_object_TT = Modells.TensileTest(data_object=self.data_object, material=self.material.text())
+        instrument = str(self.choose_experiment_comb_box.currentText())
+        self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object, material=str(self.material.text()),
+                                                       instrument=instrument)
+        self.fit_object_gh = Modells.FitGneupelHerold(data_object=self.data_object, material=self.material.text(),
+                                                      instrument=instrument)
+        self.fit_object_TT = Modells.TensileTest(data_object=self.data_object, material=self.material.text(),
+                                                 instrument=instrument)
         # self.connect(self, SIGNAL('1'), self.fit_object.set_params_phase_1)
         # self.connect(self, SIGNAL('2'), self.fit_object.set_params_phase_2)
         self.fit_object.print_params()
@@ -863,6 +929,7 @@ class CentralWidget(QWidget):
         self.do_the_fit_tt_button.setEnabled(True)
         self.insert_startvals_button.setEnabled(True)
         self.plot_polefig_button.setEnabled(True)
+        self.plot_all_polefig_button.setEnabled(True)
         self.plot_data_button.setEnabled(True)
 
     def calc_strain_with_const_D_0(self):
@@ -874,6 +941,7 @@ class CentralWidget(QWidget):
 
     def do_the_fit(self):
         self.plot_polefig_button.setEnabled(False)
+        self.plot_all_polefig_button.setEnabled(False)
         Bool = False
         if self.text_jn.currentText() == "Yes":
             Bool = True
@@ -888,7 +956,7 @@ class CentralWidget(QWidget):
               "----------------------------")
 
         # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
-
+        fit_method = str(self.fit_method.currentText())
         result = self.fit_object.do_the_fitting(filename=str(self.output_filename.text()),
                                                 material=self.material.text(),
                                                 method=str(self.modi.currentText()),
@@ -896,9 +964,11 @@ class CentralWidget(QWidget):
                                                 phase_name=self.name_of_phase_dic[
                                                     int(str(self.fit_phase_combbox.currentText()))],
                                                 texture=Bool, D_const=self.D_0_const_checkBox.isChecked(),
-                                                instrument=str(self.choose_experiment_comb_box.currentText()))
+                                                instrument=str(self.choose_experiment_comb_box.currentText()),
+                                                fit_method=fit_method)
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
         self.plot_polefig_button.setEnabled(True)
+        self.plot_all_polefig_button.setEnabled(True)
         self.emit(SIGNAL('result_of_fit'), (text, result))
         thread.exit()
 
@@ -918,15 +988,16 @@ class CentralWidget(QWidget):
               "----------------------------")
 
         # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
-
+        fit_method = str(self.fit_method.currentText())
         result = self.fit_object_gh.do_the_fitting_gneupel_herold(filename=str(self.output_filename.text()),
-                                                                  material=self.material.text(),
+                                                                  material=str(self.material.text()),
                                                                   method=str(self.modi.currentText()),
                                                                   phase=int(str(self.fit_phase_combbox.currentText())),
                                                                   phase_name=self.name_of_phase_dic[
                                                                       int(str(self.fit_phase_combbox.currentText()))],
                                                                   texture=Bool,
-                                                                  instrument=str(self.choose_experiment_comb_box.currentText()))
+                                                                  instrument=str(self.choose_experiment_comb_box.currentText()),
+                                                                  fit_method=fit_method)
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
         plot_dic = result[2]
         self.show_result_of_fit(text, result, plot_dic)
@@ -948,16 +1019,20 @@ class CentralWidget(QWidget):
             plt.legend(loc='upper left')
             plt.xlim([0, 1])
             print("savefig, ", figname, ".svg")
-            filename = ".\\sin2psi-plots\\" + figname + ".svg"
+            instrumernt = str(self.choose_experiment_comb_box.currentText())
+            filename = ".\\sin2psi-plots\\" + instrumernt + '\\' + figname + ".svg"
             if not os.path.exists(os.path.dirname(filename)):
                 os.makedirs(os.path.dirname(filename))
-            plt.savefig(".\\sin2psi-plots\\" + figname + ".svg", format="svg")
-            plt.savefig(".\\sin2psi-plots\\" + figname + ".pdf", format="pdf")
-            plt.savefig(".\\sin2psi-plots\\" + figname + ".png", format="png")
+
+            filename = ".\\sin2psi-plots\\" + instrumernt + '\\' + figname
+            plt.savefig(filename + ".svg", format="svg")
+            plt.savefig(filename + ".pdf", format="pdf")
+            plt.savefig(filename + ".png", format="png")
         plt.show()
 
     def plot_D_cospsi(self, plot_list, save=False):
         material = str(self.material.text())
+        instrument = str(self.choose_experiment_comb_box.currentText())
 
         def calc_D_0(D_hkl, hkl):
             '''
@@ -1000,15 +1075,18 @@ class CentralWidget(QWidget):
             ax.get_yaxis().get_major_formatter().set_useOffset(False)  # shutt of the Offset
             # ax.get_yaxis().get_major_formatter().set_scientific(False)  # shut of scientific notation
             # plt.yscale('log')  # set log scale, not good for small values
-            plt.legend(loc='upper left')
+            try:
+                plt.legend(loc='upper left')
+            except IndexError:
+                pass
             plt.xlim([0, 1])
 
             if save:
                 print("savefig, ", figname, ".svg")
-                filename = ".\\sin2psi-D-plots\\" + material + '\\' + figname + ".svg"
+                filename = ".\\sin2psi-D-plots\\" + instrument + '\\' + material + '\\' + figname + ".svg"
                 if not os.path.exists(os.path.dirname(filename)):
                     os.makedirs(os.path.dirname(filename))
-                filename = ".\\sin2psi-D-plots\\" + material + '\\' + figname
+                filename = ".\\sin2psi-D-plots\\" + instrument + '\\' + material + '\\' + figname
                 plt.savefig(filename + ".svg", format="svg")
                 plt.savefig(filename + ".pdf", format="pdf")
                 plt.savefig(filename + ".png", format="png")
@@ -1056,7 +1134,7 @@ class CentralWidget(QWidget):
               "----------------------------")
 
         # self.fit_object = Modells.FitStrainWithTexture(data_object=self.data_object)
-
+        fit_method = str(self.fit_method.currentText())
         result = self.fit_object_TT.do_the_fitting_gneupel_herold(filename=str(self.output_filename.text()),
                                                                   material=self.material.text(),
                                                                   method=str(self.modi.currentText()),
@@ -1064,7 +1142,8 @@ class CentralWidget(QWidget):
                                                                   phase_name=self.name_of_phase_dic[
                                                                       int(str(self.fit_phase_combbox.currentText()))],
                                                                   texture=Bool,
-                                                                  instrument=str(self.choose_experiment_comb_box.currentText()))
+                                                                  instrument=str(self.choose_experiment_comb_box.currentText()),
+                                                                  fit_method=fit_method)
         text = "Finnished calculation\nresults are stored under {}".format(result[1])
         plot_dic = result[2]
         self.show_result_of_fit(text, result, plot_dic)
@@ -1115,7 +1194,10 @@ class CentralWidget(QWidget):
         layout.addWidget(HLine[2])
 
         # handel the fitting process
-        layout.addWidget(self.label("Fit the data: "))
+        layout_fitting_h3_1 = QHBoxLayout()
+        layout_fitting_h3_1.addWidget(self.label("Fit the data, fit method: "))
+        layout_fitting_h3_1.addWidget(self.fit_method)
+        layout.addLayout(layout_fitting_h3_1)
         layout_fitting.addWidget(self.Fit_phase)
         layout_fitting.addWidget(self.fit_phase_combbox)
         layout_fitting.addWidget(self.label("phase name:"))
@@ -1143,6 +1225,7 @@ class CentralWidget(QWidget):
         layout_fitting_2.addWidget(self.label('pfmsxval:'))
         layout_fitting_2.addWidget(self.pfmaxval)
         layout_fitting_2.addWidget(self.plot_polefig_button)
+        layout_fitting_2.addWidget(self.plot_all_polefig_button)
         layout_fitting_2.addWidget(self.label('with_fit:'))
         layout_fitting_2.addWidget(self.with_fit_combbox)
         layout_fitting_2.addWidget(self.plot_data_button)
@@ -1167,6 +1250,24 @@ class CentralWidget(QWidget):
         combo.addItem("voigt")
         combo.addItem("hill")
         combo.addItem("eshelby")
+        return combo
+
+    @staticmethod
+    def create_fit_method_comb_box():
+        combo = QComboBox()
+        # leastsq, nelder, lbfgsb, powell, cg, newton, cobyla, tnc, dogleg, slsqp,
+        # differential_evolution
+        combo.addItem("leastsq")
+        combo.addItem("nelder")
+        combo.addItem("lbfgsb")
+        combo.addItem("powell")
+        combo.addItem("cg")
+        combo.addItem("newton")
+        combo.addItem("cobyla")
+        combo.addItem("tnc")
+        combo.addItem("dogleg")
+        combo.addItem("slsqp")
+        combo.addItem("differential_evolution")
         return combo
 
     @staticmethod
@@ -1618,6 +1719,7 @@ class phase_region_class(object):
                 hkl_2_theta.append([h, k, l, theta_min, theta_max, double, peak])
         print("REGION: ", self.region)
         return self.region
+
 
 
 def main(Thread_queue):

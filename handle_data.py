@@ -112,6 +112,7 @@ class Data(object):
         return plot_list
 
     def create_hkl_data_dict(self):
+        self.create_list_of_all_existiing_hkl()
         hkl_data_dict = {}  # hkl_data_dict={phase:{hkl:{force:[cos^2psi, D, D_error]}}}
         # hkl_pattern = re.compile(r'(\d)(\d)(\d)')
         for phase in self.fitted_data.data_dict_D:
@@ -150,7 +151,58 @@ class Data(object):
                         hkl_list_dict[phase].append(hkl)
         print '#######################################################################'
         print hkl_list_dict
+        self.hkl_list_dict = hkl_list_dict
         return hkl_list_dict
+    @staticmethod
+    def calceps_deps(d, derr, d_0, d_0err):
+        strain = (d - d_0) / d_0
+        strainerr = derr / d_0 + (d * d_0err) / (d_0 ** 2)
+        return strain, strainerr
+
+    def calc_epsilon_with_Dmes_D_0mes(self):
+        """
+        calculating the strain with measured Data, (D-D_0)/D_0
+        :return: None
+        """
+        # print "call calc_phi_psi_epsilon: ", self.data_dic_phases
+        # print "key list: ", self.data_dic_phases.keys()
+
+        # key_list_data_dic_phases = sorted(self.fitted_data.data_dict_D.keys())
+
+        for phase, force_dict in self.fitted_data.data_dict_D.iteritems():  # loop over all phases
+            # self.fitted_data.data_dict[phase] = {}
+            force_stress_dict = {}
+            for force, Data_list in force_dict.iteritems():  # loop over all forces
+                phi_psi_hkl = []
+                strain_stress = []
+                if int(float(force)) == 0:
+                    pass
+                else:
+                    for n in xrange(len(force_dict[force][0])):  # loop over all Data of force
+                        # values of the straind data:
+
+                        phi, psi, h, k, l = force_dict[force][0][n]
+                        D, D_err, stress, stress_err = force_dict[force][1][n]
+
+                        for j in xrange(len(force_dict['0'][0])):# vals of the unstraind data
+                            phi_0, psi_0, h_0, k_0, l_0 = force_dict['0'][0][j]
+                            D_0, D_0_err, stress_0, stress_err_0 = force_dict['0'][1][j]
+                            if (abs(float(phi) - float(phi_0)) < np.power(10., -3)
+                                and abs(float(psi) - float(psi_0)) < np.power(10., -3)
+                                 and int(h) == int(h_0)
+                                 and int(k) == int(k_0)
+                                 and int(l) == int(l_0)):
+                                phi_psi_hkl.append([phi, psi, h, k, l])
+                                strain, strain_error = self.calceps_deps(d=D, derr=D_err,
+                                                                         d_0=D_0, d_0err=D_0_err)
+
+                                stress, stress_err = self.calc_applied_stress(force=float(force))
+                                strain_stress.append([strain, strain_error, stress, stress_err])
+                    force_stress_dict[force] = [phi_psi_hkl, strain_stress]
+
+            self.fitted_data.data_dict[phase] = force_stress_dict
+            print "calculation of phi and psi finished\n--------------------------------------------------------------"
+            print self.fitted_data.data_dict
 
 
 class SPODIData(Data):
@@ -209,8 +261,9 @@ class SPODIData(Data):
         name_split = re.split('_', filename)
         force = name_split[1][0:-2]
 
-
-        force = float(force.replace(",","."))
+        force = float(force.replace(",", "."))
+        if force < 0.01:
+            force = int(0)
         omega = 0.
         Chi = 0.
         for i in xrange(1, len(name_split)):
@@ -218,7 +271,7 @@ class SPODIData(Data):
                 omega = float(re.split('[a-z]+', name_split[i])[1])
             elif re.match('Chi', name_split[i]) is not None:
                 Chi = float(re.split('[a-z]*', name_split[i])[1])
-        Parameters = [force, omega, Chi]
+        Parameters = [str(force), omega, Chi]
         return Parameters
 
     @staticmethod
@@ -323,7 +376,7 @@ class SPODIData(Data):
                     data = [two_theta, intens, error]
                     hkl_2_theta = self.fit_the_peaks_for_on_diffraction_pattern(data=data, peak_regions=peak_regions,
                                                                                 plot=plot, datanumber=number,
-                                                                                force=force, Chi=chi, phase=phase,
+                                                                                force=float(force), Chi=chi, phase=phase,
                                                                                 material=material)
                     hkl_2_theta = hkl_2_theta.tolist()
                     number += 1
@@ -337,7 +390,7 @@ class SPODIData(Data):
         # calculate phi, psi, strain and stress and store it in
         self.calc_phi_psi_epsilon()
         self.calc_phi_psi_d()
-        self.hkl_list_dict = self.create_list_of_all_existiing_hkl()
+
         self.create_hkl_data_dict()
 
         # try:
@@ -369,7 +422,7 @@ class SPODIData(Data):
                 # j is the position of the key, j+1 is the next force, j-1 is the previous force
                 phi_psi_hkl = []
                 strain_stress = []
-                if v == 0:
+                if v == '0' or v == '0.0':
                     pass
                 else:
                     for n in xrange(len(force_dict[v])):  # loop over all data of each force
@@ -378,7 +431,7 @@ class SPODIData(Data):
                         h, k, l, two_theta, two_theta_error = hkl_2_theta
 
                         # vals of the unstraind data
-                        phase_0, force_0, omega_0, chi_0, hkl_2_theta_0 = force_dict[0][n]
+                        phase_0, force_0, omega_0, chi_0, hkl_2_theta_0 = force_dict['0'][n]
                         h_0, k_0, l_0, two_theta_0, two_theta_error_0 = hkl_2_theta_0
                         # print "omega_0: {0:d}, chi_0: {1:d}".format(int(omega_0), int(chi_0))
                         # print "omega: {0:d}, chi: {1:d}".format(int(omega), int(chi))
@@ -397,18 +450,18 @@ class SPODIData(Data):
                         psi = self.psii(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta_0 / 2,
                                         chi=chi, omega=omega)
                         if not (np.isnan(phi) or np.isnan(psi)):
-                            if chi != 90:
-                                phi_psi_hkl.append([phi, psi, h, k, l])
-                                print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
-                                    format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
+                            # if chi != 90:
+                            phi_psi_hkl.append([phi, psi, h, k, l])
+                            print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
+                                format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
 
-                                strain, strain_error = self.delta_epsilon(two_theta=two_theta,
-                                                                          two_theta_0=two_theta_0,
-                                                                          two_theta_err=two_theta_error,
-                                                                          two_theta_0_err=two_theta_error_0)
+                            strain, strain_error = self.delta_epsilon(two_theta=two_theta,
+                                                                      two_theta_0=two_theta_0,
+                                                                      two_theta_err=two_theta_error,
+                                                                      two_theta_0_err=two_theta_error_0)
 
-                                stress, stress_err = self.calc_applied_stress(force=force)
-                                strain_stress.append([strain, strain_error, stress, stress_err])
+                            stress, stress_err = self.calc_applied_stress(force=float(force))
+                            strain_stress.append([strain, strain_error, stress, stress_err])
                     force_stress_dict[v] = [phi_psi_hkl, strain_stress]
 
             self.fitted_data.data_dict[i] = force_stress_dict
@@ -459,7 +512,7 @@ class SPODIData(Data):
                         D, D_error = self.calc_D(two_theta=two_theta,
                                                  two_theta_err=two_theta_error)
 
-                        stress, stress_err = self.calc_applied_stress(force=force)
+                        stress, stress_err = self.calc_applied_stress(force=float(force))
                         D_stress.append([D, D_error, stress, stress_err])
                 force_stress_dict[v] = [phi_psi_hkl, D_stress]
 
@@ -649,17 +702,17 @@ class SPODIData(Data):
 
     def get_sum_data(self):
         # print "hallo", self.data_dic_raw
-        omega1 = self.data_dic_raw[0][0][1]
+        omega1 = self.data_dic_raw['0'][0][1]
         # print "omega", omega1
-        sum_intens = np.zeros((len(self.data_dic_raw[0][0][4])))
-        for i in self.data_dic_raw[0]:
+        sum_intens = np.zeros((len(self.data_dic_raw['0'][0][4])))
+        for i in self.data_dic_raw['0']:
             print len(i[3]), len(i[4]), len(i[5])
             if omega1 == i[1]:
                 try:
                     sum_intens += np.array(i[4])
                 except ValueError:
                     pass
-        return self.data_dic_raw[0][0][3], sum_intens
+        return self.data_dic_raw['0'][0][3], sum_intens
 
     def calc_D(self, two_theta, two_theta_err):
         D = self.wavelength/(2*np.sin(np.deg2rad(two_theta/2.)))
@@ -691,22 +744,29 @@ class AllData(Data):
             line = lines[i].strip()  # removes with spaces at the frond and the end
             if "#" not in line:
                 l = re.split(r'\s*', line)
-                force, phase, h, k, l, phi, psi, strain, strainerr, stress, stresserr = l
+                force, phase, h, k, l, phi, psi, D, D_err, stress, stresserr = l
                 # print "phase: ", phase
                 phi = deg_to_rad(float(phi))
                 psi = deg_to_rad(float(psi))
-                force = float(force)
+                if force == '0.0':
+                    force = '0'
+                force = str(force)
                 if phase not in dic.keys():
                     dic[phase] = {}
 
                 if force not in dic[phase].keys():
                     dic[phase][force] = [[], []]
-                    print "###############\n" \
-                          "force: ", force
-                if h == '2' and k == '2' and l == '2':
-                    print force, h, k, l, phi, psi, strain
-                dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
-                dic[phase][force][1].append([float(strain), float(strainerr), float(stress), float(stresserr)])
+                    # print "###############\n" \
+                    #       "force: ", force
+                # if h == '2' and k == '2' and l == '2':
+                #     print force, h, k, l, phi, psi, strain
+                if D!='0':
+                    dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
+                    dic[phase][force][1].append([float(D)*np.power(10., -10.), float(D_err)*np.power(10., -10.),
+                                                 float(stress), float(stresserr)])
+                else:
+                    dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
+                    dic[phase][force][1].append([float('nan'), float('nan'), float('nan'), float('nan')])
 
         data.close()
         phase_keys = dic.keys()
@@ -715,19 +775,21 @@ class AllData(Data):
         for i in phase_name_dict.keys():
             try:
                 phase = phase_name_dict[i]
-                self.fitted_data.data_dict[i] = {}
+                self.fitted_data.data_dict_D[i] = {}
                 force_keys = dic[phase].keys()
-                print i, phase, force_keys
+                # print i, phase, force_keys
                 for j, force in enumerate(sorted(force_keys)):
-                    self.fitted_data.data_dict[i][force] = dic[phase][force]
-                    for m in xrange(len(dic[phase][force][0])):
-                        phi, psi, h, k, l = dic[phase][force][0][m]
-                        strain, strainerr, stress, stresserr = dic[phase][force][1][m]
-                        if h == 2 and k == 2 and l == 2:
-                            print phase, force, phi, psi, h, k, l, strain
+                    self.fitted_data.data_dict_D[i][force] = dic[phase][force]
+                    # for m in xrange(len(dic[phase][force][0])):
+                    #     phi, psi, h, k, l = dic[phase][force][0][m]
+                    #     strain, strainerr, stress, stresserr = dic[phase][force][1][m]
+                        # if h == 2 and k == 2 and l == 2:
+                        #     print phase, force, phi, psi, h, k, l, strain
             except KeyError:
                 pass
-        print self.fitted_data.data_dict
+        self.create_hkl_data_dict()
+        self.calc_epsilon_with_Dmes_D_0mes()
+        # print self.fitted_data.data_dict_D
 
     def just_read_data(self, filename):
         '''
@@ -743,9 +805,10 @@ class AllData(Data):
             if "#" not in line:
                 l = re.split(r'\s*', line)
                 # print l
-                force, phase, h, k, l, phi, psi, strain, strainerr, stress, stresserr = l
+                force, phase, h, k, l, phi, psi, D, D_err, stress, stresserr = l
                 phi = deg_to_rad(float(phi))
                 psi = deg_to_rad(float(psi))
+                force = str(force)
                 # print "phase: ", phase
                 if phase not in dic.keys():
                     # print "phase not in key: ", phase
@@ -755,16 +818,17 @@ class AllData(Data):
                         dic[phase][force] = [[], []]
                     else:
                         dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
-                        dic[phase][force][1].append([float(strain), float(strainerr), float(stress), float(stresserr)])
+                        dic[phase][force][1].append([float(D)*np.power(10.,-10), float(D_err)*np.power(10.,-10),
+                                                     float(stress), float(stresserr)])
             else:
-                print line
+                # print line
                 if "#Material:" in line:
                     mmm = re.split('\s+', line)
                     material = ''
                     for g in xrange(1, len(mmm)):
                         material += mmm[g]
                         material += ' '
-                    print material
+                    # print material
         data.close()
         phase_keys = dic.keys()
         return phase_keys, material
