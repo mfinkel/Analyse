@@ -99,6 +99,7 @@ class Data(object):
 
     def plot_D_cos2psi(self):
         # self.hkl_data_dict={phase:{hkl:{force:[cos^2psi, D, D_error]}}}
+        self.create_hkl_data_dict()
         plot_list = []
         for phase in self.hkl_data_dict.keys():
             for hkl in self.hkl_data_dict[phase].keys():
@@ -168,7 +169,7 @@ class Data(object):
         # print "key list: ", self.data_dic_phases.keys()
 
         # key_list_data_dic_phases = sorted(self.fitted_data.data_dict_D.keys())
-
+        self.fitted_data.data_dict = {}
         for phase, force_dict in self.fitted_data.data_dict_D.iteritems():  # loop over all phases
             # self.fitted_data.data_dict[phase] = {}
             force_stress_dict = {}
@@ -187,8 +188,8 @@ class Data(object):
                         for j in xrange(len(force_dict['0'][0])):# vals of the unstraind data
                             phi_0, psi_0, h_0, k_0, l_0 = force_dict['0'][0][j]
                             D_0, D_0_err, stress_0, stress_err_0 = force_dict['0'][1][j]
-                            if (abs(float(phi) - float(phi_0)) < np.power(10., -3)
-                                and abs(float(psi) - float(psi_0)) < np.power(10., -3)
+                            if (abs(float(phi) - float(phi_0)) < np.power(10., -2)
+                                and abs(float(psi) - float(psi_0)) < np.power(10., -2)
                                  and int(h) == int(h_0)
                                  and int(k) == int(k_0)
                                  and int(l) == int(l_0)):
@@ -203,6 +204,36 @@ class Data(object):
             self.fitted_data.data_dict[phase] = force_stress_dict
             print "calculation of phi and psi finished\n--------------------------------------------------------------"
             print self.fitted_data.data_dict
+
+    def kick_out_some_points(self, filename):
+        file = open(filename)
+        lines = file.readlines()
+        bad_data_list = []
+        for line in lines:
+            # line.strip()
+            if '#' in line:
+                continue
+            split = re.split('\s+', line.strip())
+            phase, force, phi, psi, h, k, l= split
+            phase = int(phase)
+            psi = deg_to_rad(float(psi))
+            phi = deg_to_rad(float(phi))
+            h, k, l = int(h), int(k), int(l)
+            bad_data_list.append([phase, force, phi, psi, h, k, l])
+        file.close()
+        for phase, force, phi, psi, h, k, l in bad_data_list:
+            data_D = self.fitted_data.data_dict_D[phase][force]
+            for i in xrange(len(data_D[0])):
+                phi_, psi_, h_, k_, l_ = data_D[0][i]
+                if abs(phi_ - phi) < 0.0001 and abs(psi_ - psi) < 0.0001 \
+                        and h == int(h_) and k == int(k_) and l == int(l_):
+                    self.fitted_data.data_dict_D[phase][force][1][i] = [float('nan'), float('nan'),
+                                                                        float('nan'), float('nan')]
+
+        self.calc_epsilon_with_Dmes_D_0mes()
+        return self.plot_D_cos2psi()
+
+
 
 
 class SPODIData(Data):
@@ -227,7 +258,7 @@ class SPODIData(Data):
         data_files = []
         for i in list_of_dirs:  # get all files from the selected directories
             data_files_ = i + "*.dat"
-            print data_files_
+            # print data_files_
             data_files_ = glob(str(data_files_))
             if len(data_files_)==0:
                 data_files_ = i + "*.eth"
@@ -435,7 +466,7 @@ class SPODIData(Data):
                         h_0, k_0, l_0, two_theta_0, two_theta_error_0 = hkl_2_theta_0
                         # print "omega_0: {0:d}, chi_0: {1:d}".format(int(omega_0), int(chi_0))
                         # print "omega: {0:d}, chi: {1:d}".format(int(omega), int(chi))
-                        if not (int(omega) == int(omega_0) and int(chi) == int(chi_0) and int(h) == int(h_0) and int(
+                        if not (abs(omega -omega_0)<0.0001 and abs(chi - chi_0)<0.0001 and int(h) == int(h_0) and int(
                                 k) == int(k_0) and int(l) == int(l_0)):
                             print "######################################################################"
                             print "mismatch"
@@ -449,11 +480,19 @@ class SPODIData(Data):
 
                         psi = self.psii(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta_0 / 2,
                                         chi=chi, omega=omega)
+                        if (np.isnan(phi) or np.isnan(psi)):
+                            phi_ = self.PHII(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta / 2,
+                                        chi=chi, omega=omega)
+                            psi_ = self.psii(chi_of_scatteringvector=90, theta=two_theta / 2, theta_o=two_theta / 2,
+                                        chi=chi, omega=omega)
+                            print "force: {7},  hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
+                                format(int(omega), int(chi), r_t_d(phi_), r_t_d(psi_), int(h), int(k), int(l), force)
+
                         if not (np.isnan(phi) or np.isnan(psi)):
                             # if chi != 90:
                             phi_psi_hkl.append([phi, psi, h, k, l])
-                            print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
-                                format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
+                            print "force: {7},  hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
+                                format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l), force)
 
                             strain, strain_error = self.delta_epsilon(two_theta=two_theta,
                                                                       two_theta_0=two_theta_0,
@@ -506,8 +545,8 @@ class SPODIData(Data):
                     if not (np.isnan(phi) or np.isnan(psi)):
                         # if chi != 90:
                         phi_psi_hkl.append([phi, psi, h, k, l])
-                        print "hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:.2f}, psi: {3:.2f}". \
-                            format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l))
+                        print "force: {7}, hkl: {4}{5}{6}, omega: {0:d}, chi: {1:d}, phi: {2:f}, psi: {3:f}". \
+                            format(int(omega), int(chi), r_t_d(phi), r_t_d(psi), int(h), int(k), int(l), v)
 
                         D, D_error = self.calc_D(two_theta=two_theta,
                                                  two_theta_err=two_theta_error)
@@ -706,7 +745,7 @@ class SPODIData(Data):
         # print "omega", omega1
         sum_intens = np.zeros((len(self.data_dic_raw['0'][0][4])))
         for i in self.data_dic_raw['0']:
-            print len(i[3]), len(i[4]), len(i[5])
+            # print len(i[3]), len(i[4]), len(i[5])
             if omega1 == i[1]:
                 try:
                     sum_intens += np.array(i[4])
@@ -935,5 +974,5 @@ if __name__ == "__main__":
 
         cplot.plot_coordinatframe(L_1, L_2, L_3, Q=Q, titel=title)
 
-        print "omega: {}, chi: {}, phi: {}, psi: {}".format(omega, chi, phi, psi)
+        # print "omega: {}, chi: {}, phi: {}, psi: {}".format(omega, chi, phi, psi)
     plt.show()

@@ -2278,8 +2278,8 @@ class FitGneupelHerold(FitStrainWithTexture):
                     phi, psi_, h, k, l = phi_psi_hkl_1[i]
                     for j in xrange(len(phi_psi_hkl_2)):
                         phi_2, psi__2, h_2, k_2, l_2 = phi_psi_hkl_2[j]
-                        if abs(phi - phi_2) < 0.001 and abs(
-                                        psi_ - psi__2) < 0.001 and h == h_2 and k == k_2 and l == l_2:
+                        if abs(phi - phi_2) < 0.01 and abs(
+                                        psi_ - psi__2) < 0.01 and h == h_2 and k == k_2 and l == l_2:
                             eps_1, eps_err_1, stress_1, stress_err_1 = eps_strain_1[i]
                             eps_2, eps_err_2, stress_2, stress_err_2 = eps_strain_2[j]
                             hkl_ = str(int(h)) + str(int(k)) + str(int(l))
@@ -2690,8 +2690,16 @@ class LinFit(object):
         return self.residual(self.params, xdata)
 
     def __start_vals(self, x, y):
-        print x, y
-        return y[0], (y[-1]-y[0])/(x[-1]-x[0])
+        slope = []
+        for i in xrange(len(x)-1):
+            slope.append(y[i+1]-y[i])/(x[i+1]-x[i])
+
+        slope=np.average(np.array(slope))
+        y_0 = []
+        for i in xrange(len(x)):
+            y_0.append(y[i]-slope*x[i])
+        y_0 = np.average(np.array(y_0))
+        return y_0, slope
 
 
 

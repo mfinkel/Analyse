@@ -536,7 +536,19 @@ class CentralWidget(QWidget):
         self.plot_data_button.clicked.connect(self.plot_data_fuc)
         self.connect(self, SIGNAL('polefigurevals'), self.show_pole_figure)
         self.connect(self, SIGNAL('result_of_fit'), self.show_result_of_fit)
+        self.kick_button = QPushButton('Kick_out_bad_data')
+        self.kick_button.clicked.connect(self.kick_out_bad_data)
         self.layout_handling()
+
+    def kick_out_bad_data(self):
+        filename = '.\\Bad_Data\\' + str(self.choose_experiment_comb_box.currentText()) + '\\{}_BDATA.dat'.format(
+            self.material.text())
+        p_list = self.data_object.kick_out_some_points(filename)
+        k = 'kicked'
+        self.plot_D_cospsi(p_list, save=self.save_D_0_sin2psi_plots_checkbox.isChecked(), k=k)
+        self.fit_object.data_object = self.data_object
+        self.fit_object_gh.data_object = self.data_object
+        self.fit_object_TT.data_object = self.data_object
 
     def plot_data_fuc(self):
         method = str(self.modi.currentText())
@@ -641,7 +653,7 @@ class CentralWidget(QWidget):
         ticks = []
         dmaxmin = max(v) - min(v)
         number = 10
-        step = float("{:.1f}".format(dmaxmin / 10))
+        step = float("{:.2f}".format(dmaxmin / 10))
         i = 0
         ii = []
         while min(v) < 1 - i * step:
@@ -663,10 +675,15 @@ class CentralWidget(QWidget):
         if not os.path.exists(os.path.dirname(ff )):
             os.makedirs(os.path.dirname(ff))
         ffff = open(ff, 'a')
-        ffff.write('mat: {}, Phase: {}, hkl: {}{}{}, min: {}, max: {}'.format(self.material.text(), self.name_of_phase.text(),
-                                                                         h, k, l, VAL.min(), VAL.max()))
+        ffff.writelines('mat: {}, Phase: {}, hkl: {}{}{}, min: {}, max: {}, lmin: {}, lmax: {}\n'
+                        .format(self.material.text(), self.name_of_phase.text(), h, k, l, VAL.min(), VAL.max(),
+                                self.pfminval.text(), self.pfmaxval.text()))
+        ffff.writelines(['{}, '.format(item) for item in ticks])
+        ffff.write('\n')
+
         ffff.close()
-        print('mat: {}, Phase: {}, hkl: {}{}{}, min: {}, max: {}'.format(self.material.text(), self.name_of_phase.text(),
+        print('mat: {}, Phase: {}, hkl: {}{}{}, min: {}, max: {}'.format(self.material.text(),
+                                                                         self.name_of_phase.text(),
                                                                          h, k, l, VAL.min(), VAL.max()))
 
         def mapr(r):
@@ -1041,7 +1058,7 @@ class CentralWidget(QWidget):
             plt.savefig(filename + ".png", format="png")
         plt.show()
 
-    def plot_D_cospsi(self, plot_list, save=False):
+    def plot_D_cospsi(self, plot_list, save=False, k=False):
         material = str(self.material.text())
         instrument = str(self.choose_experiment_comb_box.currentText())
 
@@ -1063,7 +1080,10 @@ class CentralWidget(QWidget):
             phase = plot_dict['Phase']
             hkl = plot_dict['hkl']
             phase = self.name_of_phase_dic[int(phase)]
-            figname = '{}, {}, hkl {}'.format(material, phase, hkl)
+            if not k:
+                figname = '{}, {}, hkl {}'.format(material, phase, hkl)
+            else:
+                figname = '{}, {}, hkl {}, {}'.format(material, phase, hkl, k)
             force_dict = plot_dict['data']
             plt.figure(figname)
 
@@ -1194,6 +1214,7 @@ class CentralWidget(QWidget):
         layout_load_data_h2.addWidget(self.checkBoxPlotFits)
         layout_load_data_h2.addWidget(self.save_D_0_sin2psi_plots_checkbox)
         layout_load_data_h2.addWidget(self.load_data_button)
+        layout_load_data_h3.addWidget(self.kick_button)
         layout_load_data_h3.addWidget(self.label('D_0 [Angstroem] phase 1:'))
         layout_load_data_h3.addWidget(self.D_0_1)
         layout_load_data_h3.addWidget(self.label('D_0 [Angstroem] phase 2:'))
