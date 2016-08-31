@@ -601,8 +601,8 @@ class CentralWidget(QWidget):
         for hkl in HKL_List:
 
             h = int(hkl[0])
-            k = int(hkl[0])
-            l = int(hkl[0])
+            k = int(hkl[1])
+            l = int(hkl[2])
             if str(self.fit_phase_combbox.currentText()) == "1":
                 theta, r, VAL = self.data_object.odf_phase_1.plot_polfigure(h, k, l)
             if str(self.fit_phase_combbox.currentText()) == "2":
@@ -659,7 +659,15 @@ class CentralWidget(QWidget):
         # set ticks for psi
         ticklables = np.rad2deg(r[0])
 
-        print('min: {}, max: {}'.format(VAL.min(), VAL.max()))
+        ff = '.\\PF\\'+ str(self.material.text()) + '\\' + 'extremvals.dat'
+        if not os.path.exists(os.path.dirname(ff )):
+            os.makedirs(os.path.dirname(ff))
+        ffff = open(ff, 'a')
+        ffff.write('mat: {}, Phase: {}, hkl: {}{}{}, min: {}, max: {}'.format(self.material.text(), self.name_of_phase.text(),
+                                                                         h, k, l, VAL.min(), VAL.max()))
+        ffff.close()
+        print('mat: {}, Phase: {}, hkl: {}{}{}, min: {}, max: {}'.format(self.material.text(), self.name_of_phase.text(),
+                                                                         h, k, l, VAL.min(), VAL.max()))
 
         def mapr(r):
             """
@@ -680,6 +688,7 @@ class CentralWidget(QWidget):
         # p1.ax.set_tichlabels(ticklables)
         # axs.set_yticks(ticklabels=ticklables)
         axs.set_title("pole figure {}{}{}\n".format(h, k, l))
+        plt.gcf().tight_layout()
 
         # draw the contourplot
         p1 = axs.contourf(theta, r, VAL, v)  # 100,,  vmin=0.7, vmax=1.8
@@ -688,10 +697,12 @@ class CentralWidget(QWidget):
 
         # axs.set_theta_zero_location("S")
         # axs.set_theta_offset(pi)
-        filename = '.\\PF' + str(self.material.text()) + '\\' + str(self.name_of_phase.text())+'_'+str(h)+str(k)+str(l) + ".svg"
-        if not os.path.exists(os.path.dirname(filename)):
-                os.makedirs(os.path.dirname(filename))
-        plt.savefig(filename, format="svg")
+        filename = '.\\PF\\' + str(self.material.text()) + '\\' + str(self.name_of_phase.text()) + '_' + str(h) + str(
+            k) + str(l)
+        if not os.path.exists(os.path.dirname(filename + ".svg")):
+            os.makedirs(os.path.dirname(filename + ".svg"))
+        plt.savefig(filename + ".svg", format="svg")
+        plt.savefig(filename + ".pdf", format="pdf")
 
         plt.show()
 
