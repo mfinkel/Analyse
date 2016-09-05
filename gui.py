@@ -704,16 +704,19 @@ class CentralWidget(QWidget):
         axs.yaxis.set_ticklabels(ticklables)
         # p1.ax.set_tichlabels(ticklables)
         # axs.set_yticks(ticklabels=ticklables)
-        axs.set_title("pole figure {}{}{}\n".format(h, k, l))
+        axs.set_title("Polefigur: {}{}{}\n".format(h, k, l))
         plt.gcf().tight_layout()
-
+        axs.set_theta_zero_location("N")
+        # axs.set_theta_offset(np.pi/2)
+        axs.set_theta_direction(-1)  # 'counterclockwise'
         # draw the contourplot
+        p1 = axs.contourf(theta, r, VAL, v)  # 100,,  vmin=0.7, vmax=1.8
+        p1 = axs.contourf(theta, r, VAL, v)  # 100,,  vmin=0.7, vmax=1.8
         p1 = axs.contourf(theta, r, VAL, v)  # 100,,  vmin=0.7, vmax=1.8
         cbar = plt.colorbar(p1, ax=axs, ticks=ticks)  # , ticks=v)  # norm=mpl.colors.Normalize(vmin=0.7, vmax=1.8))
         # cbar.set_clim(0.7, 1.8)
 
-        # axs.set_theta_zero_location("S")
-        # axs.set_theta_offset(pi)
+
         filename = '.\\PF\\' + str(self.material.text()) + '\\' + str(self.name_of_phase.text()) + '_' + str(h) + str(
             k) + str(l)
         if not os.path.exists(os.path.dirname(filename + ".svg")):
@@ -1082,11 +1085,12 @@ class CentralWidget(QWidget):
             phase = self.name_of_phase_dic[int(phase)]
             if not k:
                 figname = '{}, {}, hkl {}'.format(material, phase, hkl)
+                title = '{}, {}, hkl {}'.format(material, phase, hkl)
             else:
                 figname = '{}, {}, hkl {}, {}'.format(material, phase, hkl, k)
+                title = '{}, {}, hkl {}'.format(material, phase, hkl)
             force_dict = plot_dict['data']
             plt.figure(figname)
-
             force_list = sorted(force_dict.keys())
             for force in force_list:
                 data = force_dict[force]
@@ -1099,7 +1103,8 @@ class CentralWidget(QWidget):
 
                 # plt.plot(Psi, val, 'r-',
                 #          label="s1 = {:.3g} $\pm$ {:.3g}\ns2 = {:.3g} $\pm$ {:.3g}".format(s1, s1err, s2, s2err))
-
+            plt.gca().set_title(title)
+            plt.gcf().tight_layout()
             plt.xlabel('$\cos^2(\Psi)$')
             plt.ylabel('$D_{0}\ [\AA]$')
             ax = plt.gca()

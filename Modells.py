@@ -674,8 +674,8 @@ class FitStrainWithTexture(object):
             params.add('c_11_p1', value=220 * np.power(10., 9), min=0 * np.power(10., 9), max=600. * np.power(10., 9))
             params.add('c_12_p1', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
         elif sym == "m-3m":
-            params.add('c_11_p1', value=240 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_12_p1', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_11_p1', value=240 * np.power(10., 9), min=50. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12_p1', value=120 * np.power(10., 9), min=20. * np.power(10., 9), max=600. * np.power(10., 9))
             # params.add('z_p1', value=3.18, min=1.5, max=3.5)
             params.add('c_44_p1', value=115 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))  # ,
                        # expr='(z_p1 / 2) * (c_11_p1 - c_12_p1)')
@@ -692,8 +692,8 @@ class FitStrainWithTexture(object):
             params.add('c_11_p2', value=220 * np.power(10., 9), min=0 * np.power(10., 9), max=600. * np.power(10., 9))
             params.add('c_12_p2', value=126 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
         elif sym == "m-3m":
-            params.add('c_11_p2', value=230 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
-            params.add('c_12_p2', value=120 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_11_p2', value=230 * np.power(10., 9), min=50. * np.power(10., 9), max=600. * np.power(10., 9))
+            params.add('c_12_p2', value=120 * np.power(10., 9), min=20. * np.power(10., 9), max=600. * np.power(10., 9))
             # params.add('z_p2', value=2.45, min=1.5, max=3.5)
             params.add('c_44_p2', value=115 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))  # ,
                        # expr='(z_p2 / 2) * (c_11_p2 - c_12_p2)')
@@ -2676,6 +2676,21 @@ class LinFit(object):
         if a_const:
             params['a'].vary = False
             params['a'].value = 0
+        if self.ydata is not None:  # remove 'nan' data
+            xdata=[]
+            ydata=[]
+            ydataerr=[]
+            for i in xrange(len(self.xdata)):
+                if not (np.isnan(self.xdata[i]) or np.isnan(self.ydata[i])):
+                    xdata.append(self.xdata[i])
+                    ydata.append(self.ydata[i])
+                if self.ydataerr is not None:
+                    if not np.isnan(self.ydataerr[i]):
+                        ydataerr.append(self.ydataerr[i])
+            if self.ydataerr is not None:
+                self.ydataerr=ydataerr
+            self.xdata=xdata
+            self.ydata=ydata
         result = lm.minimize(self.residual, params, args=(self.xdata,),
                              kws={'ydata': self.ydata, 'weight': self.ydataerr})
         # res = [out.params["center"].value, out.params["center"].stderr]
@@ -2691,16 +2706,25 @@ class LinFit(object):
 
     def __start_vals(self, x, y):
         slope = []
-        for i in xrange(len(x)-1):
-            slope.append(y[i+1]-y[i])/(x[i+1]-x[i])
-
+        for step in xrange(len(x)-1):
+            for i in xrange(len(x)-step):
+                try:
+                    s= (y[i+step]-y[i])/(x[i+step]-x[i])
+                    if not np.isnan(s):
+                        slope.append(s)
+                except TypeError:
+                    continue
         slope=np.average(np.array(slope))
         y_0 = []
         for i in xrange(len(x)):
-            y_0.append(y[i]-slope*x[i])
+            try:
+                yy=y[i]-slope*x[i]
+                if not np.isnan(yy):
+                    y_0.append(yy)
+            except TypeError:
+                continue
         y_0 = np.average(np.array(y_0))
         return y_0, slope
-
 
 
 def cli_progress_test_voigt(i, end_val, tuple, bar_length=20):
@@ -2982,8 +3006,9 @@ class ODF(object):
         :param phi2: arbitrary angle
         :return: rotation matrix
         """
-        # phi += np.pi / 2
-
+        # phi += np.pi / 2.
+        phi -= np.pi / 2.
+        phi = - phi
         res = np.array([[-np.cos(psi) * np.cos(phi) * np.sin(phi2) - np.sin(phi) * np.cos(phi2),
                          -np.cos(psi) * np.sin(phi) * np.sin(phi2) + np.cos(phi) * np.cos(phi2),
                          np.sin(psi) * np.sin(phi2)],

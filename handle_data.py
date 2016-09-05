@@ -225,15 +225,28 @@ class Data(object):
             data_D = self.fitted_data.data_dict_D[phase][force]
             for i in xrange(len(data_D[0])):
                 phi_, psi_, h_, k_, l_ = data_D[0][i]
-                if abs(phi_ - phi) < 0.0001 and abs(psi_ - psi) < 0.0001 \
+                if abs(phi_ - phi) < 0.001 and abs(psi_ - psi) < 0.0001 \
                         and h == int(h_) and k == int(k_) and l == int(l_):
                     self.fitted_data.data_dict_D[phase][force][1][i] = [float('nan'), float('nan'),
                                                                         float('nan'), float('nan')]
-
+        self.remove_nan()
         self.calc_epsilon_with_Dmes_D_0mes()
         return self.plot_D_cos2psi()
 
-
+    def remove_nan(self):
+        data_D_dict = {}
+        for phase, forcedict in self.fitted_data.data_dict_D.iteritems():
+            data_D_dict[phase]={}
+            for force, data in forcedict.iteritems():
+                data_D_dict[phase][force] = [[], []]
+                phi_psi_hkl, d_de_s_se = data
+                for i in xrange(len(phi_psi_hkl)):
+                    phi, psi, h, k, l = phi_psi_hkl[i]
+                    d, de, s, se = d_de_s_se[i]
+                    if not (np.isnan(phi) or np.isnan(psi) or np.isnan(d) or np.isnan(de) or np.isnan(s) or np.isnan(se)):
+                        data_D_dict[phase][force][0].append([phi, psi, h, k, l])
+                        data_D_dict[phase][force][1].append([d, de, s, se])
+        self.fitted_data.data_dict_D = data_D_dict
 
 
 class SPODIData(Data):
