@@ -3101,13 +3101,19 @@ class ODF(object):
 
     def calc_eulerangles(self, r, h, k, l):
         """
-        need the angles phi, psi in rad
-        :param r:
-        :param h:
-        :param k:
-        :param l:
-        :return: eulerangles in rad
-        """
+        method to calculate the euler angles out of the angles phi, psi and phi_2
+        describing measurement direction
+        in terms of the specimen frame S, and the
+        Millerindizes h, k, l of the scattering plane.
+        r is the angle describing the rotation of the crystallites around
+        the measurement direction.
+        :param r: rotation around measurement direction
+        :param h: Miller index
+        :param k: Miller index
+        :param l: Miller index
+        :return: euler angles in rad
+		"""
+
         self.__params['phi2_'] = r
         phi_ = self.__params["phi"]
         psi = self.__params["psi"]
