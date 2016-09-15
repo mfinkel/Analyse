@@ -154,10 +154,11 @@ class Data(object):
         print hkl_list_dict
         self.hkl_list_dict = hkl_list_dict
         return hkl_list_dict
+
     @staticmethod
     def calceps_deps(d, derr, d_0, d_0err):
         strain = (d - d_0) / d_0
-        strainerr = derr / d_0 + (d * d_0err) / (d_0 ** 2)
+        strainerr = np.sqrt((derr / d_0)**2 + ((d * d_0err) / (d_0 ** 2))**2)
         return strain, strainerr
 
     def calc_epsilon_with_Dmes_D_0mes(self):
@@ -770,8 +771,8 @@ class SPODIData(Data):
         D = self.wavelength/(2*np.sin(np.deg2rad(two_theta/2.)))
         theta = np.deg2rad(two_theta/2)
         theta_error = np.deg2rad(two_theta_err/2)
-        wavelength_error = self.wavelength*0.0001
-        D_error = D*(wavelength_error/self.wavelength-(1/np.tan(theta))*theta_error)
+        wavelength_error = 0
+        D_error = self.wavelength * np.cos(theta)/(2 * np.sin(theta)**2) * theta_error  # D*(wavelength_error/self.wavelength-(1/np.tan(theta))*theta_error)
         return D, D_error
 
 
@@ -839,8 +840,10 @@ class AllData(Data):
                         #     print phase, force, phi, psi, h, k, l, strain
             except KeyError:
                 pass
+        self.remove_nan()
         self.create_hkl_data_dict()
         self.calc_epsilon_with_Dmes_D_0mes()
+
         # print self.fitted_data.data_dict_D
 
     def just_read_data(self, filename):

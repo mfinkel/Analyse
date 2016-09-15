@@ -2710,7 +2710,7 @@ class LinFit(object):
             for i in xrange(len(x)-step):
                 try:
                     s= (y[i+step]-y[i])/(x[i+step]-x[i])
-                    if not np.isnan(s):
+                    if not np.isnan(s) and not np.isinf(s):
                         slope.append(s)
                 except TypeError:
                     continue
@@ -2719,7 +2719,7 @@ class LinFit(object):
         for i in xrange(len(x)):
             try:
                 yy=y[i]-slope*x[i]
-                if not np.isnan(yy):
+                if not np.isnan(yy) and not np.isinf(yy):
                     y_0.append(yy)
             except TypeError:
                 continue
@@ -3006,9 +3006,9 @@ class ODF(object):
         :param phi2: arbitrary angle
         :return: rotation matrix
         """
-        # phi += np.pi / 2.
-        phi -= np.pi / 2.
-        phi = - phi
+        phi += np.pi / 2.
+        # phi -= np.pi / 2.
+        # phi = - phi
         res = np.array([[-np.cos(psi) * np.cos(phi) * np.sin(phi2) - np.sin(phi) * np.cos(phi2),
                          -np.cos(psi) * np.sin(phi) * np.sin(phi2) + np.cos(phi) * np.cos(phi2),
                          np.sin(psi) * np.sin(phi2)],

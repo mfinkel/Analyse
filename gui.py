@@ -30,6 +30,11 @@ import thread
 from multiprocessing import Process, Queue  # processing ,freezeSupport
 from time import sleep
 
+font = {'family' : 'normal',
+        'weight' : 'bold',
+        'size'   : 25}
+
+mpl.rc('font', **font)
 
 class insert_const_widget(QWidget):
     def __init__(self, *args):
@@ -704,11 +709,11 @@ class CentralWidget(QWidget):
         axs.yaxis.set_ticklabels(ticklables)
         # p1.ax.set_tichlabels(ticklables)
         # axs.set_yticks(ticklabels=ticklables)
-        axs.set_title("Polefigur: {}{}{}\n".format(h, k, l))
+        axs.set_title("Polefigur {}{}{}\n".format(h, k, l))
         plt.gcf().tight_layout()
         axs.set_theta_zero_location("N")
         # axs.set_theta_offset(np.pi/2)
-        axs.set_theta_direction(-1)  # 'counterclockwise'
+        # axs.set_theta_direction(-1)  # 'counterclockwise'
         # draw the contourplot
         p1 = axs.contourf(theta, r, VAL, v)  # 100,,  vmin=0.7, vmax=1.8
         p1 = axs.contourf(theta, r, VAL, v)  # 100,,  vmin=0.7, vmax=1.8
@@ -1064,7 +1069,11 @@ class CentralWidget(QWidget):
     def plot_D_cospsi(self, plot_list, save=False, k=False):
         material = str(self.material.text())
         instrument = str(self.choose_experiment_comb_box.currentText())
+        # font = {'family' : 'normal',
+        #'weight' : 'bold',
+        # 'size'   : 22}
 
+        # mpl.rc('font', **font)
         def calc_D_0(D_hkl, hkl):
             '''
             calc D_0 for cubic systems
@@ -1104,11 +1113,14 @@ class CentralWidget(QWidget):
                 # plt.plot(Psi, val, 'r-',
                 #          label="s1 = {:.3g} $\pm$ {:.3g}\ns2 = {:.3g} $\pm$ {:.3g}".format(s1, s1err, s2, s2err))
             plt.gca().set_title(title)
-            plt.gcf().tight_layout()
-            plt.xlabel('$\cos^2(\Psi)$')
-            plt.ylabel('$D_{0}\ [\AA]$')
+            plt.gca().title.set_fontsize(24)
+            for item in (plt.gca().get_xticklabels() + plt.gca().get_yticklabels()):
+                item.set_fontsize(20)
+            plt.xlabel('$\cos^2(\Psi)$', fontsize=22)
+            plt.ylabel('Gitterkonstante $a\ [\AA]$', fontsize=22)
             ax = plt.gca()
             ax.get_yaxis().get_major_formatter().set_useOffset(False)  # shutt of the Offset
+            plt.gcf().tight_layout()
             # ax.get_yaxis().get_major_formatter().set_scientific(False)  # shut of scientific notation
             # plt.yscale('log')  # set log scale, not good for small values
             try:
@@ -1118,6 +1130,8 @@ class CentralWidget(QWidget):
             plt.xlim([0, 1])
 
             if save:
+                figname = figname.replace(', ', '_')
+                figname = figname.replace(' ', '_')
                 print("savefig, ", figname, ".svg")
                 filename = ".\\sin2psi-D-plots\\" + instrument + '\\' + material + '\\' + figname + ".svg"
                 if not os.path.exists(os.path.dirname(filename)):
