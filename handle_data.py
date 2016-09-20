@@ -52,14 +52,17 @@ class Data(object):
         :return: stress
         """
         sample_diameter = float(self.sample_diameter) * np.power(10., -3.)
-        area = (sample_diameter) ** 2 / 4 * np.pi
         force = force * np.power(10., 3)
         if force <= 1:  # consider the 200N load at the unloaded case
             force = 200
-        stress = force / area
-        stress_error = np.sqrt((force * 0.02 / ((self.sample_diameter / 2) ** 2 * np.pi)) ** 2
-                               + (2 * force / ((self.sample_diameter / 2) ** 3 * np.pi) * (
-            self.sample_diameter / 2) * 0.05) ** 2)
+        stress = (4 * force) / (np.pi * sample_diameter**2)
+        # stress_error = np.sqrt((force * 0.02 / ((self.sample_diameter / 2) ** 2 * np.pi)) ** 2
+        #                        + (2 * force / ((self.sample_diameter / 2) ** 3 * np.pi) * (
+        #     self.sample_diameter / 2) * 0.05) ** 2)
+        dforce = force * 0.01
+        dd = sample_diameter * 0.005
+        stress_error = (4/(np.pi * sample_diameter**2)) * np.sqrt(dforce ** 2 + (force * dd/sample_diameter) ** 2)
+
         return stress, stress_error
 
     def calc_D_hkl(self, h, k, l, phase=1):
@@ -186,7 +189,7 @@ class Data(object):
                         phi, psi, h, k, l = force_dict[force][0][n]
                         D, D_err, stress, stress_err = force_dict[force][1][n]
 
-                        for j in xrange(len(force_dict['0'][0])):# vals of the unstraind data
+                        for j in xrange(len(force_dict['0'][0])):  # vals of the unstraind data
                             phi_0, psi_0, h_0, k_0, l_0 = force_dict['0'][0][j]
                             D_0, D_0_err, stress_0, stress_err_0 = force_dict['0'][1][j]
                             if (abs(float(phi) - float(phi_0)) < np.power(10., -2)
@@ -203,7 +206,8 @@ class Data(object):
                     force_stress_dict[force] = [phi_psi_hkl, strain_stress]
 
             self.fitted_data.data_dict[phase] = force_stress_dict
-            print "calculation of phi and psi finished\n--------------------------------------------------------------"
+            print "calculation of phi and psi finished" \
+                  "\n--------------------------------------------------------------\n"
             print self.fitted_data.data_dict
 
     def kick_out_some_points(self, filename):
@@ -777,8 +781,8 @@ class SPODIData(Data):
 
 
 class AllData(Data):
-    def __init__(self, odf_phase_1_file=None, odf_phase_2_file=None):
-        super(AllData, self).__init__(odf_phase_1_file=odf_phase_1_file, odf_phase_2_file=odf_phase_2_file)
+    def __init__(self, sample_diameter, odf_phase_1_file=None, odf_phase_2_file=None):
+        super(AllData, self).__init__(sample_diameter=sample_diameter, odf_phase_1_file=odf_phase_1_file, odf_phase_2_file=odf_phase_2_file)
         self.data_dic_raw = {}  # a dictionary containing the raw data, the key is the applied force, the values
         # are lists of all measured orientation angles with the measured two_theta, intens, error data
         self.data_dic_phases = {}  # dictionary containing dictionaries of all peaks of the different phases
@@ -817,9 +821,9 @@ class AllData(Data):
                     dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
                     dic[phase][force][1].append([float(D)*np.power(10., -10.), float(D_err)*np.power(10., -10.),
                                                  float(stress), float(stresserr)])
-                else:
-                    dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
-                    dic[phase][force][1].append([float('nan'), float('nan'), float('nan'), float('nan')])
+                # else:
+                #     dic[phase][force][0].append([float(phi), float(psi), int(h), int(k), int(l)])
+                #     dic[phase][force][1].append([float('nan'), float('nan'), float('nan'), float('nan')])
 
         data.close()
         phase_keys = dic.keys()
@@ -840,7 +844,7 @@ class AllData(Data):
                         #     print phase, force, phi, psi, h, k, l, strain
             except KeyError:
                 pass
-        self.remove_nan()
+        # self.remove_nan()
         self.create_hkl_data_dict()
         self.calc_epsilon_with_Dmes_D_0mes()
 

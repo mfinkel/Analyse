@@ -53,6 +53,13 @@ class InParams(object):
                        's1_err': None,
                        's2_err': None}
 
+    def reset(self):
+        self.__dict = {'hkl': None,
+                       's1': None,
+                       's2': None,
+                       's1_err': None,
+                       's2_err': None}
+
     def set_data(self, hkl=None, s1=None, s2=None,
                  s1_err=None, s2_err=None,
                  exp=False, EXP=1e-12
@@ -1140,8 +1147,8 @@ class FitStrainWithTexture(object):
                 # data_mat.append(strain_mat)
                 # data_fit_err.append(abs(strain_fit / stress_fit) * (abs(strain_fit_err / strain_fit) +
                 #                                                     abs(stress_fit_err / stress_fit)))
-                data_fit_err.append(np.sqrt(
-                    (strain_fit_err / stress_fit) ** 2 + ((strain_fit / stress_fit ** 2) * stress_fit_err) ** 2))
+                data_fit_err.append(self.calc_error_of_strain_over_stress(strain=strain_fit, strain_err=strain_fit_err,
+                                                                          stress=stress_fit, stress_err=stress_fit_err))
                 # data_mat_err.append(strain_mat_err)
 
                 theory_val = 0.
@@ -1255,8 +1262,8 @@ class FitStrainWithTexture(object):
                 strain_fit, strain_fit_err, stress_fit, stress_fit_err = strain_stress_data_fitted[n][m]
                 data_fit.append(strain_fit / stress_fit)
                 # data_mat.append(strain_mat)
-                data_fit_err.append(np.sqrt(
-                    (strain_fit_err / stress_fit) ** 2 + ((strain_fit / stress_fit ** 2) * stress_fit_err) ** 2))
+                data_fit_err.append(self.calc_error_of_strain_over_stress(strain=strain_fit, strain_err=strain_fit_err,
+                                                                          stress=stress_fit, stress_err=stress_fit_err))
                 # data_mat_err.append(strain_mat_err)
                 sigma_11 = params["sigma_11"].value  # * stress_fit
                 sigma_22 = params["sigma_22"].value  # * stress_fit
@@ -2202,7 +2209,7 @@ class FitStrainWithTexture(object):
 
     @staticmethod
     def calc_error_of_strain_over_stress(strain, stress, strain_err, stress_err):
-        error = np.sqrt((strain_err / stress) ** 2 + ((strain / stress ** 2) * stress_err) ** 2)
+        error = (strain/stress) * np.sqrt((strain_err / float(strain))**2 + (stress_err / float(stress))**2)
         return error
 
     # def calc_epsilon_dict(self, force_dict):
@@ -2258,42 +2265,54 @@ class FitGneupelHerold(FitStrainWithTexture):
             # for i in force_keys:
             print "Forces", force_keys
             try:
-                if len(force_keys) < 2:
-                    force_2 = force_keys[0]
+                # calculation with delta strain / delta stress
+                # if len(force_keys) < 2:
+                #     force_2 = force_keys[0]
+                #     phi_psi_hkl_2, eps_strain_2 = force_dict[force_2]
+                #     phi_psi_hkl_1 = phi_psi_hkl_2
+                #     eps_strain_1 = []
+                #     for m in xrange(len(eps_strain_2)):
+                #         eps_strain_1.append([0, 0, 0, 0])
+                # else:
+                #     force_1 = force_keys[0]
+                #     force_2 = force_keys[1]
+                #     if float(force_1) > float(force_2):
+                #         force_1_temp = force_1
+                #         force_1 = force_2
+                #         force_2 = force_1_temp
+                #     phi_psi_hkl_1, eps_strain_1 = force_dict[force_1]
+                #     phi_psi_hkl_2, eps_strain_2 = force_dict[force_2]
+
+                # calculation with strain / stress
+                for force_2 in force_keys:
+                    # force_2 = force_keys[0]
+                    if force_2=="0" or force_2=="0.0":
+                        continue
                     phi_psi_hkl_2, eps_strain_2 = force_dict[force_2]
                     phi_psi_hkl_1 = phi_psi_hkl_2
                     eps_strain_1 = []
-                    for m in xrange(len(eps_strain_2)):
+                    for m in xrange(len(phi_psi_hkl_1)):
                         eps_strain_1.append([0, 0, 0, 0])
-                else:
-                    force_1 = force_keys[0]
-                    force_2 = force_keys[1]
-                    if float(force_1) > float(force_2):
-                        force_1_temp = force_1
-                        force_1 = force_2
-                        force_2 = force_1_temp
-                    phi_psi_hkl_1, eps_strain_1 = force_dict[force_1]
-                    phi_psi_hkl_2, eps_strain_2 = force_dict[force_2]
-                for i in xrange(len(phi_psi_hkl_1)):
-                    phi, psi_, h, k, l = phi_psi_hkl_1[i]
-                    for j in xrange(len(phi_psi_hkl_2)):
-                        phi_2, psi__2, h_2, k_2, l_2 = phi_psi_hkl_2[j]
-                        if abs(phi - phi_2) < 0.01 and abs(
-                                        psi_ - psi__2) < 0.01 and h == h_2 and k == k_2 and l == l_2:
-                            eps_1, eps_err_1, stress_1, stress_err_1 = eps_strain_1[i]
-                            eps_2, eps_err_2, stress_2, stress_err_2 = eps_strain_2[j]
-                            hkl_ = str(int(h)) + str(int(k)) + str(int(l))
-                            print phi, phi_2, psi_, psi__2, hkl_
-                            if hkl_ in hkl_data_dict[phase].keys():
-                                hkl_data_dict[phase][hkl_][0].append(np.cos(psi_) ** 2)
-                                hkl_data_dict[phase][hkl_][1].append((eps_2 - eps_1) / (stress_2 - stress_1))
-                                if len(force_keys) < 2:
+                    for i in xrange(len(phi_psi_hkl_1)):
+                        phi, psi_, h, k, l = phi_psi_hkl_1[i]
+                        for j in xrange(len(phi_psi_hkl_2)):
+                            phi_2, psi__2, h_2, k_2, l_2 = phi_psi_hkl_2[j]
+                            if abs(phi - phi_2) < 0.01 and abs(
+                                            psi_ - psi__2) < 0.01 and h == h_2 and k == k_2 and l == l_2:
+                                eps_1, eps_err_1, stress_1, stress_err_1 = eps_strain_1[i]
+                                eps_2, eps_err_2, stress_2, stress_err_2 = eps_strain_2[j]
+                                hkl_ = str(int(h)) + str(int(k)) + str(int(l))
+                                print phi, phi_2, psi_, psi__2, hkl_
+                                if hkl_ in hkl_data_dict[phase].keys():
+                                    hkl_data_dict[phase][hkl_][0].append(np.cos(psi_) ** 2)
+                                    hkl_data_dict[phase][hkl_][1].append((eps_2 - eps_1) / (stress_2 - stress_1))
+                                    # if len(force_keys) < 2:
                                     err_1 = 0
-                                else:
-                                    err_1 = self.calc_error_of_strain_over_stress(eps_1, stress_1, eps_err_1, stress_err_1)
-                                err_2 = self.calc_error_of_strain_over_stress(eps_2, stress_2, eps_err_2, stress_err_2)
-                                err = (err_1+err_2)
-                                hkl_data_dict[phase][hkl_][2].append(err)
+                                    # else:
+                                    #     err_1 = self.calc_error_of_strain_over_stress(eps_1, stress_1, eps_err_1, stress_err_1)
+                                    err_2 = self.calc_error_of_strain_over_stress(eps_2, stress_2, eps_err_2, stress_err_2)
+                                    err = (err_1+err_2)
+                                    hkl_data_dict[phase][hkl_][2].append(err)
             except IndexError:
                 pass
 
@@ -2397,7 +2416,7 @@ class FitGneupelHerold(FitStrainWithTexture):
             # self.plot_data(h, k, l, phase, params=result.params, with_fit=True, method=method)
         # self.plot_data_gamma(Gamma, phase, s1, s1_err, s2, s2_err, params=result.params, method=method)
         nice_result = self.__print_result(result,  date_of_fit=date, method=fit_method)
-
+        self.Data.reset()
         filename = path + filename
         filename = self.save_data(filename, material, phase_name, nice_result, instrument)
         return result, filename, plots_dic

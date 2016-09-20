@@ -698,6 +698,10 @@ class CentralWidget(QWidget):
             """
             return np.rad2deg(np.arctan(r)*2)
 
+        def conv_p_to_c(flo):
+            a, b = str(flo).split('.')
+            return '{},{:d}'.format(a, int(b))
+
         # make the plot
         fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
 
@@ -705,7 +709,7 @@ class CentralWidget(QWidget):
         print("yticks: ", axs.get_yticks())
         ticklables = []
         for i in mapr(axs.get_yticks()):
-            ticklables.append(float('{:.1f}'.format(i)))
+            ticklables.append(conv_p_to_c('{:.1f}'.format(i)))  # float('{:.1f}'.format(i)))
         axs.yaxis.set_ticklabels(ticklables)
         # p1.ax.set_tichlabels(ticklables)
         # axs.set_yticks(ticklabels=ticklables)
@@ -823,7 +827,8 @@ class CentralWidget(QWidget):
               "odf1_path:", self.path_of_odf_phase1,
               "\nodf2_path:", self.path_of_odf_phase2,
               "\n############################################")
-        self.data_object = handle_data.AllData(odf_phase_1_file=self.path_of_odf_phase1,
+        self.data_object = handle_data.AllData(sample_diameter=int(str(self.diameter.text())),
+                                               odf_phase_1_file=self.path_of_odf_phase1,
                                                odf_phase_2_file=self.path_of_odf_phase2)
 
         self.data_object.read_data(self.path_of_standad_datafile, phase_name_dict=self.name_of_phase_dic)
@@ -1040,6 +1045,10 @@ class CentralWidget(QWidget):
         # self.plot_polefig_button.setEnabled(True)
 
     def cos2psi_plot(self, plots_dic):
+        def conv_p_to_c(flo):
+            a, b = str(flo).split('.')
+            return '{},{:d}'.format(a, int(b))
+
         for figname, data in plots_dic.iteritems():
             xdata, ydata, yerr = data[0]
             Psi, val, s1, s1err, s2, s2err = data[1]
@@ -1049,11 +1058,20 @@ class CentralWidget(QWidget):
 
             plt.plot(Psi, val, 'r-',
                      label="s1 = {:.3g} $\pm$ {:.3g}\ns2 = {:.3g} $\pm$ {:.3g}".format(s1, s1err, s2, s2err))
-
-            plt.xlabel('$\cos^2(\Psi)$')
-            plt.ylabel('$\epsilon/\sigma$')
-            plt.legend(loc='upper left')
+            for item in (plt.gca().get_xticklabels() + plt.gca().get_yticklabels()):
+                item.set_fontsize(18)
+            plt.xlabel('$\cos^2(\Psi)$', fontsize=20)
+            plt.ylabel('$\epsilon/\sigma$ $[GPa^{-1}]$', fontsize=20)
+            plt.legend(loc='upper left', fontsize=18)
             plt.xlim([0, 1])
+            plt.gcf().tight_layout()
+
+            # plt.gca().set_title(title)
+            # plt.gca().title.set_fontsize(24)
+
+            # plt.xlabel('$\cos^2(\Psi)$', fontsize=22)
+            # plt.ylabel('Gitterkonstante $a\ [\AA]$', fontsize=22)
+
             print("savefig, ", figname, ".svg")
             instrumernt = str(self.choose_experiment_comb_box.currentText())
             filename = ".\\sin2psi-plots\\" + instrumernt + '\\' + figname + ".svg"
@@ -1668,7 +1686,7 @@ class LOAD_STANDARD_DATA(QWidget):
         filename = QFileDialog.getOpenFileName(self, 'Open data file ', path)  # '/')  # (self, 'Open ODF File', '/')
         filename = os.path.normpath(str(filename))
         self.path_of_data_file.setText(filename)
-        data = handle_data.AllData()
+        data = handle_data.AllData(sample_diameter=6)
         self.phase_keys, self.material = data.just_read_data(filename)
         if len(self.phase_keys) == 2:
             self.odf_phase_1_path.setReadOnly(False)
