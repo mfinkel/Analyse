@@ -711,10 +711,14 @@ class CentralWidget(QWidget):
         for i in mapr(axs.get_yticks()):
             ticklables.append(conv_p_to_c('{:.1f}'.format(i)))  # float('{:.1f}'.format(i)))
         axs.yaxis.set_ticklabels(ticklables)
+
+        for item in (axs.get_xticklabels() + axs.get_yticklabels()):
+            item.set_fontsize(18)
+
         # p1.ax.set_tichlabels(ticklables)
         # axs.set_yticks(ticklabels=ticklables)
-        axs.set_title("Polefigur {}{}{}\n".format(h, k, l))
-        plt.gcf().tight_layout()
+        axs.set_title("Polfigur {}{}{}\n".format(h, k, l), fontsize=24)
+
         axs.set_theta_zero_location("N")
         # axs.set_theta_offset(np.pi/2)
         # axs.set_theta_direction(-1)  # 'counterclockwise'
@@ -722,9 +726,14 @@ class CentralWidget(QWidget):
         p1 = axs.contourf(theta, r, VAL, v)  # 100,,  vmin=0.7, vmax=1.8
         p1 = axs.contourf(theta, r, VAL, v)  # 100,,  vmin=0.7, vmax=1.8
         p1 = axs.contourf(theta, r, VAL, v)  # 100,,  vmin=0.7, vmax=1.8
+        cbar_tick_labels = []
+        for i in ticks:
+            cbar_tick_labels.append(conv_p_to_c(i))
         cbar = plt.colorbar(p1, ax=axs, ticks=ticks)  # , ticks=v)  # norm=mpl.colors.Normalize(vmin=0.7, vmax=1.8))
+        cbar.set_ticklabels(cbar_tick_labels)
+        cbar.ax.tick_params(labelsize=18)
         # cbar.set_clim(0.7, 1.8)
-
+        plt.gcf().tight_layout()
 
         filename = '.\\PF\\' + str(self.material.text()) + '\\' + str(self.name_of_phase.text()) + '_' + str(h) + str(
             k) + str(l)
@@ -1046,31 +1055,57 @@ class CentralWidget(QWidget):
 
     def cos2psi_plot(self, plots_dic):
         def conv_p_to_c(flo):
-            a, b = str(flo).split('.')
+            try:
+                a, b = str(flo).split('.')
+            except:
+                a=str(flo)
+                b=0
             return '{},{:d}'.format(a, int(b))
+
+        def conv_p_to_c_sientific(flo):
+            string = '{:.3g}'.format(float(flo))
+            try:
+                a, b = string.split('.')
+            except ValueError:
+                a=string
+                b=0
+            return '{},{}'.format(a, b)
 
         for figname, data in plots_dic.iteritems():
             xdata, ydata, yerr = data[0]
             Psi, val, s1, s1err, s2, s2err = data[1]
             plt.figure(figname)
-            plt.errorbar(xdata, ydata, yerr=yerr, fmt='bo', label="Data")
+            plt.errorbar(xdata, ydata, yerr=yerr, fmt='b.', label="Datenpunkte")
             # plots_dic[figname].append([xdata, ydata, yerr])
 
             plt.plot(Psi, val, 'r-',
-                     label="s1 = {:.3g} $\pm$ {:.3g}\ns2 = {:.3g} $\pm$ {:.3g}".format(s1, s1err, s2, s2err))
+                     label="s1 = {} $\pm$ {}\ns2 = {} $\pm$ {}".format(conv_p_to_c_sientific(s1),
+                                                                                   conv_p_to_c_sientific(s1err),
+                                                                                   conv_p_to_c_sientific(s2),
+                                                                                   conv_p_to_c_sientific(s2err)))
+
+            ax = plt.gca()
+            ax.get_yaxis().get_major_formatter().set_useOffset(False)  # shutt of the Offset
+            # ax.gird(True)
+            plt.xlim([0, 1])
+            ticklables_y = []
+            for i in plt.gca().get_yticks():
+                ticklables_y.append(conv_p_to_c('{:.4f}'.format(i*np.power(10., 12))))  # float('{:.1f}'.format(i)))
+            plt.gca().yaxis.set_ticklabels(ticklables_y)
+            # plt.gca().gird(True)
+            ticklables_x = []
+            for i in plt.gca().get_xticks():
+                ticklables_x.append(conv_p_to_c('{:.1f}'.format(i)))  # float('{:.1f}'.format(i)))
+            plt.gca().xaxis.set_ticklabels(ticklables_x)
+
             for item in (plt.gca().get_xticklabels() + plt.gca().get_yticklabels()):
                 item.set_fontsize(18)
-            plt.xlabel('$\cos^2(\Psi)$', fontsize=20)
-            plt.ylabel('$\epsilon/\sigma$ $[GPa^{-1}]$', fontsize=20)
+
+            plt.xlabel('$\cos^2(\psi)$', fontsize=20)
+            plt.ylabel('$\mathcal{F}(\psi,hkl)=\frac{\varepsilon(\psi,hkl)}{\sigma^L_{33}}$ $[TPa^{-1}]$', fontsize=20)
             plt.legend(loc='upper left', fontsize=18)
-            plt.xlim([0, 1])
+
             plt.gcf().tight_layout()
-
-            # plt.gca().set_title(title)
-            # plt.gca().title.set_fontsize(24)
-
-            # plt.xlabel('$\cos^2(\Psi)$', fontsize=22)
-            # plt.ylabel('Gitterkonstante $a\ [\AA]$', fontsize=22)
 
             print("savefig, ", figname, ".svg")
             instrumernt = str(self.choose_experiment_comb_box.currentText())
@@ -1106,6 +1141,10 @@ class CentralWidget(QWidget):
             l = float(hkl[2])
             return D_hkl*np.sqrt(h**2 + k**2 + l**2)
 
+        def conv_p_to_c(flo):
+            a, b = str(float(flo)).split('.')
+            return '{},{:d}'.format(a, int(b))
+
         for plot_dict in plot_list:
             phase = plot_dict['Phase']
             hkl = plot_dict['hkl']
@@ -1122,30 +1161,48 @@ class CentralWidget(QWidget):
             for force in force_list:
                 data = force_dict[force]
                 # color = ColorGenerator()
-                plt.errorbar(data[0], calc_D_0(np.array(data[1]) * np.power(10., 10), hkl),
-                             yerr=calc_D_0(np.array(data[2]) * np.power(10., 10), hkl),
+                plt.errorbar(data[0], np.array(data[1]) * np.power(10., 10),  # calc_D_0(np.array(data[1]) * np.power(10., 10), hkl),
+                             yerr=np.array(data[2]) * np.power(10., 10),  # calc_D_0(np.array(data[2]) * np.power(10., 10), hkl),
                              fmt='-o',  # ecolor=color.get_color(),
-                             label="Kraft = {}kN".format(force))
+                             label="Kraft = {}kN".format(conv_p_to_c(force)))
 
+            plt.xlim([0, 1])
 
+            # make the plot
+            # fig, axs = plt.subplots(1, 1, subplot_kw=dict(projection='polar'))
+
+            # axs.grid(True)
+            # print("yticks: ", axs.get_yticks())
+
+            ax = plt.gca()
+            ax.get_yaxis().get_major_formatter().set_useOffset(False)  # shutt of the Offset
+            # ax.gird(True)
+            ticklables_y = []
+            for i in plt.gca().get_yticks():
+                ticklables_y.append(conv_p_to_c('{:.4f}'.format(i)))  # float('{:.1f}'.format(i)))
+            plt.gca().yaxis.set_ticklabels(ticklables_y)
+
+            ticklables_x = []
+            for i in plt.gca().get_xticks():
+                ticklables_x.append(conv_p_to_c('{:.1f}'.format(i)))  # float('{:.1f}'.format(i)))
+            plt.gca().xaxis.set_ticklabels(ticklables_x)
                 # plt.plot(Psi, val, 'r-',
                 #          label="s1 = {:.3g} $\pm$ {:.3g}\ns2 = {:.3g} $\pm$ {:.3g}".format(s1, s1err, s2, s2err))
+
             plt.gca().set_title(title)
             plt.gca().title.set_fontsize(24)
             for item in (plt.gca().get_xticklabels() + plt.gca().get_yticklabels()):
-                item.set_fontsize(20)
-            plt.xlabel('$\cos^2(\Psi)$', fontsize=22)
-            plt.ylabel('Gitterkonstante $a\ [\AA]$', fontsize=22)
-            ax = plt.gca()
-            ax.get_yaxis().get_major_formatter().set_useOffset(False)  # shutt of the Offset
+                item.set_fontsize(18)
+            plt.xlabel('$\cos^2(\psi)$', fontsize=22)
+            plt.ylabel('Gitterebenenabstand $D_{%s%s%s}\ [\AA]$' % (hkl[0], hkl[1], hkl[2]), fontsize=22)
             plt.gcf().tight_layout()
             # ax.get_yaxis().get_major_formatter().set_scientific(False)  # shut of scientific notation
             # plt.yscale('log')  # set log scale, not good for small values
             try:
-                plt.legend(loc='upper left')
+                plt.legend(loc='best', fontsize=18)
             except IndexError:
                 pass
-            plt.xlim([0, 1])
+
 
             if save:
                 figname = figname.replace(', ', '_')
