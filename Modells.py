@@ -355,7 +355,7 @@ def residual_Hill(params, gam, data1=None, data2=None, weight1=None, weight2=Non
     return mde
 
 
-def fitting_Hill(gam, data1, data2, weight1, weight2, fit_method='leastsq'):
+def fitting_Hill(gam, data1, data2, weight1, weight2, fit_method='leastsq', phase=None):
     '''
     -----------------------------------------------------------------------------
     fitting the Hill Moddel:
@@ -366,7 +366,16 @@ def fitting_Hill(gam, data1, data2, weight1, weight2, fit_method='leastsq'):
     #          name,   value                           Min,                      Max
     params.add('c_11', value=217.8 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
     params.add('c_12', value=125.8 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
-    params.add('c_44', value=126.4 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
+    if phase is None:
+        params.add('c_44', value=126.4 * np.power(10., 9))  # ,  min=100.*np.power(10.,9), max=300.*np.power(10.,9))
+    if phase == 1:
+        params.add('z', value=2.9, min=1.5, max=3.5, vary=True)
+        params.add('c_44', value=126.4 * np.power(10., 9), expr='(z / 2) * (c_11 - c_12)')
+    if phase == 2:
+        params.add('z', value=3.1, min=1.5, max=3.5, vary=True)
+        params.add('c_44', value=126.4 * np.power(10., 9), expr='(z / 2) * (c_11 - c_12)')
+
+
 
     result = lm.minimize(residual_Hill, params, method=fit_method, args=(gam,), \
                          kws={'data1': data1, 'data2': data2, 'weight1': weight1, 'weight2': weight2})
@@ -683,9 +692,9 @@ class FitStrainWithTexture(object):
         elif sym == "m-3m":
             params.add('c_11_p1', value=240 * np.power(10., 9), min=50. * np.power(10., 9), max=600. * np.power(10., 9))
             params.add('c_12_p1', value=120 * np.power(10., 9), min=20. * np.power(10., 9), max=600. * np.power(10., 9))
-            # params.add('z_p1', value=3.18, min=1.5, max=3.5)
-            params.add('c_44_p1', value=115 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))  # ,
-                       # expr='(z_p1 / 2) * (c_11_p1 - c_12_p1)')
+            params.add('z_p1', value=2.9, min=1.5, max=3.5, vary=False)
+            params.add('c_44_p1', value=115 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9),
+                       expr='(z_p1 / 2) * (c_11_p1 - c_12_p1)')
         elif sym == "hexagonal":
             params.add('c_11_p1', value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
             params.add('c_12_p1', value=120 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
@@ -701,9 +710,9 @@ class FitStrainWithTexture(object):
         elif sym == "m-3m":
             params.add('c_11_p2', value=230 * np.power(10., 9), min=50. * np.power(10., 9), max=600. * np.power(10., 9))
             params.add('c_12_p2', value=120 * np.power(10., 9), min=20. * np.power(10., 9), max=600. * np.power(10., 9))
-            # params.add('z_p2', value=2.45, min=1.5, max=3.5)
-            params.add('c_44_p2', value=115 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9))  # ,
-                       # expr='(z_p2 / 2) * (c_11_p2 - c_12_p2)')
+            params.add('z_p2', value=3.1, min=1.5, max=3.5, vary=False)
+            params.add('c_44_p2', value=115 * np.power(10., 9), min=10. * np.power(10., 9), max=600. * np.power(10., 9),
+                       expr='(z_p2 / 2) * (c_11_p2 - c_12_p2)')
 
         elif sym == "hexagonal":
             params.add('c_11_p2', value=217 * np.power(10., 9), min=0. * np.power(10., 9), max=600. * np.power(10., 9))
@@ -1340,15 +1349,15 @@ class FitStrainWithTexture(object):
                 for k in key_words:
                     if k in key:
                         pars.add(k, params[key].value)
-            # if param_vary and 'p1' in key and 'c_44' not in pars.keys() and 'c_12' in pars.keys() and 'c_11' in pars.keys():
-            #     pars.add('z', value=2., min=1.5, max=3.5)
-            #     pars.add('c_44', value=params['c_44_p1'].value, min=params['c_44_p1'].min, max=params['c_44_p1'].max,
-            #              expr='(z / 2) * (c_11 - c_12)')
-            #
-            # if param_vary and 'p2' in key and 'c_44' not in pars.keys() and 'c_12' in pars.keys() and 'c_11' in pars.keys():
-            #     pars.add('z', value=2., min=1.5, max=3.5)
-            #     pars.add('c_44', value=params['c_44_p2'].value, min=params['c_44_p2'].min, max=params['c_44_p2'].max,
-            #              expr='(z / 2) * (c_11 - c_12)')
+            if param_vary and 'p1' in key and 'c_44' not in pars.keys() and 'c_12' in pars.keys() and 'c_11' in pars.keys():
+                pars.add('z', value=2., min=1.5, max=3.5)
+                pars.add('c_44', value=params['c_44_p1'].value, min=params['c_44_p1'].min, max=params['c_44_p1'].max,
+                         expr='(z / 2) * (c_11 - c_12)')
+
+            if param_vary and 'p2' in key and 'c_44' not in pars.keys() and 'c_12' in pars.keys() and 'c_11' in pars.keys():
+                pars.add('z', value=2., min=1.5, max=3.5)
+                pars.add('c_44', value=params['c_44_p2'].value, min=params['c_44_p2'].min, max=params['c_44_p2'].max,
+                         expr='(z / 2) * (c_11 - c_12)')
         return pars
 
     def do_the_fitting(self, filename, material, method="reus", path=".\\results\\", texture=False, phase=1,
@@ -1384,11 +1393,15 @@ class FitStrainWithTexture(object):
         params_keys = params.keys()
         for key in params_keys:
             if phase == 1:
+                if 'z' in key:
+                    continue
                 if "p1" in key:
                     params[key].vary = True
                 if "p2" in key:
                     params[key].vary = False
             if phase == 2:
+                if 'z' in key:
+                    continue
                 if "p1" in key:
                     params[key].vary = False
                 if "p2" in key:
@@ -2402,7 +2415,7 @@ class FitGneupelHerold(FitStrainWithTexture):
         print s2_err
         fit_method = fit_method
         if method == "hill":
-            result = fitting_Hill(Gamma, s1, s2, s1_err, s2_err, fit_method=fit_method)
+            result = fitting_Hill(Gamma, s1, s2, s1_err, s2_err, fit_method=fit_method, phase=phase)  #
         if method == "voigt":
             result = fitting_Voigt(Gamma, s1, s2, s1_err, s2_err, fit_method=fit_method)
         if method == "eshelby":

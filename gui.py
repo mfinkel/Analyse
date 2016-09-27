@@ -1085,7 +1085,10 @@ class CentralWidget(QWidget):
                                                                                    conv_p_to_c_sientific(s2err)))
 
             ax = plt.gca()
-            ax.get_yaxis().get_major_formatter().set_useOffset(False)  # shutt of the Offset
+            try:
+                ax.get_yaxis().get_major_formatter().set_useOffset(False)  # shutt of the Offset
+            except AttributeError:
+                pass
             # ax.gird(True)
             plt.xlim([0, 1])
             ticklables_y = []
@@ -1175,7 +1178,10 @@ class CentralWidget(QWidget):
             # print("yticks: ", axs.get_yticks())
 
             ax = plt.gca()
-            ax.get_yaxis().get_major_formatter().set_useOffset(False)  # shutt of the Offset
+            try:
+                ax.get_yaxis().get_major_formatter().set_useOffset(False)  # shutt of the Offset
+            except AttributeError:
+                pass
             # ax.gird(True)
             ticklables_y = []
             for i in plt.gca().get_yticks():
